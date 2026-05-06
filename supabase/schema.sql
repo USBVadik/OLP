@@ -1,0 +1,74 @@
+-- Supabase SQL schema for OneLink Pay
+-- Run this in Supabase SQL Editor
+
+-- Merchants
+create table if not exists merchants (
+  id uuid primary key default gen_random_uuid(),
+  wallet_address text not null unique,
+  name text,
+  created_at timestamptz default now()
+);
+
+-- Payment Links
+create table if not exists payment_links (
+  id uuid primary key default gen_random_uuid(),
+  merchant_id text not null,
+  merchant_address text not null,
+  amount text not null,
+  token text not null,
+  destination_token_address text,
+  destination_chain_id integer not null default 8453,
+  label text,
+  status text not null default 'active' check (status in ('active', 'expired', 'completed', 'failed')),
+  contract_invoice_id text,
+  receipt_emitter_address text,
+  registered_tx_hash text,
+  paid_tx_hash text,
+  paid_at timestamptz,
+  error_message text,
+  created_at timestamptz default now(),
+  expires_at timestamptz
+);
+
+-- Payments
+create table if not exists payments (
+  id uuid primary key default gen_random_uuid(),
+  payment_link_id uuid references payment_links(id),
+  payer_address text not null,
+  source_chain_id integer not null,
+  destination_chain_id integer not null,
+  token text not null,
+  amount text not null,
+  tx_hash text,
+  receipt_tx_hash text,
+  preview_json jsonb,
+  error_message text,
+  status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'failed')),
+  created_at timestamptz default now(),
+  completed_at timestamptz
+);
+
+-- Indexes
+create index if not exists idx_payment_links_merchant on payment_links(merchant_id);
+create index if not exists idx_payments_link on payments(payment_link_id);
+create index if not exists idx_payments_status on payments(status);
+
+-- Milestone B migration helpers for existing Supabase projects
+alter table if exists payment_links add column if not exists destination_token_address text;
+alter table if exists payment_links add column if not exists contract_invoice_id text;
+alter table if exists payment_links add column if not exists receipt_emitter_address text;
+alter table if exists payment_links add column if not exists registered_tx_hash text;
+alter table if exists payment_links add column if not exists paid_tx_hash text;
+alter table if exists payment_links add column if not exists paid_at timestamptz;
+alter table if exists payment_links add column if not exists error_message text;
+alter table if exists payment_links drop constraint if exists payment_links_status_check;
+alter table if exists payment_links
+  add constraint payment_links_status_check
+  check (status in ('active', 'expired', 'completed', 'failed'));
+
+alter table if exists payments add column if not exists preview_json jsonb;
+alter table if exists payments add column if not exists error_message text;
+alter table if exists payments drop constraint if exists payments_status_check;
+alter table if exists payments
+  add constraint payments_status_check
+  check (status in ('pending', 'processing', 'completed', 'failed'));

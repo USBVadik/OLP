@@ -1,0 +1,16 @@
+{
+  "name": "onelink-pay-contracts",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.6.1",
+    "@types/chai": "^4.3.20",
+    "chai": "^4.5.0",
+    "hardhat": "^2.22.0"
+  }
+}
