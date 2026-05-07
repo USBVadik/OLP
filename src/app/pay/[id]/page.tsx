@@ -121,6 +121,42 @@ function getPaymentAmountLabel(paymentLink: PaymentLink): string {
   }
 }
 
+function shortAddress(address: string | null | undefined) {
+  if (!address) return "Not connected";
+  return `${address.slice(0, 10)}...${address.slice(-6)}`;
+}
+
+function getModeHelpText() {
+  return PAYMENT_MODE === "universal_invoice"
+    ? "Strict invoice mode: Particle builds approve + payInvoice."
+    : "Fallback mode: Particle sends USDC, then backend verifies the Transfer and records proof.";
+}
+
+function getErrorMessage(error: any) {
+  return error?.message || error?.response?.data?.message || String(error);
+}
+
+function isParticleMaintenanceError(error: any) {
+  const message = JSON.stringify({
+    message: error?.message,
+    response: error?.response?.data,
+    code: error?.code,
+  }).toLowerCase();
+  return message.includes("-32801") || message.includes("maintanence") || message.includes("maintenance");
+}
+
+function getCreateTransactionError(error: any) {
+  const message = getErrorMessage(error);
+  if (PAYMENT_MODE === "universal_invoice" && isParticleMaintenanceError(error)) {
+    return [
+      "Universal invoice mode is selected, but Particle custom universal transactions are currently blocked for this project.",
+      `Exact Particle error: ${message}`,
+      "No transfer_fallback was attempted automatically. Switch NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback to use the stable path.",
+    ].join(" ");
+  }
+  return `Transaction creation failed: ${message}`;
+}
+
 export default function PayPage({ params }: { params: { id: string } }) {
   const [step, setStep] = useState<Step>("loading");
   const [paymentLink, setPaymentLink] = useState<PaymentLink | null>(null);
@@ -334,8 +370,12 @@ export default function PayPage({ params }: { params: { id: string } }) {
       log("createTransaction", "error", {
         message: e.message,
         response: e.response?.data,
+        code: e.code,
+        mode: PAYMENT_MODE,
+        stage: PAYMENT_MODE === "universal_invoice" ? "createUniversalTransaction" : "createTransferTransaction",
+        particleMaintenance: isParticleMaintenanceError(e),
       });
-      setError(`Transaction creation failed: ${e.message}`);
+      setError(getCreateTransactionError(e));
     } finally {
       setIsCreatingTx(false);
     }
@@ -430,10 +470,11 @@ export default function PayPage({ params }: { params: { id: string } }) {
       <div className="max-w-lg mx-auto">
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
           <h1 className="text-xl font-bold mb-1">OneLink Pay</h1>
-          <p className="text-sm text-gray-500 mb-6">P0 Core Loop</p>
+          <p className="text-sm text-gray-500">Checkout prototype</p>
+          <CheckoutBadges />
 
           {/* STEP: Loading */}
-          {step === "loading" && <p className="text-gray-500">Loading invoice...</p>}
+          {step === "loading" && <LoadingState title="Loading invoice" detail="Fetching payment link details." />}
 
           {/* STEP: Login */}
           {step === "login" && paymentLink && (
@@ -442,10 +483,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
           {/* STEP: Balances loading */}
           {step === "balances" && (
-            <div className="text-center py-8">
-              <div className="animate-spin w-6 h-6 border-2 border-black border-t-transparent rounded-full mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Fetching unified balances...</p>
-            </div>
+            <LoadingState title="Checking balance" detail="Reading Particle Universal Account assets." />
           )}
 
           {/* STEP: Preview */}
@@ -464,86 +502,23 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
           {/* STEP: Paying */}
           {step === "paying" && (
-            <div className="text-center py-8">
-              <div className="animate-spin w-6 h-6 border-2 border-black border-t-transparent rounded-full mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Processing payment...</p>
-            </div>
+            <LoadingState title="Processing payment" detail="Waiting for Particle transaction and server-side proof verification." />
           )}
 
           {/* STEP: Success */}
           {step === "success" && (
-            <div className="text-center py-8">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-green-600 text-lg">OK</span>
-              </div>
-              <p className="font-bold text-green-700">Payment Sent</p>
-              {paymentLink && txResult?.txHash && (
-                <div className="mt-4 text-left border border-green-200 bg-green-50 rounded-lg p-3 text-sm">
-          <p className="font-medium text-green-800">USDC Transfer verified and InvoicePaid recorded on Base</p>
-                  <p className="mt-2">
-                    <span className="text-gray-500">Amount</span>{" "}
-                    <span className="font-bold">{getPaymentAmountLabel(paymentLink)}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-500">Merchant</span>{" "}
-                    <span className="font-mono text-xs">{paymentLink.merchant_address}</span>
-                  </p>
-                  <p>
-                    <span className="text-gray-500">Invoice</span>{" "}
-                    <span className="font-mono text-xs">{paymentLink.contract_invoice_id}</span>
-                  </p>
-                  <a
-                    href={txResult.paymentExplorer}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-700 underline break-all"
-                  >
-                    {txResult.txHash}
-                  </a>
-                  {txResult.proofTxHash && txResult.proofExplorer && (
-                    <p className="mt-2">
-                      <span className="text-gray-500">Proof</span>{" "}
-                      <a
-                        href={txResult.proofExplorer}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-700 underline break-all"
-                      >
-                        {txResult.proofTxHash}
-                      </a>
-                    </p>
-                  )}
-                </div>
-              )}
-              {txResult && (
-                <details className="mt-4 text-left">
-                  <summary className="text-sm cursor-pointer">Advanced result</summary>
-                  <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto text-left">
-                    {JSON.stringify(txResult, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
+            <SuccessState paymentLink={paymentLink} txResult={txResult} />
           )}
 
           {/* STEP: Error */}
           {step === "error" && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700 font-medium">Error</p>
-              <p className="text-red-600 text-sm mt-1">{error}</p>
-              <button
-                onClick={() => { setError(null); setStep("login"); }}
-                className="mt-3 text-sm underline text-red-700"
-              >
-                Retry
-              </button>
-            </div>
+            <ErrorState message={error} onRetry={() => { setError(null); setStep(paymentLink ? "login" : "loading"); }} />
           )}
         </div>
 
         {/* Diagnostic Logs */}
         <details className="bg-white rounded-xl shadow p-4">
-          <summary className="text-sm font-medium cursor-pointer">Diagnostic Logs ({logs.length})</summary>
+          <summary className="text-sm font-medium cursor-pointer">Advanced debug: raw Particle/probe data ({logs.length})</summary>
           <div className="mt-3 space-y-2 max-h-96 overflow-auto">
             {logs.map((l, i) => (
               <div key={i} className="text-xs font-mono border-b pb-1">
@@ -568,20 +543,170 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
 // --- Sub-components ---
 
+function CheckoutBadges() {
+  return (
+    <div className="my-4 flex flex-wrap gap-2 text-xs">
+      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
+        mode: <span className="font-mono">{PAYMENT_MODE}</span>
+      </span>
+      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
+        chain: <span className="font-mono">{ACTIVE_CHAIN.name} {ACTIVE_CHAIN.chainId}</span>
+      </span>
+    </div>
+  );
+}
+
+function LoadingState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="border rounded-lg p-4">
+      <p className="font-medium">{title}</p>
+      <p className="mt-1 text-sm text-gray-600">{detail}</p>
+    </div>
+  );
+}
+
+function ErrorState({ message, onRetry }: { message: string | null; onRetry: () => void }) {
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <p className="text-red-700 font-medium">Checkout error</p>
+      <p className="text-red-600 text-sm mt-1">{message || "Something went wrong."}</p>
+      <button
+        onClick={onRetry}
+        className="mt-3 text-sm underline text-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+function PaymentSummary({
+  paymentLink,
+  address,
+}: {
+  paymentLink: PaymentLink;
+  address?: string | null;
+}) {
+  return (
+    <div className="border rounded-lg p-4">
+      <p className="text-sm font-medium mb-3">Payment summary</p>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">You pay</span>
+          <span className="font-bold text-right">{getPaymentAmountLabel(paymentLink)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Merchant receives</span>
+          <span className="text-right">{getPaymentAmountLabel(paymentLink)} on {ACTIVE_CHAIN.name}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Merchant</span>
+          <span className="font-mono text-xs text-right">{shortAddress(paymentLink.merchant_address)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Wallet</span>
+          <span className="font-mono text-xs text-right">{shortAddress(address)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Mode</span>
+          <span className="font-mono text-xs text-right">{PAYMENT_MODE}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Chain</span>
+          <span className="font-mono text-xs text-right">{ACTIVE_CHAIN.name} ({ACTIVE_CHAIN.chainId})</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-500">Receipt</span>
+          <span className={paymentLink.registered_tx_hash ? "text-green-700" : "text-red-600"}>
+            {paymentLink.registered_tx_hash ? "Registered" : "Not registered"}
+          </span>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-gray-500">{getModeHelpText()}</p>
+    </div>
+  );
+}
+
+function SuccessState({
+  paymentLink,
+  txResult,
+}: {
+  paymentLink: PaymentLink | null;
+  txResult: any;
+}) {
+  return (
+    <div className="py-4">
+      <div className="mb-4 text-center">
+        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <span className="text-green-600 text-lg">OK</span>
+        </div>
+        <p className="font-bold text-green-700">Payment verified</p>
+        <p className="text-sm text-gray-600">USDC Transfer verified and InvoicePaid proof recorded.</p>
+      </div>
+
+      {paymentLink && txResult?.txHash && (
+        <div className="text-left border border-green-200 bg-green-50 rounded-lg p-3 text-sm">
+          <div className="space-y-2">
+            <div>
+              <p className="text-gray-500">Amount</p>
+              <p className="font-bold">{getPaymentAmountLabel(paymentLink)}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Merchant</p>
+              <p className="font-mono text-xs break-all">{paymentLink.merchant_address}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Invoice ID</p>
+              <p className="font-mono text-xs break-all">{paymentLink.contract_invoice_id}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Payment tx</p>
+              <a
+                href={txResult.paymentExplorer}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-700 underline break-all font-mono text-xs"
+              >
+                {txResult.txHash}
+              </a>
+            </div>
+            {txResult.proofTxHash && txResult.proofExplorer && (
+              <div>
+                <p className="text-gray-500">Proof tx</p>
+                <a
+                  href={txResult.proofExplorer}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-700 underline break-all font-mono text-xs"
+                >
+                  {txResult.proofTxHash}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {txResult && (
+        <details className="mt-4 text-left">
+          <summary className="text-sm cursor-pointer">Advanced debug: raw payment result</summary>
+          <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto text-left max-h-72">
+            {JSON.stringify(txResult, null, 2)}
+          </pre>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function LoginForm({ paymentLink, onLogin }: { paymentLink: PaymentLink; onLogin: (email: string) => void }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg p-4">
-        <p className="text-sm text-gray-500">Invoice</p>
-        <p className="text-2xl font-bold mt-1">{getPaymentAmountLabel(paymentLink)}</p>
-        {paymentLink.label && <p className="text-sm text-gray-600 mt-1">{paymentLink.label}</p>}
-        <p className="text-xs text-gray-400 font-mono mt-2">
-          To: {paymentLink.merchant_address}
-        </p>
-      </div>
+      <PaymentSummary paymentLink={paymentLink} />
+      {paymentLink.label && <p className="text-sm text-gray-600">{paymentLink.label}</p>}
       <div>
         <label className="text-sm text-gray-600 block mb-1">Email to sign in</label>
         <input
@@ -630,6 +755,8 @@ function PreviewStep({
         <p className="text-sm font-mono">{address}</p>
       </div>
 
+      <PaymentSummary paymentLink={paymentLink} address={address} />
+
       {/* Balances */}
       <div className="border rounded-lg p-4">
         <p className="text-sm font-medium mb-2">Unified Balance (Particle UA)</p>
@@ -647,33 +774,6 @@ function PreviewStep({
         ) : (
           <p className="text-xs text-gray-400">No balance data</p>
         )}
-      </div>
-
-      {/* Payment details */}
-      <div className="border rounded-lg p-4">
-        <p className="text-sm font-medium mb-2">Payment</p>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Amount</span>
-          <span className="font-bold">{getPaymentAmountLabel(paymentLink)}</span>
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span className="text-gray-500">To</span>
-          <span className="font-mono text-xs">{paymentLink.merchant_address.slice(0, 10)}...</span>
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span className="text-gray-500">Chain</span>
-          <span>{ACTIVE_CHAIN.name} ({ACTIVE_CHAIN.chainId})</span>
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span className="text-gray-500">Mode</span>
-          <span>{PAYMENT_MODE === "universal_invoice" ? "Universal invoice" : "Particle Transfer + verified proof"}</span>
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span className="text-gray-500">Receipt</span>
-          <span className={paymentLink.registered_tx_hash ? "text-green-700" : "text-red-600"}>
-            {paymentLink.registered_tx_hash ? "Registered" : "Not registered"}
-          </span>
-        </div>
       </div>
 
       {/* Transaction preview */}
@@ -695,7 +795,7 @@ function PreviewStep({
             <p>You do not need to switch networks or hold destination-chain gas manually.</p>
           </div>
           <details className="mt-3">
-            <summary className="text-xs cursor-pointer text-blue-800">Advanced Particle transaction</summary>
+            <summary className="text-xs cursor-pointer text-blue-800">Advanced debug: raw Particle transaction</summary>
             <pre className="text-xs overflow-auto max-h-40 mt-2">
               {JSON.stringify(transaction, null, 2)}
             </pre>

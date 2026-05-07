@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
+import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const isDemoReplay = searchParams.get("demo") === "replay";
   const [merchantId, setMerchantId] = useState("");
   const [links, setLinks] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -14,16 +18,17 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     if (!merchantId) return;
+    const demoQuery = isDemoReplay ? "&demo=replay" : "";
     const [linksRes, paymentsRes] = await Promise.all([
-      fetch(`/api/payment-links?merchantId=${merchantId}`, { cache: "no-store" }),
-      fetch(`/api/payments?merchantId=${merchantId}`, { cache: "no-store" }),
+      fetch(`/api/payment-links?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
+      fetch(`/api/payments?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
     ]);
     const linksData = await linksRes.json();
     const paymentsData = await paymentsRes.json();
     setLinks(linksData.links || []);
     setPayments(paymentsData.payments || []);
     setStats(paymentsData.stats || { total: 0, completed: 0, pending: 0, failed: 0 });
-  }, [merchantId]);
+  }, [merchantId, isDemoReplay]);
 
   async function createLink() {
     if (!newLink.amount || !newLink.merchantAddress) return;
@@ -58,6 +63,12 @@ export default function DashboardPage() {
     }
   }
 
+  useEffect(() => {
+    if (isDemoReplay) {
+      setMerchantId(searchParams.get("merchantId") || DEMO_REPLAY_PAYMENT_LINK.merchant_id);
+    }
+  }, [isDemoReplay, searchParams]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   function formatLinkAmount(link: any) {
@@ -77,6 +88,17 @@ export default function DashboardPage() {
     <main className="min-h-screen p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Merchant Dashboard (P0 MVP)</h1>
 
+      {isDemoReplay && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">Demo replay mode</p>
+          <p>
+            This dashboard is showing seeded data from an existing successful payment tx and proof tx.
+            It does not create or execute a new payment.
+          </p>
+        </div>
+      )}
+
+      {!isDemoReplay && (
       <div className="bg-white border rounded-xl p-6 mb-6">
         <h2 className="font-bold mb-3">Create Payment Link</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -122,6 +144,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      )}
 
       <div className="bg-white border rounded-xl p-6">
         <h2 className="font-bold mb-3">Payment Links</h2>
@@ -155,6 +178,14 @@ export default function DashboardPage() {
                       proof {getCompletedPaymentForLink(l.id).receipt_tx_hash.slice(0, 10)}...
                     </span>
                   )}
+                  {isDemoReplay && l.status === "completed" && (
+                    <a
+                      href={`/success/${l.id}`}
+                      className="mt-1 block text-xs text-blue-700 underline"
+                    >
+                      open replay success page
+                    </a>
+                  )}
                 </span>
                 <span className={l.status === "completed" ? "text-green-600 font-bold text-right" : "text-gray-500 text-right"}>
                   {l.status === "completed" ? "PAID" : l.status}
@@ -170,5 +201,13 @@ export default function DashboardPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen p-8 max-w-4xl mx-auto">Loading dashboard...</main>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

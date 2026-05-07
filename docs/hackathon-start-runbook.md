@@ -1,25 +1,76 @@
 # Hackathon Start Runbook
 
-Use this only after the official hackathon kickoff. Until then, keep this repo in pre-hackathon prototype freeze.
+Use this after the official Encode/UXmaxx kickoff. Until final rules are live, do not add product features, spend mainnet gas, or migrate the architecture.
 
-## 1. Check Final Rules
+## 1. Read Final Encode/UXmaxx Page
 
-- Read the final UXmaxx/Encode/Particle rules before writing new code.
-- Confirm whether pre-hackathon prototypes are allowed and what must be rebuilt or newly committed during the event.
-- Confirm the exact judging criteria for Particle Universal Accounts, EIP-7702, cross-chain payments, and on-chain proof.
-- Write any sponsor-specific required SDKs, chains, or demo constraints in `docs/status.md`.
+Open the final competition page and record in `docs/status.md`:
 
-## 2. Check Latest Particle SDK And Docs
+- Final judging criteria.
+- Final submission deadline.
+- Whether pre-hackathon prototypes are allowed.
+- Whether code must be written after kickoff.
+- Required demo format: deployed app, local app, video, GitHub repo, or all of these.
+- Exact wording around Particle Universal Accounts, EIP-7702, and cross-chain operations.
 
-- Check the latest Particle Universal Account SDK version and changelog.
-- Check whether `createUniversalTransaction()` custom calls are still under maintenance for this project.
-- Check whether Base and Arbitrum support changed for SEND/TRANSFER/custom-call rails.
-- Check whether Magic signing requirements changed for EIP-7702 authorization handling.
-- Upgrade only after reading migration notes and rerunning the probe matrix.
+Do not continue implementation until this is written down.
 
-## 3. Rerun Probe Matrix
+## 2. Read Final Partner Bounties
 
-Start local dev:
+Check all final sponsor/partner bounties and write down:
+
+- Required SDKs.
+- Required chain(s).
+- Required transaction type(s).
+- Required proof or explorer links.
+- Any mandatory wallet/auth provider.
+- Whether ZeroDev, Arbitrum, Magic, Openfort, Particle AuthKit, or other partners are explicitly required.
+
+Decision rule:
+
+- If a partner requirement conflicts with the current working path, timebox a spike before migrating.
+- If a partner is optional, do not add it until the core checkout still works.
+
+## 3. Check Particle UA Maintenance Status
+
+Before touching code, check whether Particle custom universal calls are still blocked.
+
+Confirm:
+
+- Is `createUniversalTransaction()` custom-call support active for this project?
+- Is `-32801 System maintanence...` still returned?
+- Is the feature behind project allowlist, SDK version, chain support, or dashboard setting?
+- Is Base supported differently from Arbitrum?
+- Are there new EIP-7702 authorization requirements for Magic signing?
+
+If the answer is unclear, rerun the probe matrix and keep `transfer_fallback` active until proven otherwise.
+
+## 4. Update Particle SDK Only If Needed
+
+Do not upgrade SDKs just because a newer version exists.
+
+Upgrade only if:
+
+- Particle docs/changelog says the target issue is fixed.
+- Carlos/Particle/Encode recommends a specific version.
+- The final rules require a newer version.
+- Probe matrix suggests current SDK is the blocker.
+
+After any SDK change:
+
+```bash
+corepack pnpm install
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm test:unit
+cd contracts && corepack pnpm test
+```
+
+Then rerun the probe matrix.
+
+## 5. Rerun Probe Matrix
+
+Start the app:
 
 ```bash
 corepack pnpm dev
@@ -31,31 +82,76 @@ Open:
 http://localhost:3000/debug/particle-probe
 ```
 
-Use:
+Enable:
 
 ```text
 NEXT_PUBLIC_ENABLE_DEBUG_PROBES=true
 ```
 
-Run Base probes first:
+Run probes in this order:
 
-- Magic login.
-- Particle UA init.
-- `getPrimaryAssets()`.
-- `createTransferTransaction()` with Base USDC.
-- `createUniversalTransaction()` with single USDC `transfer`.
-- `createUniversalTransaction()` with single USDC `approve`.
-- `createUniversalTransaction()` with `approve + payInvoice`.
+1. Base transfer:
+   - `createTransferTransaction()`
+   - Base USDC
+   - merchant recipient
 
-Run Arbitrum probes only as exploratory:
+2. Base universal USDC.transfer:
+   - `createUniversalTransaction()`
+   - one custom USDC `transfer`
 
-- Arbitrum `createTransferTransaction()`.
-- Arbitrum custom `createUniversalTransaction()` probes.
-- Do not deploy Arbitrum ReceiptEmitter or spend gas unless the rules or sponsor guidance make Arbitrum the target.
+3. Base universal approve:
+   - `createUniversalTransaction()`
+   - one custom USDC `approve`
 
-Do not send transactions from the probe page unless explicitly approved during the hackathon.
+4. Base approve + payInvoice:
+   - `createUniversalTransaction()`
+   - USDC `approve`
+   - `ReceiptEmitter.payInvoice`
 
-## 4. Choose Payment Mode
+5. Arbitrum transfer:
+   - `createTransferTransaction()`
+   - Arbitrum native USDC
+   - merchant recipient
+
+6. Arbitrum universal call:
+   - `createUniversalTransaction()`
+   - at least one custom USDC call
+   - optional `approve + payInvoice` only if ReceiptEmitter is deployed there
+
+For every probe, record:
+
+- result: success/failure
+- rootHash present: yes/no
+- userOps present: yes/no
+- eip7702Auth present: yes/no
+- eip7702Delegated value
+- exact error code/message
+- whether the error is Particle `-32801`
+
+Do not send transactions from the probe page unless explicitly approved.
+
+## 6. Choose Final Chain
+
+Default:
+
+```text
+Base mainnet, chainId 8453
+```
+
+Activate Arbitrum only if at least one of these is true:
+
+- Final partner bounty explicitly prefers/requires Arbitrum.
+- Arbitrum probes work materially better than Base.
+- Arbitrum is the smallest way to satisfy the final cross-chain requirement.
+
+Do not activate Arbitrum if:
+
+- Arbitrum custom calls still return `-32801`.
+- Arbitrum transfer still fails simulation.
+- There is no funded test wallet/UA and no explicit approval to spend gas.
+- Base already satisfies the final rules.
+
+## 7. Choose Final Payment Mode
 
 Default:
 
@@ -63,54 +159,75 @@ Default:
 NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback
 ```
 
-Use this if Particle custom calls still return:
+Keep `transfer_fallback` if:
 
-```text
--32801 System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
-```
+- Base transfer works.
+- Custom universal calls still return `-32801`.
+- Final rules accept Particle SEND/TRANSFER plus server-side USDC `Transfer` verification and ReceiptEmitter proof.
 
-Strict path:
+Switch to:
 
 ```text
 NEXT_PUBLIC_PAYMENT_MODE=universal_invoice
 ```
 
-Use this only if the probe matrix confirms `createUniversalTransaction(approve + payInvoice)` builds a preview/rootHash and the Magic EIP-7702 authorization path is understood.
+Only if:
 
-## 5. Choose Chain
+- `createUniversalTransaction(approve + payInvoice)` returns preview/rootHash.
+- EIP-7702 authorization handling is understood.
+- Magic signing path works.
+- One full tiny payment can complete without manual fallback.
 
-Default active chain:
+Never silently fallback from `universal_invoice` to `transfer_fallback`. If strict mode fails, show the exact diagnostic and choose mode deliberately.
 
-```text
-Base mainnet, chainId 8453, USDC 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-```
+## 8. Build Only Final Chosen Path
 
-Keep Arbitrum exploratory unless it clearly beats Base in the fresh probe matrix:
+After choosing chain and payment mode:
 
-```text
-Arbitrum One, chainId 42161, USDC 0xaf88d065e77c8cC2239327C5EDb3A432268e5831
-```
+- Update `docs/status.md`.
+- Update README wording.
+- Keep only the selected path in the primary demo script.
+- Keep alternate paths documented as fallback/probe paths.
+- Do not broaden token support before the selected path is stable.
+- Do not add UI polish until the selected path works end-to-end.
 
-Do not support both chains in the product flow until one chain is stable.
+## 9. When To Add ZeroDev
 
-## 6. Continue Implementation Only After Decisions
+Add ZeroDev only if all are true:
 
-Continue product work only after these are written in `docs/status.md`:
+- Core checkout path works repeatedly.
+- Final partner bounties make ZeroDev strategically useful.
+- There is enough time for a real permission/session-key demo.
+- The implementation can be honestly demonstrated.
 
-- Final rules checked.
-- Particle SDK/docs checked.
-- Probe matrix rerun.
-- Active payment mode chosen.
-- Active chain chosen.
-- Any known sponsor blockers recorded with exact errors.
+If any condition fails:
 
-Cut until core checkout is stable:
+- Keep ZeroDev as stretch/planned.
+- Do not claim Repeat-Pay Caps are implemented.
 
-- ZeroDev.
-- Repeat-Pay Caps.
-- QR links.
-- Merchant auth.
-- Particle AuthKit checkout.
-- UI polish beyond demo-critical clarity.
+## 10. Prepare Final Demo And Submission
 
-Do not spend mainnet gas until the exact invoice/payment/proof test has been approved.
+After the final path is stable:
+
+- Create one fresh demo invoice.
+- Use the smallest safe USDC amount.
+- Capture payment tx explorer link.
+- Capture proof tx explorer link.
+- Confirm dashboard shows PAID/proof status after refresh.
+- Prepare fallback demo replay page.
+- Write final limitations honestly.
+- Prepare 30-second pitch, 60-second pitch, README run steps, and submission text.
+
+## Do Not Do Before Final Rules Are Live
+
+- Do not add ZeroDev.
+- Do not build Repeat-Pay Caps.
+- Do not build QR links.
+- Do not build merchant auth.
+- Do not migrate to Particle AuthKit checkout.
+- Do not activate Arbitrum as product chain.
+- Do not add multi-token support.
+- Do not do UI polish/branding/landing-page work.
+- Do not spend mainnet gas.
+- Do not claim cross-chain proof is final.
+- Do not claim `universal_invoice` works while Particle returns `-32801`.

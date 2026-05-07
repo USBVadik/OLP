@@ -1,6 +1,6 @@
 # Rules Watch
 
-Last updated: 2026-05-06
+Last updated: 2026-05-07
 
 This document tracks what we currently know before the official UXmaxx kickoff. Treat it as planning context, not final submission truth.
 
@@ -16,14 +16,22 @@ Private/contextual guidance from Carlos:
 - Magic is a good wallet direction.
 - Arbitrum is worth exploring.
 
-## 1. Current Known Judging Criteria
+## 1. Current Known Placeholder Rules
 
-Current public criteria:
+Current public judging criteria:
 
 - UX & Design: 45%.
 - Technical Implementation: 25%.
 - Creativity & Ambition: 20%.
 - Completeness: 10%.
+
+Current public technical requirements:
+
+- Use Particle Universal Accounts SDK in EIP-7702 mode.
+- Use an embedded wallet such as Magic or Openfort, or managed server-side wallet flow.
+- Include partner technologies where applicable.
+- Include at least one cross-chain operation.
+- Provide a functional demo, either deployed or runnable locally.
 
 Working interpretation for OneLink Pay:
 
@@ -32,15 +40,16 @@ Working interpretation for OneLink Pay:
 - Technical points likely depend on real use of Particle Universal Accounts and EIP-7702, not just branding.
 - Completeness means one clean end-to-end path beats many half-built features.
 
-## 2. Current Technical Requirements
+## 2. Carlos Comments
 
-Current public requirements:
+Treat these as helpful pre-kickoff guidance, not final written rules:
 
-- Use Particle Universal Accounts SDK in EIP-7702 mode.
-- Use an embedded wallet such as Magic or Openfort, or managed server-side wallet flow.
-- Include partner technologies where applicable.
-- Include at least one cross-chain operation.
-- Provide a functional demo, either deployed or runnable locally.
+- Lightweight prep and prototyping are fine.
+- The current public page is a placeholder.
+- Magic is a good wallet direction.
+- Arbitrum is worth exploring.
+
+## 3. Current Technical Direction
 
 Current project interpretation:
 
@@ -51,7 +60,7 @@ Current project interpretation:
 - Active payment mode: `transfer_fallback`.
 - Strict path: `universal_invoice`, gated behind `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`.
 
-## 3. Unstable Or Placeholder Elements
+## 4. Unstable Or Placeholder Elements
 
 These can change after kickoff:
 
@@ -67,7 +76,7 @@ These can change after kickoff:
 
 Do not build irreversible scope around any unstable item before kickoff.
 
-## 4. What Our Prototype Already Satisfies
+## 5. What Our Prototype Currently Satisfies
 
 Current prototype status:
 
@@ -85,7 +94,7 @@ Current prototype status:
 - Arbitrum probe config exists and is documented as exploratory.
 - Strict `createUniversalTransaction()` custom-call blocker is documented with exact `-32801` maintenance error.
 
-## 5. What Is Still Pending
+## 6. What Remains Pending
 
 Pending until final rules and SDK behavior are confirmed:
 
@@ -97,9 +106,9 @@ Pending until final rules and SDK behavior are confirmed:
 - Any final partner-specific integration.
 - Any final submission packaging, pitch, and video work.
 
-## 6. Decision Matrix For Final Rules
+## 7. Decision Matrix For Final Partner Requirements
 
-| Final rule outcome | Decision |
+| Final partner requirement | Decision |
 |---|---|
 | `createUniversalTransaction()` custom calls work after kickoff | Switch `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`, retest `approve + payInvoice`, then build around direct ReceiptEmitter payment. |
 | Custom calls still return `-32801`, but transfer rail is accepted | Keep `transfer_fallback`: Particle transfer -> server verifies USDC `Transfer` -> ReceiptEmitter proof -> Supabase PAID. |
@@ -109,9 +118,10 @@ Pending until final rules and SDK behavior are confirmed:
 | Magic remains accepted/recommended | Keep Magic as active wallet/auth path. |
 | Magic has a final-rule issue | Evaluate Openfort or managed server-side path only after confirming the issue. |
 | Partner tech requirements expand | Add only the smallest qualifying partner integration after core checkout is stable. |
+| Particle AuthKit becomes mandatory | Timebox an AuthKit spike and compare it against the working Magic path before migrating. |
 | ZeroDev/Repeat-Pay becomes a bounty target but core payment is unstable | Cut stretch; do not trade core checkout reliability for optional caps. |
 
-## 7. What Not To Overclaim
+## 8. What Not To Overclaim
 
 Do not claim:
 

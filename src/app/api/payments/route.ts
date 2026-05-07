@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { DEMO_REPLAY_PAYMENT, DEMO_REPLAY_PAYMENT_LINK, isDemoReplayRequest } from "@/lib/demo/replay";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -88,6 +89,23 @@ export async function GET(request: Request) {
       { error: "merchantId required" },
       { status: 400 }
     );
+  }
+
+  if (isDemoReplayRequest(searchParams)) {
+    const payments =
+      merchantId.toLowerCase() === DEMO_REPLAY_PAYMENT_LINK.merchant_id.toLowerCase()
+        ? [DEMO_REPLAY_PAYMENT]
+        : [];
+    return NextResponse.json({
+      demoReplay: true,
+      payments,
+      stats: {
+        total: payments.length,
+        completed: payments.length,
+        pending: 0,
+        failed: 0,
+      },
+    });
   }
 
   // Get all payment links for this merchant, then get their payments

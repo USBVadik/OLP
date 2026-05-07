@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import {
-  ERC20_TRANSFER_EVENT_ABI,
   RECEIPT_EMITTER_ABI,
 } from "@/lib/contracts/receipt-emitter";
 import { getActivePaymentChain } from "@/lib/config/payment";
+import {
+  assertCanMarkPaid,
+  normalizeAddress,
+  verifyUsdcTransferForPayment,
+} from "@/lib/payments/mark-paid-verification";
 import { createPublicClient, createWalletClient, http, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
@@ -17,10 +21,6 @@ const MarkPaidSchema = z.object({
   txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
 });
 const ACTIVE_CHAIN = getActivePaymentChain();
-
-function normalizeAddress(address: string | null | undefined) {
-  return address?.toLowerCase();
-}
 
 function getPublicClient() {
   const rpcUrl = process.env.BASE_MAINNET_RPC_URL;
@@ -60,8 +60,9 @@ export async function POST(
     if (!link.contract_invoice_id) throw new Error("Payment link is missing contract_invoice_id");
     if (!link.registered_tx_hash) throw new Error("Payment link is not registered on-chain");
 
-    if (link.status === "completed") {
-      if (normalizeAddress(link.paid_tx_hash) === normalizeAddress(parsed.txHash)) {
+    try {
+      const markPaidState = assertCanMarkPaid(link, parsed.txHash);
+      if (markPaidState.deduped) {
         const { data: payment } = await supabaseAdmin
           .from("payments")
           .select("*")
@@ -76,8 +77,9 @@ export async function POST(
           proofTxHash: payment?.receipt_tx_hash ?? null,
         });
       }
+    } catch (error) {
       return NextResponse.json(
-        { error: "Payment link is already completed with a different tx hash" },
+        { error: error instanceof Error ? error.message : "Payment link is already completed" },
         { status: 409 }
       );
     }
@@ -91,10 +93,6 @@ export async function POST(
       timeout: 60_000,
     });
 
-    if (receipt.status !== "success") {
-      throw new Error(`Transaction failed on ${ACTIVE_CHAIN.name}: ${parsed.txHash}`);
-    }
-
     const duplicatePaymentTx = await supabaseAdmin
       .from("payments")
       .select("id,payment_link_id,status")
@@ -106,23 +104,12 @@ export async function POST(
       throw new Error("Payment tx hash was already used for another payment link");
     }
 
-    const usdcLogs = receipt.logs.filter(
-      (log) => normalizeAddress(log.address) === normalizeAddress(ACTIVE_CHAIN.usdcAddress)
-    );
-    const transferLogs = parseEventLogs({
-      abi: ERC20_TRANSFER_EVENT_ABI,
-      eventName: "Transfer",
-      logs: usdcLogs,
+    const matchingTransfer = verifyUsdcTransferForPayment({
+      receipt,
+      chain: ACTIVE_CHAIN,
+      link,
+      txHash: parsed.txHash as Hex,
     });
-    const matchingTransfer = transferLogs.find(
-      (log) =>
-        normalizeAddress(log.args.to) === normalizeAddress(link.merchant_address) &&
-        log.args.value === BigInt(link.amount)
-    );
-
-    if (!matchingTransfer) {
-      throw new Error(`Matching ${ACTIVE_CHAIN.name} USDC Transfer to merchant for invoice amount was not found`);
-    }
 
     const walletClient = getServerWalletClient();
     const proofTxHash = await walletClient.writeContract({
@@ -226,9 +213,9 @@ export async function POST(
       link: updatedLink,
       payment,
       transfer: {
-        from: matchingTransfer.args.from as Address,
-        to: matchingTransfer.args.to as Address,
-        value: matchingTransfer.args.value.toString(),
+        from: matchingTransfer.from,
+        to: matchingTransfer.to,
+        value: matchingTransfer.value.toString(),
         txHash: parsed.txHash,
       },
       proofTxHash,

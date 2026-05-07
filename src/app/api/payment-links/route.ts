@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { DEMO_REPLAY_PAYMENT_LINK, isDemoReplayRequest } from "@/lib/demo/replay";
 import {
   RECEIPT_EMITTER_ABI,
 } from "@/lib/contracts/receipt-emitter";
@@ -159,6 +160,17 @@ export async function GET(request: Request) {
       { error: "merchantId required" },
       { status: 400 }
     );
+  }
+
+  if (isDemoReplayRequest(searchParams)) {
+    const links =
+      merchantId.toLowerCase() === DEMO_REPLAY_PAYMENT_LINK.merchant_id.toLowerCase()
+        ? [DEMO_REPLAY_PAYMENT_LINK]
+        : [];
+    return NextResponse.json({
+      demoReplay: true,
+      links,
+    });
   }
 
   const { data, error } = await supabaseAdmin
