@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDemoReplaySuccess } from "@/lib/demo/replay";
+import { getActivePaymentChain, getConfiguredPaymentMode } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
+
+const ACTIVE_CHAIN = getActivePaymentChain();
+const PAYMENT_MODE = getConfiguredPaymentMode();
 
 function formatAmount(amount: string, tokenSymbol: string, chainId: number) {
   const token = resolvePaymentToken(tokenSymbol, chainId);
@@ -29,8 +33,14 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700">
             OK
           </div>
-          <h1 className="text-2xl font-bold text-green-800">Payment Verified</h1>
+          <h1 className="text-2xl font-bold text-green-800">PAID</h1>
           <p className="text-sm text-gray-500">Existing Base USDC transfer plus ReceiptEmitter proof</p>
+        </div>
+
+        <div className="mb-5 grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded border border-green-100 bg-green-50 p-2 text-green-800">paid</div>
+          <div className="rounded border border-gray-200 bg-gray-50 p-2">{ACTIVE_CHAIN.name}</div>
+          <div className="rounded border border-gray-200 bg-gray-50 p-2 font-mono">{PAYMENT_MODE}</div>
         </div>
 
         <dl className="space-y-3 text-sm">
@@ -45,6 +55,10 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
           <div className="flex justify-between gap-4">
             <dt className="text-gray-500">Invoice ID</dt>
             <dd className="break-all font-mono text-xs">{link.contract_invoice_id}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-gray-500">Proof status</dt>
+            <dd className="font-semibold text-green-700">InvoicePaid found</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-gray-500">Payment tx</dt>

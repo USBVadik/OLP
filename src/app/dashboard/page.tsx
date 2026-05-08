@@ -4,6 +4,10 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
 import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
+import { getActivePaymentChain, getConfiguredPaymentMode, getExplorerTxUrl } from "@/lib/config/payment";
+
+const ACTIVE_CHAIN = getActivePaymentChain();
+const PAYMENT_MODE = getConfiguredPaymentMode();
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -84,9 +88,36 @@ function DashboardContent() {
     return payments.find((payment) => payment.payment_link_id === linkId && payment.status === "completed");
   }
 
+  function TxLink({ hash, label }: { hash: string | null | undefined; label: string }) {
+    if (!hash) return null;
+    return (
+      <a
+        className="block text-xs text-blue-700 underline font-mono"
+        href={getExplorerTxUrl(ACTIVE_CHAIN, hash)}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {label} {hash.slice(0, 10)}...
+      </a>
+    );
+  }
+
   return (
     <main className="min-h-screen p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Merchant Dashboard (P0 MVP)</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Merchant Dashboard</h1>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          <span className="rounded border border-gray-200 bg-white px-2 py-1">
+            mode: <span className="font-mono">{PAYMENT_MODE}</span>
+          </span>
+          <span className="rounded border border-gray-200 bg-white px-2 py-1">
+            chain: <span className="font-mono">{ACTIVE_CHAIN.name}</span>
+          </span>
+          <span className="rounded border border-gray-200 bg-white px-2 py-1">
+            proof: <span className="font-semibold">ReceiptEmitter</span>
+          </span>
+        </div>
+      </div>
 
       {isDemoReplay && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -163,19 +194,21 @@ function DashboardContent() {
         {links.length === 0 ? (
           <p className="text-gray-400 text-sm">No links found</p>
         ) : (
-          <ul className="space-y-2 text-sm">
-            {links.map((l: any) => (
-              <li key={l.id} className="border rounded p-2 flex justify-between gap-3">
+          <ul className="space-y-3 text-sm">
+            {links.map((l: any) => {
+              const completedPayment = getCompletedPaymentForLink(l.id);
+              return (
+              <li key={l.id} className="border rounded-lg p-3">
+                <div className="flex justify-between gap-3">
                 <span>
-                  {l.label || l.id.slice(0, 8)} - {formatLinkAmount(l)}
+                  <span className="font-medium">{l.label || l.id.slice(0, 8)}</span>
+                  <span className="block text-gray-600">{formatLinkAmount(l)} on {ACTIVE_CHAIN.name}</span>
+                  <span className="block text-xs text-gray-500">
+                    mode <span className="font-mono">{PAYMENT_MODE}</span>
+                  </span>
                   {l.registered_tx_hash && (
                     <span className="block text-xs text-gray-400 font-mono">
                       registered {l.registered_tx_hash.slice(0, 10)}...
-                    </span>
-                  )}
-                  {getCompletedPaymentForLink(l.id)?.receipt_tx_hash && (
-                    <span className="block text-xs text-green-700 font-mono">
-                      proof {getCompletedPaymentForLink(l.id).receipt_tx_hash.slice(0, 10)}...
                     </span>
                   )}
                   {isDemoReplay && l.status === "completed" && (
@@ -191,12 +224,20 @@ function DashboardContent() {
                   {l.status === "completed" ? "PAID" : l.status}
                   {l.status === "completed" && (
                     <span className="block text-xs font-normal">
-                      {getCompletedPaymentForLink(l.id)?.receipt_tx_hash ? "proof ok" : "proof pending"}
+                      {completedPayment?.receipt_tx_hash ? "proof ok" : "proof pending"}
                     </span>
                   )}
                 </span>
+                </div>
+                {completedPayment && (
+                  <div className="mt-3 rounded border border-green-100 bg-green-50 p-2">
+                    <p className="mb-1 text-xs font-medium text-green-800">Verified payment proof</p>
+                    <TxLink hash={completedPayment.tx_hash} label="payment tx" />
+                    <TxLink hash={completedPayment.receipt_tx_hash} label="proof tx" />
+                  </div>
+                )}
               </li>
-            ))}
+            )})}
           </ul>
         )}
       </div>

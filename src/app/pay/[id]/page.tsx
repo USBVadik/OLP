@@ -129,7 +129,13 @@ function shortAddress(address: string | null | undefined) {
 function getModeHelpText() {
   return PAYMENT_MODE === "universal_invoice"
     ? "Strict invoice mode: Particle builds approve + payInvoice."
-    : "Fallback mode: Particle sends USDC, then backend verifies the Transfer and records proof.";
+    : "Fallback mode: Particle sends USDC on Base, then backend verifies the Transfer and records proof.";
+}
+
+function getModeProofText() {
+  return PAYMENT_MODE === "universal_invoice"
+    ? "Future strict path: ReceiptEmitter receives payInvoice directly in the same universal transaction."
+    : "Current working path: the merchant receives USDC first, then the backend writes an InvoicePaid proof after verification.";
 }
 
 function getErrorMessage(error: any) {
@@ -546,7 +552,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
 function CheckoutBadges() {
   return (
     <div className="my-4 flex flex-wrap gap-2 text-xs">
-      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
+      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1" title={getModeHelpText()}>
         mode: <span className="font-mono">{PAYMENT_MODE}</span>
       </span>
       <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
@@ -623,6 +629,7 @@ function PaymentSummary({
         </div>
       </div>
       <p className="mt-3 text-xs text-gray-500">{getModeHelpText()}</p>
+      <p className="mt-1 text-xs text-gray-500">{getModeProofText()}</p>
     </div>
   );
 }
@@ -640,7 +647,7 @@ function SuccessState({
         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
           <span className="text-green-600 text-lg">OK</span>
         </div>
-        <p className="font-bold text-green-700">Payment verified</p>
+        <p className="font-bold text-green-700">PAID</p>
         <p className="text-sm text-gray-600">USDC Transfer verified and InvoicePaid proof recorded.</p>
       </div>
 
@@ -658,6 +665,10 @@ function SuccessState({
             <div>
               <p className="text-gray-500">Invoice ID</p>
               <p className="font-mono text-xs break-all">{paymentLink.contract_invoice_id}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Payment mode</p>
+              <p className="font-mono text-xs">{PAYMENT_MODE}</p>
             </div>
             <div>
               <p className="text-gray-500">Payment tx</p>
@@ -707,6 +718,12 @@ function LoginForm({ paymentLink, onLogin }: { paymentLink: PaymentLink; onLogin
     <div className="space-y-4">
       <PaymentSummary paymentLink={paymentLink} />
       {paymentLink.label && <p className="text-sm text-gray-600">{paymentLink.label}</p>}
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">
+        <p className="font-medium">Wallet path</p>
+        <p className="mt-1">
+          Sign in with Magic. The app initializes a Particle Universal Account for that wallet and builds a payment preview before any transaction is sent.
+        </p>
+      </div>
       <div>
         <label className="text-sm text-gray-600 block mb-1">Email to sign in</label>
         <input
@@ -753,6 +770,9 @@ function PreviewStep({
       <div className="bg-gray-50 rounded-lg p-3">
         <p className="text-xs text-gray-500">Connected wallet (Magic)</p>
         <p className="text-sm font-mono">{address}</p>
+        <p className="mt-2 text-xs text-gray-500">
+          Particle UA is initialized from this Magic wallet and used to create the payment preview.
+        </p>
       </div>
 
       <PaymentSummary paymentLink={paymentLink} address={address} />
