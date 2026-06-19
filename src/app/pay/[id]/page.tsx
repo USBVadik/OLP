@@ -11,27 +11,43 @@ import {
   getActivePaymentChain,
   getConfiguredPaymentMode,
   getExplorerTxUrl,
+  getPublicRpcUrl,
 } from "@/lib/config/payment";
 
 // Dynamic imports for browser-only SDKs
 let Magic: any = null;
+let EVMExtension: any = null;
 let UniversalAccount: any = null;
 let SUPPORTED_TOKEN_TYPE: any = null;
+let UNIVERSAL_ACCOUNT_VERSION: any = null;
 
 async function loadSDKs() {
-  if (!Magic) {
+  if (!Magic || !EVMExtension) {
     const magicMod = await import("magic-sdk");
     Magic = magicMod.Magic;
+    const evmMod = await import("@magic-ext/evm");
+    EVMExtension = evmMod.EVMExtension;
   }
   if (!UniversalAccount) {
     const particleMod = await import("@particle-network/universal-account-sdk");
     UniversalAccount = particleMod.UniversalAccount;
     SUPPORTED_TOKEN_TYPE = particleMod.SUPPORTED_TOKEN_TYPE;
+    UNIVERSAL_ACCOUNT_VERSION = particleMod.UNIVERSAL_ACCOUNT_VERSION;
   }
+}
+
+async function loadEthers() {
+  const ethersMod = await import("ethers");
+  return {
+    BrowserProvider: ethersMod.BrowserProvider,
+    getBytes: ethersMod.getBytes,
+    Signature: ethersMod.Signature,
+  };
 }
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
+const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
 
 interface PaymentLink {
   id: string;
@@ -126,16 +142,32 @@ function shortAddress(address: string | null | undefined) {
   return `${address.slice(0, 10)}...${address.slice(-6)}`;
 }
 
+function getSettlementChainIds(tx: any): number[] {
+  const ops = tx?.userOps ?? tx?.data?.userOps ?? [];
+  const ids = ops
+    .map((op: any) => op?.chainId)
+    .filter((id: any) => typeof id === "number");
+  return Array.from(new Set(ids));
+}
+
 function getModeHelpText() {
-  return PAYMENT_MODE === "universal_invoice"
-    ? "Strict invoice mode: Particle builds approve + payInvoice."
-    : "Fallback mode: Particle sends USDC on Base, then backend verifies the Transfer and records proof.";
+  if (PAYMENT_MODE === "universal_invoice") {
+    return "Strict invoice mode: Particle builds approve + payInvoice.";
+  }
+  if (PAYMENT_MODE === "universal_7702_transfer") {
+    return "EIP-7702 mode: your Magic EOA is delegated in-place to the Universal Account, then Particle settles USDC to the merchant on Base.";
+  }
+  return "Fallback mode: Particle sends USDC on Base, then backend verifies the Transfer and records proof.";
 }
 
 function getModeProofText() {
-  return PAYMENT_MODE === "universal_invoice"
-    ? "Future strict path: ReceiptEmitter receives payInvoice directly in the same universal transaction."
-    : "Current working path: the merchant receives USDC first, then the backend writes an InvoicePaid proof after verification.";
+  if (PAYMENT_MODE === "universal_invoice") {
+    return "Future strict path: ReceiptEmitter receives payInvoice directly in the same universal transaction.";
+  }
+  if (PAYMENT_MODE === "universal_7702_transfer") {
+    return "EIP-7702 path: the EOA acts as the Universal Account; after USDC settles, the backend verifies the Transfer and records an InvoicePaid proof.";
+  }
+  return "Current working path: the merchant receives USDC first, then the backend writes an InvoicePaid proof after verification.";
 }
 
 function getErrorMessage(error: any) {
@@ -160,6 +192,13 @@ function getCreateTransactionError(error: any) {
       "No transfer_fallback was attempted automatically. Switch NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback to use the stable path.",
     ].join(" ");
   }
+  if (IS_7702 && isParticleMaintenanceError(error)) {
+    return [
+      "EIP-7702 transfer mode is selected, but Particle returned a maintenance error (-32801).",
+      `Exact Particle error: ${message}`,
+      "This usually means the Universal Accounts V2 migration window is still gating this operation. Use NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback as the safe demo path until Particle confirms V2 is live.",
+    ].join(" ");
+  }
   return `Transaction creation failed: ${message}`;
 }
 
@@ -175,6 +214,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [isCreatingTx, setIsCreatingTx] = useState(false);
   const [logs, setLogs] = useState<DiagnosticLog[]>([]);
+  const [payPhase, setPayPhase] = useState<string | null>(null);
 
   function log(action: string, result: string, data?: any) {
     setLogs((prev) => [...prev, { ts: new Date().toISOString(), action, result, data }]);
@@ -216,9 +256,20 @@ export default function PayPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     loadSDKs().then(() => {
-      const m = new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!);
+      const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!;
+      // EIP-7702 needs Magic's EVM extension (sign7702Authorization / send7702Transaction
+      // and evm.switchChain are exposed through it on the configured chain).
+      const m = IS_7702
+        ? new Magic(key, {
+            extensions: [
+              new EVMExtension([
+                { rpcUrl: getPublicRpcUrl(ACTIVE_CHAIN), chainId: ACTIVE_CHAIN.chainId, default: true },
+              ]),
+            ],
+          })
+        : new Magic(key);
       setMagic(m);
-      log("initMagic", "ok", { key: process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY?.slice(0, 10) + "..." });
+      log("initMagic", "ok", { mode: PAYMENT_MODE, eip7702: IS_7702, key: key?.slice(0, 10) + "..." });
     });
   }, []);
 
@@ -232,21 +283,32 @@ export default function PayPage({ params }: { params: { id: string } }) {
       log("magicLogin", "authenticated", { didToken: didToken?.slice(0, 20) + "..." });
 
       const metadata = await magic.user.getInfo();
-      const userAddress = metadata.publicAddress;
+      const userAddress = metadata.publicAddress ?? metadata.wallets?.ethereum?.publicAddress;
       if (!userAddress) throw new Error("No public address from Magic");
 
       setAddress(userAddress);
       log("magicLogin", "got address", { address: userAddress });
 
-      // 4. Init Particle UA (EIP-7702 mode via ownerAddress)
-      const universalAccount = new UniversalAccount({
+      // 4. Init Particle UA. In EIP-7702 mode the EOA itself becomes the Universal Account.
+      const particleCreds = {
         projectId: process.env.NEXT_PUBLIC_PARTICLE_PROJECT_ID!,
         projectClientKey: process.env.NEXT_PUBLIC_PARTICLE_CLIENT_KEY!,
         projectAppUuid: process.env.NEXT_PUBLIC_PARTICLE_APP_ID!,
-        ownerAddress: userAddress,
-      });
+      };
+      const universalAccount = IS_7702
+        ? new UniversalAccount({
+            ...particleCreds,
+            smartAccountOptions: {
+              useEIP7702: true,
+              name: "UNIVERSAL",
+              version: UNIVERSAL_ACCOUNT_VERSION,
+              ownerAddress: userAddress,
+            },
+            tradeConfig: { slippageBps: 100, universalGas: false },
+          })
+        : new UniversalAccount({ ...particleCreds, ownerAddress: userAddress });
       setUa(universalAccount);
-      log("initParticleUA", "ok", { ownerAddress: userAddress });
+      log("initParticleUA", "ok", { mode: PAYMENT_MODE, eip7702: IS_7702, ownerAddress: userAddress });
 
       // 5. Fetch balances
       setStep("balances");
@@ -349,9 +411,9 @@ export default function PayPage({ params }: { params: { id: string } }) {
         rootHash: tx.rootHash,
         userOps,
       });
-      if (hasBlockingEip7702Auth(userOps)) {
+      if (!IS_7702 && hasBlockingEip7702Auth(userOps)) {
         throw new Error(
-          "EIP-7702 authorization is required but this Magic SDK path does not expose wallet.sign7702Authorization yet."
+          "EIP-7702 authorization is required. Set NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer to delegate the EOA in-place and sign the authorization, instead of this non-7702 path."
         );
       }
       setTransaction(tx);
@@ -387,6 +449,72 @@ export default function PayPage({ params }: { params: { id: string } }) {
     }
   }, [ua, paymentLink, address, isCreatingTx]);
 
+  // EIP-7702: pre-delegate the EOA on the active chain (split from the payment tx to
+  // avoid the AA24 error seen when delegation + transaction are combined in one step).
+  const ensureDelegated7702 = useCallback(async () => {
+    if (!ua || !magic || !address) throw new Error("Universal Account or wallet not ready");
+    const deployments = await ua.getEIP7702Deployments();
+    const dep = (deployments || []).find((d: any) => d.chainId === ACTIVE_CHAIN.chainId);
+    if (dep?.isDelegated) {
+      log("ensureDelegated", "already delegated", { chainId: ACTIVE_CHAIN.chainId });
+      return;
+    }
+    setPayPhase(`Step 1/2: delegating your account on ${ACTIVE_CHAIN.name} (one-time)...`);
+    log("ensureDelegated", "delegating", { chainId: ACTIVE_CHAIN.chainId });
+    await magic.evm.switchChain(ACTIVE_CHAIN.chainId);
+    // getEIP7702Auth returns chain-specific params; Magic cannot sign chainId:0 auths,
+    // so we pre-delegate per chain. nonce is incremented by 1 for the standalone tx.
+    const [auth] = await ua.getEIP7702Auth([ACTIVE_CHAIN.chainId]);
+    const authorization = await magic.wallet.sign7702Authorization({
+      contractAddress: auth.address,
+      chainId: ACTIVE_CHAIN.chainId,
+      nonce: auth.nonce + 1,
+    });
+    const delegationTx = await magic.wallet.send7702Transaction({
+      to: address,
+      data: "0x",
+      authorizationList: [authorization],
+    });
+    log("ensureDelegated", "ok", { delegationTx });
+  }, [ua, magic, address]);
+
+  // EIP-7702: pre-delegate, sign any inline authorizations the SDK still needs, sign the
+  // rootHash, then broadcast through the Universal Account SDK with the authorizations.
+  const sendVia7702 = useCallback(async (tx: any) => {
+    if (!ua || !magic || !address) throw new Error("Universal Account or wallet not ready");
+    const { BrowserProvider, getBytes, Signature } = await loadEthers();
+
+    await ensureDelegated7702();
+    setPayPhase("Step 2/2: signing and settling the payment...");
+
+    const authorizations: Array<{ userOpHash: string; signature: string }> = [];
+    const nonceMap = new Map<number, string>();
+    for (const op of tx.userOps ?? []) {
+      if (op.eip7702Auth && !op.eip7702Delegated) {
+        let serialized = nonceMap.get(op.eip7702Auth.nonce);
+        if (!serialized) {
+          const a = await magic.wallet.sign7702Authorization({
+            contractAddress: op.eip7702Auth.address,
+            chainId: op.eip7702Auth.chainId || op.chainId,
+            nonce: op.eip7702Auth.nonce,
+          });
+          serialized = Signature.from({ r: a.r, s: a.s, v: a.v }).serialized;
+          nonceMap.set(op.eip7702Auth.nonce, serialized);
+        }
+        authorizations.push({ userOpHash: op.userOpHash, signature: serialized });
+      }
+    }
+    log("sign7702Authorizations", "ok", { count: authorizations.length });
+
+    // Particle expects an EIP-191 signature of transaction.rootHash.
+    const provider = new BrowserProvider(magic.rpcProvider);
+    const signer = await provider.getSigner();
+    const signature = await signer.signMessage(getBytes(tx.rootHash));
+    log("signRootHash", "ok", { rootHash: tx.rootHash, signature: signature.slice(0, 20) + "..." });
+
+    return ua.sendTransaction(tx, signature, authorizations.length ? authorizations : undefined);
+  }, [ua, magic, address, ensureDelegated7702]);
+
   // 7. Send transaction
   const handlePay = useCallback(async () => {
     if (!ua || !transaction || !magic) return;
@@ -397,28 +525,34 @@ export default function PayPage({ params }: { params: { id: string } }) {
     }
 
     setStep("paying");
+    setPayPhase(IS_7702 ? "Preparing EIP-7702 payment..." : null);
     try {
       log("sendTransaction", "starting", {
         transactionId: transaction.transactionId,
         rootHash: transaction.rootHash,
       });
 
-      // Sign with Magic provider (cast to any for protected method access)
-      const provider = magic.rpcProvider as any;
-      const from = address!;
+      let result: any;
+      if (IS_7702) {
+        result = await sendVia7702(transaction);
+      } else {
+        // Sign with Magic provider (cast to any for protected method access)
+        const provider = magic.rpcProvider as any;
+        const from = address!;
 
-      // Particle expects an EIP-191 signature of transaction.rootHash.
-      const signature = await provider.request({
-        method: "personal_sign",
-        params: [transaction.rootHash, from],
-      }) as string;
+        // Particle expects an EIP-191 signature of transaction.rootHash.
+        const signature = await provider.request({
+          method: "personal_sign",
+          params: [transaction.rootHash, from],
+        }) as string;
 
-      log("signRootHash", "ok", {
-        rootHash: transaction.rootHash,
-        signature: signature.slice(0, 20) + "...",
-      });
+        log("signRootHash", "ok", {
+          rootHash: transaction.rootHash,
+          signature: signature.slice(0, 20) + "...",
+        });
 
-      const result = await ua.sendTransaction(transaction, signature);
+        result = await ua.sendTransaction(transaction, signature);
+      }
       log("sendTransaction", "ok", result);
 
       if (paymentLink && address) {
@@ -455,6 +589,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         });
       }
 
+      setPayPhase(null);
       setStep("success");
     } catch (e: any) {
       log("sendTransaction", "error", {
@@ -467,9 +602,10 @@ export default function PayPage({ params }: { params: { id: string } }) {
         ? " The transaction preview may have expired. Retry and create a fresh preview."
         : "";
       setError(`Payment failed: ${e.message}${retryHint}`);
+      setPayPhase(null);
       setStep("error");
     }
-  }, [ua, transaction, magic, address, paymentLink]);
+  }, [ua, transaction, magic, address, paymentLink, sendVia7702]);
 
   return (
     <main className="min-h-screen bg-gray-50 p-4">
@@ -508,7 +644,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
           {/* STEP: Paying */}
           {step === "paying" && (
-            <LoadingState title="Processing payment" detail="Waiting for Particle transaction and server-side proof verification." />
+            <LoadingState title="Processing payment" detail={payPhase ?? "Waiting for Particle transaction and server-side proof verification."} />
           )}
 
           {/* STEP: Success */}
@@ -764,6 +900,11 @@ function PreviewStep({
   onCreateTx: () => void;
   onPay: () => void;
 }) {
+  const settlementChainIds = transaction ? getSettlementChainIds(transaction) : [];
+  const routingLabel =
+    settlementChainIds.length > 1
+      ? `across ${settlementChainIds.length} chains`
+      : `on ${ACTIVE_CHAIN.name}`;
   return (
     <div className="space-y-4">
       {/* Wallet info */}
@@ -813,6 +954,14 @@ function PreviewStep({
                 : "Backend verifies the USDC Transfer and records `InvoicePaid` proof."}
             </p>
             <p>You do not need to switch networks or hold destination-chain gas manually.</p>
+            <p className="font-medium text-blue-900">
+              Powered by Particle Universal Account &mdash; chain-abstracted settlement {routingLabel}.
+            </p>
+            {IS_7702 && (
+              <p className="text-blue-900">
+                Your first payment includes a one-time EIP-7702 delegation of this wallet (same address, reversible).
+              </p>
+            )}
           </div>
           <details className="mt-3">
             <summary className="text-xs cursor-pointer text-blue-800">Advanced debug: raw Particle transaction</summary>

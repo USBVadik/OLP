@@ -1,7 +1,7 @@
 import { type Address } from "viem";
 
 export type SupportedChainKey = "base" | "arbitrum";
-export type PaymentMode = "transfer_fallback" | "universal_invoice";
+export type PaymentMode = "transfer_fallback" | "universal_invoice" | "universal_7702_transfer";
 
 export interface ChainPaymentConfig {
   key: SupportedChainKey;
@@ -48,9 +48,18 @@ export function getActivePaymentChain(): ChainPaymentConfig {
 
 export function getConfiguredPaymentMode(): PaymentMode {
   const mode = process.env.NEXT_PUBLIC_PAYMENT_MODE;
-  return mode === "universal_invoice" ? "universal_invoice" : "transfer_fallback";
+  if (mode === "universal_invoice") return "universal_invoice";
+  if (mode === "universal_7702_transfer") return "universal_7702_transfer";
+  return "transfer_fallback";
 }
 
 export function getExplorerTxUrl(chain: ChainPaymentConfig, txHash: string): string {
   return `${chain.explorerTxBaseUrl}/${txHash}`;
+}
+
+export function getPublicRpcUrl(chain: ChainPaymentConfig): string {
+  if (chain.key === "arbitrum") {
+    return process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL || "https://arb1.arbitrum.io/rpc";
+  }
+  return process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://mainnet.base.org";
 }

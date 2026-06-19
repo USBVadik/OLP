@@ -45,3 +45,46 @@ The error happens before preview/signing.
 
 1. Is custom `createUniversalTransaction` currently disabled, under maintenance, or behind an allowlist for this SDK/project?
 2. For UXmaxx, if `createUniversalTransaction` remains unavailable, is a Particle SEND/TRANSFER flow acceptable for the cross-chain value movement requirement if we verify the payment server-side and record an on-chain payment proof separately?
+
+---
+
+## Update — Root Cause Research (2026-06-19)
+
+After reviewing current Particle and Magic primary sources, the `-32801` is most likely **not** an OneLink payload bug. Two overlapping causes:
+
+### 1. Universal Accounts V2 migration (primary, external)
+
+Particle's docs now carry a site-wide notice that Universal Accounts are upgrading to V2, that users should withdraw funds from existing accounts, and that during the migration only `createTransferTransaction` (withdrawals) is available. That matches our matrix exactly: transfer works; `createUniversalTransaction` / `createBuyTransaction` / `createConvertTransaction` all return `-32801`. The published SDK (`1.1.1`) still pins `UNIVERSAL_ACCOUNT_VERSION = "1.0.3"`, i.e. the V2 account class is not yet in the public SDK. So custom/convert/buy may stay blocked until Particle ships V2, regardless of our code.
+
+### 2. Our integration was on the deprecated path (secondary, fixed in-repo)
+
+- `magic-sdk` 29.4.2 -> 33.7.1 (adds `wallet.sign7702Authorization` / `wallet.send7702Transaction`); added `@magic-ext/evm`.
+- UA now initializes in EIP-7702 mode via `smartAccountOptions { useEIP7702: true, name: "UNIVERSAL", version: UNIVERSAL_ACCOUNT_VERSION }`. Use the exported constant — a hardcoded `"2.0"` returns "Unsupported smart account".
+- Added the delegation flow: `getEIP7702Auth` -> Magic `sign7702Authorization` -> `send7702Transaction`, then inline-auth signing on `sendTransaction`.
+- In 7702 mode funds/balances read from the **EOA**, not the legacy UA address — fund the EOA (USDC + a little ETH for the one-time delegation).
+
+Behind `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`. Live verification via `/debug/particle-probe` (EIP-7702 Delegation Probe).
+
+### Refined questions for Particle
+
+1. During the V2 migration, is `-32801` expected for **all** non-transfer ops (custom/convert/buy) on existing projects, on both Base and Arbitrum?
+2. Is custom-call support gated by project allowlist, account version, or purely the migration timeline? Anything we can toggle?
+3. ETA for V2 GA and the V2-capable SDK / `UNIVERSAL_ACCOUNT_VERSION` bump?
+4. Does EIP-7702 in-place delegation + cross-chain `createTransferTransaction` (value moved via UA across chains) qualify for the Universal Accounts Track while custom calls are under maintenance?
+
+Updated environment: Particle UA `1.1.1`, `magic-sdk` `33.7.1`, `@magic-ext/evm` `1.5.0`, Next `14.2.35`, Base `8453`.
+
+### Live probe result (2026-06-19, against production Particle backend)
+
+Ran a Node build-only probe with the real project credentials (no transactions sent, no gas). Owner EOA `0x53Bd...3206a`.
+
+| Call | Legacy mode | EIP-7702 mode | Arbitrum (7702) |
+| --- | --- | --- | --- |
+| `getSmartAccountOptions` | UA = `0xeE1FB8...0246` | UA = owner EOA `0x53Bd...3206a` | — |
+| `getPrimaryAssets` | ~$1.62 (on legacy UA) | ~$1.17 (on EOA) | — |
+| `createTransferTransaction` | OK (rootHash + userOp) | OK (rootHash + userOp) | OK |
+| `createUniversalTransaction` (USDC.transfer) | **-32801 maintenance** | **-32801 maintenance** | **-32801 maintenance** |
+
+`getEIP7702Deployments` shows `isDelegated:false` on all chains (EOA not yet delegated). `getEIP7702Auth([8453])` returns `chainId:0` (chain-agnostic) with delegate contract `0x6640c1...831C` — confirming Magic must pre-delegate per chain (cannot sign chainId:0).
+
+**Conclusion (now empirically confirmed, high confidence):** `-32801` is a Particle-side, system-wide block on custom universal transactions (both Base and Arbitrum, both account modes). Correct EIP-7702 init does **not** unblock it, and Arbitrum is not a workaround. `createTransferTransaction` is the only build-able rail right now — which is exactly what `universal_7702_transfer` mode uses. The strict `universal_invoice` path stays blocked until Particle completes the V2 migration.

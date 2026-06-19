@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-05-06
+Last updated: 2026-06-19
 
 ## Active Stack
 
@@ -8,7 +8,8 @@ This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + 
 
 - Magic is the embedded wallet/auth layer.
 - Particle Universal Account SDK is the chain abstraction layer.
-- EIP-7702 mode is implicit through `new UniversalAccount({ ownerAddress })`, resolving to `UNIVERSAL` version `1.0.3`.
+- Legacy/fallback modes use `new UniversalAccount({ ownerAddress })` (separate smart-account address, `UNIVERSAL` version `1.0.3`).
+- An explicit EIP-7702 mode (`universal_7702_transfer`) is now implemented: `smartAccountOptions { useEIP7702: true, version: UNIVERSAL_ACCOUNT_VERSION }`, with the EOA delegated in-place via Magic's `sign7702Authorization` / `send7702Transaction`.
 - Particle AuthKit is installed but not used in the active flow.
 - Base mainnet USDC is the only supported MVP token.
 - Arbitrum is configured only for exploratory probes.
@@ -43,7 +44,9 @@ The app logs `inspectUserOps` after transaction creation:
 - `userOps[].hasEip7702Auth`
 - `userOps[].eip7702Delegated`
 
-If a transaction includes `eip7702Auth` and `eip7702Delegated === false`, the checkout stops with a clear diagnostic. The current Magic SDK path signs `rootHash` with `personal_sign`; it does not yet perform explicit `wallet.sign7702Authorization()`.
+In the legacy/fallback modes, if a transaction includes `eip7702Auth` and `eip7702Delegated === false`, the checkout stops with a clear diagnostic and signs `rootHash` with `personal_sign`.
+
+In `universal_7702_transfer` mode (magic-sdk 33.7.1 + `@magic-ext/evm`), the checkout now performs explicit delegation: `getEIP7702Auth` -> `magic.wallet.sign7702Authorization` -> `send7702Transaction` (pre-delegation), then signs inline `eip7702Auth` user-ops and the `rootHash`, and calls `ua.sendTransaction(tx, signature, authorizations)`.
 
 ## ReceiptEmitter Status
 
@@ -88,11 +91,12 @@ Particle `createUniversalTransaction()` has previously returned:
 System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
 ```
 
-The strict custom-call path is recorded as externally blocked. The active fallback uses Particle `createTransferTransaction()` plus server-side USDC `Transfer` verification and `recordVerifiedPayment()` proof.
+The strict custom-call path is recorded as externally blocked. Root cause (empirically confirmed 2026-06-19 via a live build-only probe with the real project credentials): `createUniversalTransaction` returns `-32801` on both Base and Arbitrum, in both legacy and EIP-7702 modes, while `createTransferTransaction` builds fine everywhere. This matches Particle's Universal Accounts V2 migration (legacy accounts in a withdraw-only window; public SDK `1.1.1` still pins version `1.0.3`). It is an external/timeline block, not a payload bug — correct EIP-7702 init does not unblock custom calls, and Arbitrum is not a workaround. The active fallback uses Particle `createTransferTransaction()` plus server-side USDC `Transfer` verification and `recordVerifiedPayment()` proof. Refined Particle questions + probe results: `docs/particle-create-universal-repro.md`.
 
 ## Payment Mode Flag
 
-- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: active default.
-- `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` path available for future Particle retesting.
+- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: active default (legacy smart-account mode + transfer).
+- `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`: EIP-7702 mode — EOA delegated in-place, then `createTransferTransaction` settles USDC to the merchant. Track-qualifying path. Fund the EOA (USDC + a little Base ETH for the one-time delegation). Verify via `/debug/particle-probe`.
+- `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` path available for future Particle retesting (currently blocked by the V2 migration).
 
 Do not spend more mainnet gas for strict-path testing unless explicitly requested.

@@ -6,7 +6,8 @@
 |---|---:|
 | `@particle-network/authkit` | 2.1.1, installed but not used |
 | `@particle-network/universal-account-sdk` | 1.1.1 |
-| `magic-sdk` | 29.4.2 |
+| `magic-sdk` | 33.7.1 |
+| `@magic-ext/evm` | 1.5.0 |
 | `viem` | 2.48.8 |
 | `ethers` | 6.16.0 |
 | `next` | 14.2.35 |
@@ -28,6 +29,28 @@ The active checkout flow is Particle `createTransferTransaction()` plus server-s
 8. `ua.sendTransaction()` submits the transaction.
 9. `mark-paid` verifies the Base USDC `Transfer` server-side.
 10. Backend calls `recordVerifiedPayment()` and verifies `InvoicePaid` before marking Supabase paid.
+
+## EIP-7702 Transfer Mode (`universal_7702_transfer`)
+
+Implemented 2026-06-19. Selected via `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`. The owner EOA is delegated in-place to the Universal Account (no separate smart-account address), then the same `createTransferTransaction` settles USDC to the merchant on Base. Backend verification + proof are unchanged.
+
+Init differences vs the legacy fallback:
+
+- Magic is constructed with `@magic-ext/evm`'s `EVMExtension` on the active chain (unlocks `magic.evm.switchChain` and `magic.wallet.sign7702Authorization` / `send7702Transaction`).
+- UA is constructed with `smartAccountOptions: { useEIP7702: true, name: "UNIVERSAL", version: UNIVERSAL_ACCOUNT_VERSION, ownerAddress }`. Use the exported constant — a hardcoded `"2.0"` returns "Unsupported smart account".
+
+Send flow (`sendVia7702` in `src/app/pay/[id]/page.tsx`):
+
+1. `ensureDelegated7702()` — if the EOA is not yet delegated on Base: `magic.evm.switchChain` -> `ua.getEIP7702Auth([chainId])` -> `magic.wallet.sign7702Authorization({ contractAddress, chainId, nonce: nonce + 1 })` -> `magic.wallet.send7702Transaction({ to: eoa, data: "0x", authorizationList })`. Split from the payment to avoid the AA24 error.
+2. Sign any inline `userOps[].eip7702Auth` (dedup by nonce) into `{ userOpHash, signature }` via ethers `Signature.from`.
+3. Sign `rootHash` with ethers `BrowserProvider(magic.rpcProvider)` + `signMessage(getBytes(rootHash))`.
+4. `ua.sendTransaction(tx, signature, authorizations)`.
+
+Funding: in 7702 mode balances read from the **EOA**, not the legacy UA address. Fund the EOA with USDC plus a little Base ETH for the one-time delegation tx. Public client RPC via `NEXT_PUBLIC_BASE_RPC_URL` (default `https://mainnet.base.org`).
+
+Files: `src/lib/config/payment.ts` (mode + `getPublicRpcUrl`), `src/lib/particle/universal-account.ts` (`createUniversal7702Account`), `src/app/pay/[id]/page.tsx`, `src/types/particle.d.ts`. Live verification: `/debug/particle-probe` -> EIP-7702 Delegation Probe.
+
+Caveat: the strict `createUniversalTransaction` custom-call path is still gated by Particle's Universal Accounts V2 migration (`-32801`), so even correct 7702 init may not unblock custom calls until V2 ships. `createTransferTransaction` (incl. cross-chain sourcing) is the rail that stays available.
 
 ## Contract
 
@@ -87,7 +110,7 @@ It shares the same hex address as the active Base mainnet contract, but it is a 
 
 ## Known Risk
 
-Particle `createUniversalTransaction()` currently returns a maintenance error for custom calls in this project. The strict custom-call path remains documented as blocked, while the active Milestone B fallback uses `createTransferTransaction()` plus server-side verification and on-chain proof.
+Particle `createUniversalTransaction()` currently returns a maintenance error (`-32801`) for custom calls in this project. Root cause (researched 2026-06-19): Particle's Universal Accounts V2 migration puts legacy accounts in a withdraw-only window where only `createTransferTransaction` works; the public SDK `1.1.1` still pins `UNIVERSAL_ACCOUNT_VERSION = "1.0.3"`. So this is primarily an external/timeline block, not a payload bug. The strict custom-call path stays blocked until V2 ships; the active fallback uses `createTransferTransaction()` plus server-side verification and on-chain proof. See `docs/particle-create-universal-repro.md` for the refined Particle questions.
 
 ## Chain Config
 

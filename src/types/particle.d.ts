@@ -48,6 +48,13 @@ declare module "@particle-network/universal-account-sdk" {
     [key: string]: any;
   }
 
+  export const UNIVERSAL_ACCOUNT_VERSION: string;
+
+  export interface EIP7702Authorization {
+    userOpHash: string;
+    signature: string;
+  }
+
   export class UniversalAccount {
     constructor(config: IUniversalAccountConfig);
     getPrimaryAssets(): Promise<IAssetsResponse>;
