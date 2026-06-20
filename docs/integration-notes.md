@@ -52,6 +52,20 @@ Files: `src/lib/config/payment.ts` (mode + `getPublicRpcUrl`), `src/lib/particle
 
 Caveat: the strict `createUniversalTransaction` custom-call path is still gated by Particle's Universal Accounts V2 migration (`-32801`), so even correct 7702 init may not unblock custom calls until V2 ships. `createTransferTransaction` (incl. cross-chain sourcing) is the rail that stays available.
 
+### Live Base EIP-7702 Verification — 2026-06-20
+
+The Base delegation flow has been verified on mainnet with Magic + Particle UA:
+
+- Owner EOA: `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`
+- Delegation tx: `0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- BaseScan: `https://basescan.org/tx/0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- Transaction type: `eip7702`
+- Delegate contract: `0x6640c1CCCaF07Dbe765eC05E294FE427cC92831C`
+- Particle post-delegation state: smart account address equals the owner EOA, Base `isDelegated: true`.
+- Build-only transfer probe after delegation: `createTransferTransaction()` returns `rootHash`, fee quotes, token changes, one userOp, and no inline `eip7702Auth` requirement.
+
+This proves the in-place EIP-7702 account upgrade path. The next product step is a tiny end-to-end `universal_7702_transfer` payment through `/pay/[id]`, then server-side USDC `Transfer` verification and `ReceiptEmitter.recordVerifiedPayment`.
+
 ## Contract
 
 ReceiptEmitter v1.1 uses OpenZeppelin `5.6.1`.

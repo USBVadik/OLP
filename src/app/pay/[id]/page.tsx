@@ -13,6 +13,19 @@ import {
   getExplorerTxUrl,
   getPublicRpcUrl,
 } from "@/lib/config/payment";
+import {
+  Wordmark,
+  Chip,
+  ConceptTag,
+  Dot,
+  Disclosure,
+  VerifiedSeal,
+  TxReference,
+  Field,
+  IconShield,
+  IconLock,
+  IconCheck,
+} from "@/components/ui";
 
 // Dynamic imports for browser-only SDKs
 let Magic: any = null;
@@ -577,13 +590,26 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
       if (paymentLink && address) {
         let txHash = extractEvmTxHash(result);
+        // Particle settles the UA transfer on-chain asynchronously, so the Base tx hash
+        // (e.g. under userOps[].txHash) is usually absent from the immediate send result.
+        // Poll getTransaction until it surfaces instead of failing on the first miss.
         if (!txHash && transaction.transactionId) {
-          const status = await ua.getTransaction(transaction.transactionId);
-          log("getParticleTransaction", "ok", status);
-          txHash = extractEvmTxHash(status);
+          setPayPhase("Waiting for on-chain settlement...");
+          for (let attempt = 0; attempt < 12 && !txHash; attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            const status = await ua.getTransaction(transaction.transactionId);
+            txHash = extractEvmTxHash(status);
+            log(
+              "getParticleTransaction",
+              txHash ? `hash found (attempt ${attempt})` : `pending (attempt ${attempt})`,
+              status
+            );
+          }
         }
         if (!txHash) {
-          throw new Error("sendTransaction did not return a Base mainnet tx hash. Cannot verify InvoicePaid.");
+          throw new Error(
+            "Particle has not surfaced a Base settlement tx hash yet. The transfer may still be processing. If USDC already left your wallet, do NOT retry — verify with the Particle transactionId instead."
+          );
         }
 
         const markPaidRes = await fetch(`/api/payments/${paymentLink.id}/mark-paid`, {
@@ -628,11 +654,16 @@ export default function PayPage({ params }: { params: { id: string } }) {
   }, [ua, transaction, magic, address, paymentLink, sendVia7702]);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
-          <h1 className="text-xl font-bold mb-1">OneLink Pay</h1>
-          <p className="text-sm text-gray-500">Checkout prototype</p>
+    <main className="op-shell px-4 py-8 sm:py-12">
+      <div className="mx-auto w-full max-w-md">
+        <header className="mb-5 flex items-center justify-between">
+          <Wordmark />
+          <span className="op-chip">
+            <IconLock className="h-3.5 w-3.5" /> Secure checkout
+          </span>
+        </header>
+
+        <div className="op-card op-animate-rise p-6 sm:p-7">
           <CheckoutBadges />
 
           {/* STEP: Loading */}
@@ -678,26 +709,31 @@ export default function PayPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        {/* Diagnostic Logs */}
-        <details className="bg-white rounded-xl shadow p-4">
-          <summary className="text-sm font-medium cursor-pointer">Advanced debug: raw Particle/probe data ({logs.length})</summary>
-          <div className="mt-3 space-y-2 max-h-96 overflow-auto">
-            {logs.map((l, i) => (
-              <div key={i} className="text-xs font-mono border-b pb-1">
-                <span className="text-gray-400">{l.ts.split("T")[1]?.slice(0, 8)}</span>{" "}
-                <span className="font-bold">{l.action}</span>{" "}
-                <span className={l.result === "error" ? "text-red-600" : "text-green-600"}>
-                  [{l.result}]
-                </span>
-                {l.data && (
-                  <pre className="text-gray-500 mt-0.5 whitespace-pre-wrap break-all">
-                    {JSON.stringify(l.data, null, 2).slice(0, 500)}
-                  </pre>
-                )}
-              </div>
-            ))}
-          </div>
-        </details>
+        {/* Developer logs */}
+        <div className="mt-4">
+          <Disclosure summary={`Developer logs (${logs.length})`}>
+            <div className="max-h-96 space-y-2 overflow-auto">
+              {logs.length === 0 ? (
+                <p className="text-xs text-faint">No events yet.</p>
+              ) : (
+                logs.map((l, i) => (
+                  <div key={i} className="border-b border-line pb-1 font-mono text-xs">
+                    <span className="text-faint">{l.ts.split("T")[1]?.slice(0, 8)}</span>{" "}
+                    <span className="font-bold text-ink2">{l.action}</span>{" "}
+                    <span className={l.result === "error" ? "text-danger" : "text-verify"}>
+                      [{l.result}]
+                    </span>
+                    {l.data && (
+                      <pre className="mt-0.5 whitespace-pre-wrap break-all text-muted">
+                        {JSON.stringify(l.data, null, 2).slice(0, 500)}
+                      </pre>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </Disclosure>
+        </div>
       </div>
     </main>
   );
@@ -707,36 +743,39 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
 function CheckoutBadges() {
   return (
-    <div className="my-4 flex flex-wrap gap-2 text-xs">
-      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1" title={getModeHelpText()}>
-        mode: <span className="font-mono">{PAYMENT_MODE}</span>
-      </span>
-      <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
-        chain: <span className="font-mono">{ACTIVE_CHAIN.name} {ACTIVE_CHAIN.chainId}</span>
-      </span>
+    <div className="mb-5 flex flex-wrap gap-2" title={getModeHelpText()}>
+      <Chip>
+        mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
+      </Chip>
+      <Chip>
+        chain <span className="ml-1 font-mono text-ink">{ACTIVE_CHAIN.name} {ACTIVE_CHAIN.chainId}</span>
+      </Chip>
     </div>
   );
 }
 
 function LoadingState({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="border rounded-lg p-4">
-      <p className="font-medium">{title}</p>
-      <p className="mt-1 text-sm text-gray-600">{detail}</p>
+    <div className="op-card-quiet flex items-start gap-3 p-4">
+      <span className="relative mt-1 flex h-3 w-3" aria-hidden="true">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold/50" />
+        <span className="relative inline-flex h-3 w-3 rounded-full bg-gold" />
+      </span>
+      <div>
+        <p className="font-semibold text-ink">{title}</p>
+        <p className="mt-1 text-sm text-muted">{detail}</p>
+      </div>
     </div>
   );
 }
 
 function ErrorState({ message, onRetry }: { message: string | null; onRetry: () => void }) {
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-      <p className="text-red-700 font-medium">Checkout error</p>
-      <p className="text-red-600 text-sm mt-1">{message || "Something went wrong."}</p>
-      <button
-        onClick={onRetry}
-        className="mt-3 text-sm underline text-red-700"
-      >
-        Retry
+    <div className="rounded-2xl border border-danger/25 bg-danger-soft p-4">
+      <p className="font-semibold text-danger">Checkout error</p>
+      <p className="mt-1 text-sm text-danger/90">{message || "Something went wrong."}</p>
+      <button onClick={onRetry} className="op-btn-secondary mt-4">
+        Try again
       </button>
     </div>
   );
@@ -750,43 +789,58 @@ function PaymentSummary({
   address?: string | null;
 }) {
   return (
-    <div className="border rounded-lg p-4">
-      <p className="text-sm font-medium mb-3">Payment summary</p>
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">You pay</span>
-          <span className="font-bold text-right">{getPaymentAmountLabel(paymentLink)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Merchant receives</span>
-          <span className="text-right">{getPaymentAmountLabel(paymentLink)} on {ACTIVE_CHAIN.name}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Merchant</span>
-          <span className="font-mono text-xs text-right">{shortAddress(paymentLink.merchant_address)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Wallet</span>
-          <span className="font-mono text-xs text-right">{shortAddress(address)}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Mode</span>
-          <span className="font-mono text-xs text-right">{PAYMENT_MODE}</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Chain</span>
-          <span className="font-mono text-xs text-right">{ACTIVE_CHAIN.name} ({ACTIVE_CHAIN.chainId})</span>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Receipt</span>
-          <span className={paymentLink.registered_tx_hash ? "text-green-700" : "text-red-600"}>
-            {paymentLink.registered_tx_hash ? "Registered" : "Not registered"}
-          </span>
+    <section className="overflow-hidden rounded-3xl border border-line bg-paper">
+      <div className="flex items-center justify-between px-5 pt-5">
+        <span className="op-eyebrow">Trust Preview</span>
+        <span className="op-chip-gold">
+          <IconShield className="h-3.5 w-3.5" /> Consent
+        </span>
+      </div>
+
+      <div className="px-5 pt-4">
+        <div className="rounded-2xl bg-paper2 p-5 text-center">
+          <p className="text-xs text-muted">You pay</p>
+          <p className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink tnum">
+            {getPaymentAmountLabel(paymentLink)}
+          </p>
         </div>
       </div>
-      <p className="mt-3 text-xs text-gray-500">{getModeHelpText()}</p>
-      <p className="mt-1 text-xs text-gray-500">{getModeProofText()}</p>
-    </div>
+
+      <dl className="divide-y divide-line px-5">
+        <Field
+          label="Merchant receives"
+          value={`${getPaymentAmountLabel(paymentLink)} on ${ACTIVE_CHAIN.name}`}
+        />
+        <Field label="Active chain" value={`${ACTIVE_CHAIN.name} (${ACTIVE_CHAIN.chainId})`} />
+        <Field label="Payment mode" value={PAYMENT_MODE} mono />
+        <Field label="Merchant" value={shortAddress(paymentLink.merchant_address)} mono />
+        {address ? <Field label="Your wallet" value={shortAddress(address)} mono /> : null}
+        <div className="flex items-center justify-between gap-4 py-3">
+          <div>
+            <p className="text-sm text-muted">Spend caps</p>
+            <p className="mt-0.5 text-xs text-faint">Scoped limits for future automation</p>
+          </div>
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-medium text-ink">Off</span>
+            <ConceptTag />
+          </span>
+        </div>
+      </dl>
+
+      <div className="m-5 mt-3 rounded-2xl border border-line bg-paper2 p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <Dot tone="gold" /> Proof behavior
+        </p>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">{getModeProofText()}</p>
+        <p className="mt-2 text-xs font-medium">
+          <span className={paymentLink.registered_tx_hash ? "text-verify" : "text-muted"}>
+            {paymentLink.registered_tx_hash
+              ? "Invoice registered on-chain"
+              : "Invoice not yet registered on-chain"}
+          </span>
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -798,70 +852,39 @@ function SuccessState({
   txResult: any;
 }) {
   return (
-    <div className="py-4">
-      <div className="mb-4 text-center">
-        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-          <span className="text-green-600 text-lg">OK</span>
-        </div>
-        <p className="font-bold text-green-700">PAID</p>
-        <p className="text-sm text-gray-600">USDC Transfer verified and InvoicePaid proof recorded.</p>
+    <div className="py-2">
+      <div className="mb-5 text-center">
+        <VerifiedSeal animate />
+        <p className="mt-4 font-display text-2xl font-semibold text-ink">Payment verified</p>
+        <p className="mt-1 text-sm text-muted">
+          USDC transfer verified and an InvoicePaid proof was recorded on-chain.
+        </p>
       </div>
 
-      {paymentLink && txResult?.txHash && (
-        <div className="text-left border border-green-200 bg-green-50 rounded-lg p-3 text-sm">
-          <div className="space-y-2">
-            <div>
-              <p className="text-gray-500">Amount</p>
-              <p className="font-bold">{getPaymentAmountLabel(paymentLink)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Merchant</p>
-              <p className="font-mono text-xs break-all">{paymentLink.merchant_address}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Invoice ID</p>
-              <p className="font-mono text-xs break-all">{paymentLink.contract_invoice_id}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Payment mode</p>
-              <p className="font-mono text-xs">{PAYMENT_MODE}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Payment tx</p>
-              <a
-                href={txResult.paymentExplorer}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-700 underline break-all font-mono text-xs"
-              >
-                {txResult.txHash}
-              </a>
-            </div>
-            {txResult.proofTxHash && txResult.proofExplorer && (
-              <div>
-                <p className="text-gray-500">Proof tx</p>
-                <a
-                  href={txResult.proofExplorer}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 underline break-all font-mono text-xs"
-                >
-                  {txResult.proofTxHash}
-                </a>
-              </div>
-            )}
+      {paymentLink && txResult?.txHash ? (
+        <div className="rounded-2xl border border-line bg-paper2 p-4">
+          <dl className="divide-y divide-line">
+            <Field label="Amount" value={getPaymentAmountLabel(paymentLink)} emphasis />
+            <Field label="Merchant" value={shortAddress(paymentLink.merchant_address)} mono />
+            <Field label="Invoice ID" value={paymentLink.contract_invoice_id ?? "—"} mono />
+            <Field label="Payment mode" value={PAYMENT_MODE} mono />
+          </dl>
+          <div className="mt-4 space-y-2">
+            <TxReference label="Payment transaction" hash={txResult.txHash} href={txResult.paymentExplorer} />
+            <TxReference label="Proof transaction" hash={txResult.proofTxHash} href={txResult.proofExplorer} />
           </div>
         </div>
-      )}
+      ) : null}
 
-      {txResult && (
-        <details className="mt-4 text-left">
-          <summary className="text-sm cursor-pointer">Advanced debug: raw payment result</summary>
-          <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-auto text-left max-h-72">
-            {JSON.stringify(txResult, null, 2)}
-          </pre>
-        </details>
-      )}
+      {txResult ? (
+        <div className="mt-4">
+          <Disclosure summary="Raw payment result">
+            <pre className="max-h-72 overflow-auto text-left text-xs text-muted">
+              {JSON.stringify(txResult, null, 2)}
+            </pre>
+          </Disclosure>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -873,30 +896,34 @@ function LoginForm({ paymentLink, onLogin }: { paymentLink: PaymentLink; onLogin
   return (
     <div className="space-y-4">
       <PaymentSummary paymentLink={paymentLink} />
-      {paymentLink.label && <p className="text-sm text-gray-600">{paymentLink.label}</p>}
-      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">
-        <p className="font-medium">Wallet path</p>
-        <p className="mt-1">
-          Sign in with Magic. The app initializes a Particle Universal Account for that wallet and builds a payment preview before any transaction is sent.
+      {paymentLink.label ? <p className="px-1 text-sm text-muted">{paymentLink.label}</p> : null}
+
+      <div className="space-y-3 rounded-2xl border border-line bg-paper2 p-4">
+        <div>
+          <label htmlFor="op-email" className="mb-1 block text-sm font-medium text-ink">
+            Email to sign in
+          </label>
+          <input
+            id="op-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="op-input"
+            placeholder="you@example.com"
+          />
+        </div>
+        <button
+          onClick={() => { setLoading(true); onLogin(email); }}
+          disabled={!email || loading}
+          className="op-btn-primary w-full"
+        >
+          {loading ? "Signing in…" : "Sign in with Magic"}
+        </button>
+        <p className="text-xs leading-relaxed text-muted">
+          A Particle Universal Account is initialized for your wallet and a payment preview is built
+          before anything is sent.
         </p>
       </div>
-      <div>
-        <label className="text-sm text-gray-600 block mb-1">Email to sign in</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2"
-          placeholder="you@example.com"
-        />
-      </div>
-      <button
-        onClick={() => { setLoading(true); onLogin(email); }}
-        disabled={!email || loading}
-        className="w-full py-3 bg-black text-white rounded-lg font-medium disabled:opacity-50"
-      >
-        {loading ? "Signing in..." : "Sign in with Magic"}
-      </button>
     </div>
   );
 }
@@ -921,99 +948,100 @@ function PreviewStep({
   onPay: () => void;
 }) {
   const settlementChainIds = transaction ? getSettlementChainIds(transaction) : [];
-  const routingLabel =
-    settlementChainIds.length > 1
-      ? `across ${settlementChainIds.length} chains`
-      : `on ${ACTIVE_CHAIN.name}`;
   return (
     <div className="space-y-4">
       {/* Wallet info */}
-      <div className="bg-gray-50 rounded-lg p-3">
-        <p className="text-xs text-gray-500">Connected wallet (Magic)</p>
-        <p className="text-sm font-mono">{address}</p>
-        <p className="mt-2 text-xs text-gray-500">
-          Particle UA is initialized from this Magic wallet and used to create the payment preview.
-        </p>
+      <div className="rounded-2xl border border-line bg-paper2 p-4">
+        <p className="op-eyebrow">Connected wallet · Magic</p>
+        <p className="mt-1 font-mono text-sm text-ink2">{shortAddress(address)}</p>
       </div>
 
       <PaymentSummary paymentLink={paymentLink} address={address} />
 
       {/* Balances */}
-      <div className="border rounded-lg p-4">
-        <p className="text-sm font-medium mb-2">Unified Balance (Particle UA)</p>
+      <div className="rounded-2xl border border-line bg-paper p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-ink">Universal Account balance</p>
+          {balances?.error ? (
+            <span className="text-xs font-medium text-danger">Unavailable</span>
+          ) : balances ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-verify">
+              <IconCheck className="h-3.5 w-3.5" /> Loaded
+            </span>
+          ) : (
+            <span className="text-xs text-faint">No data</span>
+          )}
+        </div>
         {balances?.error ? (
-          <p className="text-xs text-red-500">{balances.error}</p>
+          <p className="mt-1 text-xs text-danger">{balances.error}</p>
         ) : balances ? (
-          <details>
-            <summary className="text-xs cursor-pointer text-gray-600">
-              Balance loaded. Show advanced details
-            </summary>
-            <pre className="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-40 mt-2">
-              {JSON.stringify(balances, null, 2)}
-            </pre>
-          </details>
-        ) : (
-          <p className="text-xs text-gray-400">No balance data</p>
-        )}
+          <div className="mt-3">
+            <Disclosure summary="Show balance details">
+              <pre className="max-h-40 overflow-auto text-xs text-muted">
+                {JSON.stringify(balances, null, 2)}
+              </pre>
+            </Disclosure>
+          </div>
+        ) : null}
       </div>
 
       {/* Transaction preview */}
-      {transaction && (
-        <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
-          <p className="text-sm font-medium text-blue-800 mb-2">Transaction Preview</p>
-          <div className="text-sm space-y-1">
-            <p>You pay {getPaymentAmountLabel(paymentLink)} from your Particle Universal Account.</p>
-            <p>
+      {transaction ? (
+        <div className="rounded-2xl border border-gold/30 bg-gold-soft/40 p-4">
+          <p className="op-eyebrow text-gold">Settlement preview</p>
+          <ul className="mt-2 space-y-1.5 text-sm text-ink2">
+            <li className="flex gap-2">
+              <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+              You pay {getPaymentAmountLabel(paymentLink)} from your Particle Universal Account.
+            </li>
+            <li className="flex gap-2">
+              <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               {PAYMENT_MODE === "universal_invoice"
                 ? "Particle builds approve + payInvoice as a universal transaction."
-                : `Merchant receives USDC on ${ACTIVE_CHAIN.name} through Particle transfer.`}
-            </p>
-            <p>
+                : `Merchant receives USDC on ${ACTIVE_CHAIN.name} through your Universal Account.`}
+            </li>
+            <li className="flex gap-2">
+              <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               {PAYMENT_MODE === "universal_invoice"
                 ? "ReceiptEmitter handles the invoice payment directly."
-                : "Backend verifies the USDC Transfer and records `InvoicePaid` proof."}
-            </p>
-            <p>You do not need to switch networks or hold destination-chain gas manually.</p>
-            <p className="font-medium text-blue-900">
-              Powered by Particle Universal Account &mdash; chain-abstracted settlement {routingLabel}.
-            </p>
-            {IS_7702 && (
-              <p className="text-blue-900">
-                Your first payment includes a one-time EIP-7702 delegation of this wallet (same address, reversible).
+                : "Backend verifies the USDC Transfer and records an InvoicePaid proof."}
+            </li>
+            {IS_7702 ? (
+              <li className="flex gap-2">
+                <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+                Your first payment includes a one-time EIP-7702 delegation of this wallet (same
+                address, reversible).
+              </li>
+            ) : null}
+          </ul>
+          <div className="mt-3">
+            <Disclosure summary="Raw Particle transaction">
+              <p className="mb-2 text-xs text-muted">
+                Settlement chain IDs: {settlementChainIds.join(", ") || ACTIVE_CHAIN.chainId}
               </p>
-            )}
+              <pre className="max-h-40 overflow-auto text-xs text-muted">
+                {JSON.stringify(transaction, null, 2)}
+              </pre>
+            </Disclosure>
           </div>
-          <details className="mt-3">
-            <summary className="text-xs cursor-pointer text-blue-800">Advanced debug: raw Particle transaction</summary>
-            <pre className="text-xs overflow-auto max-h-40 mt-2">
-              {JSON.stringify(transaction, null, 2)}
-            </pre>
-          </details>
         </div>
-      )}
+      ) : null}
 
-      {error && (
-        <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-          <p className="text-sm font-medium text-red-700">Transaction preview failed</p>
-          <p className="text-xs text-red-600 mt-1">{error}</p>
+      {error ? (
+        <div className="rounded-2xl border border-danger/25 bg-danger-soft p-4">
+          <p className="text-sm font-semibold text-danger">Transaction preview failed</p>
+          <p className="mt-1 text-xs text-danger/90">{error}</p>
         </div>
-      )}
+      ) : null}
 
       {/* Actions */}
       {!transaction ? (
-        <button
-          onClick={onCreateTx}
-          disabled={isCreatingTx}
-          className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium disabled:opacity-50"
-        >
-          {isCreatingTx ? "Creating preview..." : "Create Transaction Preview"}
+        <button onClick={onCreateTx} disabled={isCreatingTx} className="op-btn-primary w-full">
+          {isCreatingTx ? "Building preview…" : "Build payment preview"}
         </button>
       ) : (
-        <button
-          onClick={onPay}
-          className="w-full py-3 bg-black text-white rounded-lg font-medium"
-        >
-          Confirm & Pay
+        <button onClick={onPay} className="op-btn-primary w-full">
+          Confirm &amp; pay
         </button>
       )}
     </div>

@@ -14,6 +14,11 @@ test("payment mode can select universal_invoice", () => {
   assert.equal(getConfiguredPaymentMode(), "universal_invoice");
 });
 
+test("payment mode can select universal_7702_transfer", () => {
+  process.env.NEXT_PUBLIC_PAYMENT_MODE = "universal_7702_transfer";
+  assert.equal(getConfiguredPaymentMode(), "universal_7702_transfer");
+});
+
 test("unknown payment mode falls back to transfer_fallback", () => {
   process.env.NEXT_PUBLIC_PAYMENT_MODE = "not_a_mode";
   assert.equal(getConfiguredPaymentMode(), "transfer_fallback");

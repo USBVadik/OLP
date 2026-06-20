@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
 import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
 import { getActivePaymentChain, getConfiguredPaymentMode, getExplorerTxUrl } from "@/lib/config/payment";
+import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck } from "@/components/ui";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
@@ -89,157 +90,205 @@ function DashboardContent() {
   }
 
   function TxLink({ hash, label }: { hash: string | null | undefined; label: string }) {
-    if (!hash) return null;
-    return (
-      <a
-        className="block text-xs text-blue-700 underline font-mono"
-        href={getExplorerTxUrl(ACTIVE_CHAIN, hash)}
-        target="_blank"
-        rel="noreferrer"
-      >
-        {label} {hash.slice(0, 10)}...
-      </a>
-    );
+    return <TxReference label={label} hash={hash} href={hash ? getExplorerTxUrl(ACTIVE_CHAIN, hash) : null} />;
   }
 
   return (
-    <main className="min-h-screen p-8 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Merchant Dashboard</h1>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded border border-gray-200 bg-white px-2 py-1">
-            mode: <span className="font-mono">{PAYMENT_MODE}</span>
-          </span>
-          <span className="rounded border border-gray-200 bg-white px-2 py-1">
-            chain: <span className="font-mono">{ACTIVE_CHAIN.name}</span>
-          </span>
-          <span className="rounded border border-gray-200 bg-white px-2 py-1">
-            proof: <span className="font-semibold">ReceiptEmitter</span>
-          </span>
-        </div>
-      </div>
+    <main className="op-shell px-5 py-8 sm:py-10">
+      <div className="mx-auto w-full max-w-3xl">
+        <header className="mb-6 flex items-center justify-between">
+          <Wordmark />
+          <span className="op-chip">Merchant dashboard</span>
+        </header>
 
-      {isDemoReplay && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-semibold">Demo replay mode</p>
-          <p>
-            This dashboard is showing seeded data from an existing successful payment tx and proof tx.
-            It does not create or execute a new payment.
-          </p>
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <Chip>
+            mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
+          </Chip>
+          <Chip>
+            chain <span className="ml-1 font-mono text-ink">{ACTIVE_CHAIN.name}</span>
+          </Chip>
+          <Chip>
+            proof <span className="ml-1 font-semibold text-ink">ReceiptEmitter</span>
+          </Chip>
         </div>
-      )}
 
-      {!isDemoReplay && (
-      <div className="bg-white border rounded-xl p-6 mb-6">
-        <h2 className="font-bold mb-3">Create Payment Link</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            placeholder="Merchant 0x address"
-            value={newLink.merchantAddress}
-            onChange={(e) => setNewLink({ ...newLink, merchantAddress: e.target.value })}
-            className="border rounded px-3 py-2 col-span-2 font-mono text-sm"
-          />
-          <input
-            placeholder="Admin create token"
-            value={adminCreateToken}
-            onChange={(e) => setAdminCreateToken(e.target.value)}
-            className="border rounded px-3 py-2 col-span-2"
-            type="password"
-          />
-          <input
-            placeholder="Amount (max 0.25 USDC)"
-            value={newLink.amount}
-            onChange={(e) => setNewLink({ ...newLink, amount: e.target.value })}
-            className="border rounded px-3 py-2"
-          />
-          <select
-            value={newLink.token}
-            onChange={(e) => setNewLink({ ...newLink, token: e.target.value })}
-            className="border rounded px-3 py-2"
-          >
-            <option>USDC</option>
-          </select>
-          <input
-            placeholder="Label (optional)"
-            value={newLink.label}
-            onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
-            className="border rounded px-3 py-2"
-          />
-          <button onClick={createLink} className="bg-black text-white rounded px-4 py-2">
-            Create
-          </button>
-        </div>
-        {createdUrl && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm break-all">
-            {createdUrl}
+        {isDemoReplay && (
+          <div className="mb-6 rounded-2xl border border-gold/25 bg-gold-soft/50 p-4 text-sm">
+            <p className="font-semibold text-ink">Demo replay mode</p>
+            <p className="mt-1 text-muted">
+              Showing seeded data from an existing successful payment and proof transaction. No new
+              payment is created or executed.
+            </p>
           </div>
         )}
-      </div>
-      )}
 
-      <div className="bg-white border rounded-xl p-6">
-        <h2 className="font-bold mb-3">Payment Links</h2>
-        <input
-          placeholder="Enter merchant address to view links"
-          value={merchantId}
-          onChange={(e) => setMerchantId(e.target.value)}
-          className="border rounded px-3 py-2 w-full mb-3 font-mono text-sm"
-        />
-        <div className="grid grid-cols-4 gap-2 mb-4 text-center text-sm">
-          <div className="bg-gray-50 rounded p-2">Total: {stats.total}</div>
-          <div className="bg-green-50 rounded p-2">Paid: {stats.completed}</div>
-          <div className="bg-yellow-50 rounded p-2">Pending: {stats.pending}</div>
-          <div className="bg-red-50 rounded p-2">Failed: {stats.failed}</div>
-        </div>
-        {links.length === 0 ? (
-          <p className="text-gray-400 text-sm">No links found</p>
-        ) : (
-          <ul className="space-y-3 text-sm">
-            {links.map((l: any) => {
-              const completedPayment = getCompletedPaymentForLink(l.id);
-              return (
-              <li key={l.id} className="border rounded-lg p-3">
-                <div className="flex justify-between gap-3">
-                <span>
-                  <span className="font-medium">{l.label || l.id.slice(0, 8)}</span>
-                  <span className="block text-gray-600">{formatLinkAmount(l)} on {ACTIVE_CHAIN.name}</span>
-                  <span className="block text-xs text-gray-500">
-                    mode <span className="font-mono">{PAYMENT_MODE}</span>
-                  </span>
-                  {l.registered_tx_hash && (
-                    <span className="block text-xs text-gray-400 font-mono">
-                      registered {l.registered_tx_hash.slice(0, 10)}...
-                    </span>
-                  )}
-                  {isDemoReplay && l.status === "completed" && (
-                    <a
-                      href={`/success/${l.id}`}
-                      className="mt-1 block text-xs text-blue-700 underline"
-                    >
-                      open replay success page
-                    </a>
-                  )}
-                </span>
-                <span className={l.status === "completed" ? "text-green-600 font-bold text-right" : "text-gray-500 text-right"}>
-                  {l.status === "completed" ? "PAID" : l.status}
-                  {l.status === "completed" && (
-                    <span className="block text-xs font-normal">
-                      {completedPayment?.receipt_tx_hash ? "proof ok" : "proof pending"}
-                    </span>
-                  )}
-                </span>
-                </div>
-                {completedPayment && (
-                  <div className="mt-3 rounded border border-green-100 bg-green-50 p-2">
-                    <p className="mb-1 text-xs font-medium text-green-800">Verified payment proof</p>
-                    <TxLink hash={completedPayment.tx_hash} label="payment tx" />
-                    <TxLink hash={completedPayment.receipt_tx_hash} label="proof tx" />
-                  </div>
-                )}
-              </li>
-            )})}
-          </ul>
+        {!isDemoReplay && (
+          <section className="op-card mb-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-ink">Create payment link</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="op-merchant" className="mb-1 block text-sm font-medium text-ink">
+                  Merchant address
+                </label>
+                <input
+                  id="op-merchant"
+                  placeholder="0x…"
+                  value={newLink.merchantAddress}
+                  onChange={(e) => setNewLink({ ...newLink, merchantAddress: e.target.value })}
+                  className="op-input font-mono"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="op-admin" className="mb-1 block text-sm font-medium text-ink">
+                  Admin create token
+                </label>
+                <input
+                  id="op-admin"
+                  placeholder="Required to register on-chain"
+                  value={adminCreateToken}
+                  onChange={(e) => setAdminCreateToken(e.target.value)}
+                  className="op-input"
+                  type="password"
+                />
+              </div>
+              <div>
+                <label htmlFor="op-amount" className="mb-1 block text-sm font-medium text-ink">
+                  Amount
+                </label>
+                <input
+                  id="op-amount"
+                  placeholder="Max 0.25 USDC"
+                  value={newLink.amount}
+                  onChange={(e) => setNewLink({ ...newLink, amount: e.target.value })}
+                  className="op-input"
+                />
+              </div>
+              <div>
+                <label htmlFor="op-token" className="mb-1 block text-sm font-medium text-ink">
+                  Token
+                </label>
+                <select
+                  id="op-token"
+                  value={newLink.token}
+                  onChange={(e) => setNewLink({ ...newLink, token: e.target.value })}
+                  className="op-input"
+                >
+                  <option>USDC</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="op-label" className="mb-1 block text-sm font-medium text-ink">
+                  Label <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <input
+                  id="op-label"
+                  placeholder="e.g. Coffee subscription"
+                  value={newLink.label}
+                  onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
+                  className="op-input"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <button onClick={createLink} className="op-btn-primary w-full sm:w-auto">
+                  Create link
+                </button>
+              </div>
+            </div>
+            {createdUrl && (
+              <div className="mt-4 break-all rounded-xl border border-verify/20 bg-verify-soft p-3 text-sm text-ink2">
+                {createdUrl}
+              </div>
+            )}
+          </section>
         )}
+
+        <section className="op-card p-6">
+          <h2 className="font-display text-lg font-semibold text-ink">Payment links</h2>
+          <div className="mt-4">
+            <label htmlFor="op-view-merchant" className="mb-1 block text-sm font-medium text-ink">
+              Merchant address
+            </label>
+            <input
+              id="op-view-merchant"
+              placeholder="Enter a merchant address to view links"
+              value={merchantId}
+              onChange={(e) => setMerchantId(e.target.value)}
+              className="op-input font-mono"
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stat label="Total" value={stats.total} />
+            <Stat label="Paid" value={stats.completed} tone="verify" />
+            <Stat label="Pending" value={stats.pending} tone="gold" />
+            <Stat label="Failed" value={stats.failed} tone="danger" />
+          </div>
+
+          {links.length === 0 ? (
+            <p className="mt-6 text-sm text-faint">No links found.</p>
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {links.map((l: any) => {
+                const completedPayment = getCompletedPaymentForLink(l.id);
+                const isPaid = l.status === "completed";
+                return (
+                  <li key={l.id} className="rounded-2xl border border-line bg-paper p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink">{l.label || l.id.slice(0, 8)}</p>
+                        <p className="mt-0.5 text-sm text-muted">
+                          {formatLinkAmount(l)} on {ACTIVE_CHAIN.name}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="op-chip-concept">mode {PAYMENT_MODE}</span>
+                          {l.registered_tx_hash && (
+                            <span className="op-chip-concept font-mono">
+                              registered {l.registered_tx_hash.slice(0, 10)}…
+                            </span>
+                          )}
+                        </div>
+                        {isDemoReplay && isPaid && (
+                          <a
+                            href={`/success/${l.id}`}
+                            className="op-link mt-2 inline-flex items-center gap-1 text-xs"
+                          >
+                            Open proof receipt <IconArrowUpRight className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {isPaid ? (
+                          <span className="op-chip-verify">
+                            <IconCheck className="h-3.5 w-3.5" /> PAID
+                          </span>
+                        ) : (
+                          <span className="op-chip capitalize">{l.status}</span>
+                        )}
+                        {isPaid && (
+                          <p className="mt-1.5 text-xs font-medium">
+                            {completedPayment?.receipt_tx_hash ? (
+                              <span className="text-verify">proof recorded</span>
+                            ) : (
+                              <span className="text-muted">proof pending</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {completedPayment && (
+                      <div className="mt-3 space-y-2 border-t border-line pt-3">
+                        <p className="op-eyebrow">Verified payment proof</p>
+                        <TxLink hash={completedPayment.tx_hash} label="Payment transaction" />
+                        <TxLink hash={completedPayment.receipt_tx_hash} label="Proof transaction" />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -247,8 +296,39 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen p-8 max-w-4xl mx-auto">Loading dashboard...</main>}>
+    <Suspense
+      fallback={
+        <main className="op-shell px-5 py-10">
+          <div className="mx-auto max-w-3xl text-sm text-muted">Loading dashboard…</div>
+        </main>
+      }
+    >
       <DashboardContent />
     </Suspense>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "verify" | "gold" | "danger";
+}) {
+  const valueColor =
+    tone === "verify"
+      ? "text-verify"
+      : tone === "gold"
+        ? "text-gold"
+        : tone === "danger"
+          ? "text-danger"
+          : "text-ink";
+  return (
+    <div className="rounded-xl border border-line bg-paper2 p-3 text-center">
+      <p className={`font-display text-2xl font-semibold tnum ${valueColor}`}>{value}</p>
+      <p className="mt-0.5 text-xs text-muted">{label}</p>
+    </div>
   );
 }

@@ -72,3 +72,37 @@ alter table if exists payments drop constraint if exists payments_status_check;
 alter table if exists payments
   add constraint payments_status_check
   check (status in ('pending', 'processing', 'completed', 'failed'));
+
+-- Explicit Data API grants for Supabase PostgREST / supabase-js compatibility.
+-- Required for new Supabase projects after 2026-05-30 and existing projects after 2026-10-30.
+-- RLS is intentionally left unchanged here; RLS hardening needs a separate policy pass
+-- so the checkout/demo flow is not accidentally blocked.
+
+grant usage on schema public to anon;
+grant usage on schema public to authenticated;
+grant usage on schema public to service_role;
+
+grant select
+  on public.payment_links,
+     public.payments
+  to anon;
+
+grant select
+  on public.merchants,
+     public.payment_links,
+     public.payments
+  to authenticated;
+
+grant select, insert, update, delete
+  on public.merchants,
+     public.payment_links,
+     public.payments
+  to service_role;
+
+grant usage, select
+  on all sequences in schema public
+  to authenticated;
+
+grant usage, select
+  on all sequences in schema public
+  to service_role;

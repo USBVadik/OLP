@@ -2,6 +2,20 @@
 
 Hi Particle / Encode team,
 
+## Update — Base EIP-7702 Delegation Verified (2026-06-20)
+
+OneLink Pay now has a successful live Base EIP-7702 delegation through Magic + Particle UA:
+
+- Owner EOA: `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`
+- Delegation tx: `0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- BaseScan: `https://basescan.org/tx/0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- Transaction type: `eip7702`, authorization list length `1`
+- Delegate contract: `0x6640c1CCCaF07Dbe765eC05E294FE427cC92831C`
+
+After delegation, `getEIP7702Deployments()` reports Base `isDelegated: true`, and `createTransferTransaction()` builds cleanly in EIP-7702 mode with `rootHash`, fee quotes, token changes, and no inline auth requirement. This makes `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` the current Universal Accounts Track candidate.
+
+The strict custom-call path (`createUniversalTransaction` with `approve + payInvoice`) remains tracked separately because it previously returned `-32801` maintenance on custom calls.
+
 We are building OneLink Pay for UXmaxx. Our intended qualifying path was:
 
 Magic embedded wallet -> Particle Universal Account -> `createUniversalTransaction` on Base -> USDC `approve` + `ReceiptEmitter.payInvoice` -> `InvoicePaid` event.

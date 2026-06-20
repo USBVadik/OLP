@@ -3,6 +3,18 @@ import { notFound } from "next/navigation";
 import { DEMO_REPLAY_PAYMENT, DEMO_REPLAY_PAYMENT_LINK, getDemoReplaySuccess } from "@/lib/demo/replay";
 import { getActivePaymentChain, getConfiguredPaymentMode } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
+import {
+  Wordmark,
+  Chip,
+  ConceptTag,
+  Field,
+  TxReference,
+  IconCheck,
+  IconArrowUpRight,
+  IconShield,
+  IconReceipt,
+  IconLock,
+} from "@/components/ui";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
@@ -16,84 +28,110 @@ export default function DemoReplayPage() {
   const replay = getDemoReplaySuccess(DEMO_REPLAY_PAYMENT_LINK.id);
   if (!replay) notFound();
 
-  return (
-    <main className="min-h-screen bg-gray-50 px-5 py-8">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <p className="font-semibold">Demo replay mode</p>
-          <p className="mt-1">
-            This uses an existing successful payment transaction and proof transaction. It does not execute a new payment or spend gas.
-          </p>
-        </div>
+  const amount = formatAmount();
 
-        <section className="rounded-lg border bg-white p-6">
-          <div className="mb-5 flex flex-wrap gap-2 text-xs">
-            <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
-              status: <span className="font-semibold text-green-700">PAID</span>
-            </span>
-            <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
-              mode: <span className="font-mono">{PAYMENT_MODE}</span>
-            </span>
-            <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
-              chain: <span className="font-mono">{ACTIVE_CHAIN.name}</span>
-            </span>
-            <span className="rounded border border-gray-200 bg-gray-50 px-2 py-1">
-              proof: <span className="font-semibold text-green-700">ok</span>
-            </span>
+  return (
+    <main className="op-shell px-5 py-8 sm:py-12">
+      <div className="mx-auto w-full max-w-3xl">
+        <header className="mb-6 flex items-center justify-between">
+          <Wordmark />
+          <Link href="/" className="op-btn-ghost px-3 py-2">
+            Home
+          </Link>
+        </header>
+
+        {/* Intro */}
+        <section className="op-animate-rise">
+          <span className="op-eyebrow">Demo replay</span>
+          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink">
+            Trust before you pay. Proof after it settles.
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink2">
+            This walkthrough replays a real, verified payment: the customer paid {amount} on{" "}
+            {ACTIVE_CHAIN.name}, the backend verified the USDC transfer, and a ReceiptEmitter proof
+            was recorded before the invoice was marked paid. No new payment is executed and no gas is
+            spent.
+          </p>
+        </section>
+
+        {/* Three moments */}
+        <section className="mt-8 grid gap-3 sm:grid-cols-3">
+          <Moment icon={<IconShield className="h-4 w-4" />} step="Before" title="Trust Preview" />
+          <Moment icon={<IconReceipt className="h-4 w-4" />} step="After" title="Proof Receipt" />
+          <Moment icon={<IconLock className="h-4 w-4" />} step="Next" title="Permission Firewall" tag />
+        </section>
+
+        {/* Verified summary */}
+        <section className="mt-8 op-card overflow-hidden">
+          <div className="flex items-center justify-between border-b border-line px-6 py-4">
+            <span className="op-eyebrow">Verified payment</span>
+            <Chip tone="verify">
+              <IconCheck className="h-3.5 w-3.5" /> PAID · proof recorded
+            </Chip>
           </div>
 
-          <h1 className="text-2xl font-bold">OneLink Pay Demo Replay</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">
-            The customer paid {formatAmount()} in USDC on Base. The backend verified the USDC Transfer and recorded a ReceiptEmitter proof transaction before marking the invoice paid.
-          </p>
+          <div className="px-6 py-2">
+            <dl className="divide-y divide-line">
+              <Field label="Amount" value={amount} emphasis />
+              <Field label="Merchant" value={DEMO_REPLAY_PAYMENT_LINK.merchant_address} mono />
+              <Field label="Payer Universal Account" value={DEMO_REPLAY_PAYMENT.payer_address} mono />
+              <Field label="Invoice ID" value={DEMO_REPLAY_PAYMENT_LINK.contract_invoice_id} mono />
+              <Field label="Payment mode" value={PAYMENT_MODE} mono />
+            </dl>
+          </div>
 
-          <dl className="mt-6 space-y-3 text-sm">
-            <ReceiptRow label="Amount" value={formatAmount()} />
-            <ReceiptRow label="Merchant" value={DEMO_REPLAY_PAYMENT_LINK.merchant_address} mono />
-            <ReceiptRow label="Payer UA" value={DEMO_REPLAY_PAYMENT.payer_address} mono />
-            <ReceiptRow label="Invoice ID" value={DEMO_REPLAY_PAYMENT_LINK.contract_invoice_id} mono />
-            <ReceiptLink label="Payment tx" href={replay.paymentExplorer} value={DEMO_REPLAY_PAYMENT.tx_hash} />
-            <ReceiptLink label="Proof tx" href={replay.proofExplorer} value={DEMO_REPLAY_PAYMENT.receipt_tx_hash} />
-          </dl>
+          <div className="space-y-2 px-6 pb-5 pt-2">
+            <p className="op-eyebrow mb-1">On-chain proof</p>
+            <TxReference label="Payment transaction" hash={DEMO_REPLAY_PAYMENT.tx_hash} href={replay.paymentExplorer} />
+            <TxReference label="Proof transaction" hash={DEMO_REPLAY_PAYMENT.receipt_tx_hash} href={replay.proofExplorer} />
+          </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href={`/success/${DEMO_REPLAY_PAYMENT_LINK.id}`}
-              className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white"
-            >
-              Open Receipt Page
+          <div className="flex flex-col gap-3 border-t border-line bg-paper2 px-6 py-5 sm:flex-row sm:items-center">
+            <Link href={`/success/${DEMO_REPLAY_PAYMENT_LINK.id}`} className="op-btn-primary">
+              Open proof receipt
+              <IconArrowUpRight className="h-4 w-4" />
             </Link>
             <Link
               href={`/dashboard?demo=replay&merchantId=${DEMO_REPLAY_PAYMENT_LINK.merchant_id}`}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium"
+              className="op-btn-secondary"
             >
-              Open Dashboard Replay
+              Open merchant dashboard
             </Link>
           </div>
         </section>
+
+        <p className="mt-5 text-center text-xs leading-relaxed text-muted">
+          Honest scope: no live cross-chain routing, no real session keys, and no gas sponsorship are
+          claimed. Spend caps and the Permission Firewall are concept previews.
+        </p>
       </div>
     </main>
   );
 }
 
-function ReceiptRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function Moment({
+  icon,
+  step,
+  title,
+  tag = false,
+}: {
+  icon: React.ReactNode;
+  step: string;
+  title: string;
+  tag?: boolean;
+}) {
   return (
-    <div className="grid gap-1 border-b border-gray-100 pb-3 sm:grid-cols-[140px_1fr]">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className={mono ? "break-all font-mono text-xs" : "font-semibold"}>{value}</dd>
-    </div>
-  );
-}
-
-function ReceiptLink({ label, href, value }: { label: string; href: string; value: string }) {
-  return (
-    <div className="grid gap-1 border-b border-gray-100 pb-3 sm:grid-cols-[140px_1fr]">
-      <dt className="text-gray-500">{label}</dt>
-      <dd>
-        <a className="break-all font-mono text-xs text-blue-700 underline" href={href} target="_blank" rel="noreferrer">
-          {value}
-        </a>
-      </dd>
+    <div className="op-card-quiet flex items-center gap-3 p-4">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-soft text-gold">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="op-eyebrow">{step}</p>
+        <p className="flex items-center gap-1.5 truncate font-semibold text-ink">
+          {title}
+          {tag ? <ConceptTag /> : null}
+        </p>
+      </div>
     </div>
   );
 }

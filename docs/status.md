@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 ## Active Stack
 
@@ -13,7 +13,7 @@ This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + 
 - Particle AuthKit is installed but not used in the active flow.
 - Base mainnet USDC is the only supported MVP token.
 - Arbitrum is configured only for exploratory probes.
-- Default payment mode is `transfer_fallback`.
+- Default example payment mode is `transfer_fallback`; the active Universal Accounts Track candidate is `universal_7702_transfer`.
 
 ## Active Payment Path
 
@@ -47,6 +47,17 @@ The app logs `inspectUserOps` after transaction creation:
 In the legacy/fallback modes, if a transaction includes `eip7702Auth` and `eip7702Delegated === false`, the checkout stops with a clear diagnostic and signs `rootHash` with `personal_sign`.
 
 In `universal_7702_transfer` mode (magic-sdk 33.7.1 + `@magic-ext/evm`), the checkout now performs explicit delegation: `getEIP7702Auth` -> `magic.wallet.sign7702Authorization` -> `send7702Transaction` (pre-delegation), then signs inline `eip7702Auth` user-ops and the `rootHash`, and calls `ua.sendTransaction(tx, signature, authorizations)`.
+
+Live Base proof, 2026-06-20:
+
+- Owner EOA: `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`
+- Delegation tx: `0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- BaseScan: `https://basescan.org/tx/0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- Transaction type: `eip7702`
+- Authorization list length: `1`
+- Delegate contract: `0x6640c1CCCaF07Dbe765eC05E294FE427cC92831C`
+- Post-delegation Particle state: `getEIP7702Deployments()` reports Base `isDelegated: true`.
+- Post-delegation transfer build: `createTransferTransaction()` returns `rootHash`, fee quotes, token changes, one userOp, and `eip7702Delegated: true` without a maintenance error.
 
 ## ReceiptEmitter Status
 
@@ -95,8 +106,8 @@ The strict custom-call path is recorded as externally blocked. Root cause (empir
 
 ## Payment Mode Flag
 
-- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: active default (legacy smart-account mode + transfer).
-- `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`: EIP-7702 mode — EOA delegated in-place, then `createTransferTransaction` settles USDC to the merchant. Track-qualifying path. Fund the EOA (USDC + a little Base ETH for the one-time delegation). Verify via `/debug/particle-probe`.
+- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: stable legacy smart-account mode + transfer/proof.
+- `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`: EIP-7702 mode — EOA delegated in-place, then `createTransferTransaction` settles USDC to the merchant. This is the active Universal Accounts Track candidate. Fund the EOA (USDC + a little Base ETH for the one-time delegation). Verify via `/debug/particle-probe`.
 - `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` path available for future Particle retesting (currently blocked by the V2 migration).
 
 Do not spend more mainnet gas for strict-path testing unless explicitly requested.

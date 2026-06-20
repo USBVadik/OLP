@@ -1,3 +1,134 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans;
+    font-feature-settings: "ss01", "cv01", "cv11";
+  }
+
+  /* Tabular, even figures for amounts and tx data. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: rgba(168, 123, 54, 0.18);
+  }
+}
+
+@layer components {
+  .op-shell {
+    @apply min-h-screen bg-canvas text-ink;
+  }
+
+  /* Eyebrow / small uppercase label */
+  .op-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-muted;
+  }
+
+  /* Pills / chips */
+  .op-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-1 text-xs font-medium text-ink2;
+  }
+  .op-chip-verify {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-verify/20 bg-verify-soft px-3 py-1 text-xs font-semibold text-verify;
+  }
+  .op-chip-gold {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-soft px-3 py-1 text-xs font-semibold text-gold;
+  }
+  .op-chip-concept {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line2 bg-paper2 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted;
+  }
+
+  /* Cards */
+  .op-card {
+    @apply rounded-3xl border border-line bg-paper shadow-card;
+  }
+  .op-card-quiet {
+    @apply rounded-2xl border border-line bg-paper2;
+  }
+
+  /* Buttons */
+  .op-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .op-btn-primary {
+    @apply op-btn bg-ink text-cream hover:bg-ink2;
+  }
+  .op-btn-secondary {
+    @apply op-btn border border-line2 bg-paper text-ink hover:bg-paper2;
+  }
+  .op-btn-ghost {
+    @apply op-btn text-ink2 hover:bg-paper2;
+  }
+
+  /* Inputs */
+  .op-input {
+    @apply w-full rounded-xl border border-line2 bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-faint transition-shadow focus:border-gold/50 focus:outline-none focus:ring-2 focus:ring-gold/25;
+  }
+
+  /* Key / value rows */
+  .op-row {
+    @apply flex items-center justify-between gap-4 py-3;
+  }
+  .op-row-label {
+    @apply text-sm text-muted;
+  }
+  .op-row-value {
+    @apply text-right text-sm font-medium text-ink;
+  }
+  .op-divider {
+    @apply h-px w-full bg-line;
+  }
+
+  /* Links */
+  .op-link {
+    @apply font-medium text-gold underline-offset-2 hover:underline;
+  }
+
+  /* Disclosure (native <details>) */
+  .op-disclosure {
+    @apply rounded-2xl border border-line bg-paper2;
+  }
+  .op-disclosure > summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-ink2 transition-colors hover:text-ink;
+  }
+  .op-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+  .op-disclosure > summary .op-chevron {
+    @apply text-faint transition-transform duration-200;
+  }
+  .op-disclosure[open] > summary .op-chevron {
+    transform: rotate(180deg);
+  }
+
+  .op-animate-rise {
+    @apply animate-rise;
+  }
+  .op-animate-seal {
+    @apply animate-seal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-animate-rise,
+  .op-animate-seal {
+    animation: none !important;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
