@@ -45,6 +45,27 @@ async function loadEthers() {
   };
 }
 
+// Magic v33 removed top-level metadata.publicAddress; the EVM address now lives under
+// wallets.ethereum. Fall back to the EIP-1193 provider for maximum version robustness.
+async function resolveMagicEoa(magic: any): Promise<string | null> {
+  try {
+    const meta = await magic.user.getInfo();
+    const fromMeta = meta?.publicAddress ?? meta?.wallets?.ethereum?.publicAddress;
+    if (fromMeta) return fromMeta;
+  } catch {
+    /* fall through to provider */
+  }
+  for (const method of ["eth_accounts", "eth_requestAccounts"]) {
+    try {
+      const accounts = await magic.rpcProvider.request({ method });
+      if (accounts?.[0]) return accounts[0];
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
 const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
@@ -282,8 +303,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
       const didToken = await magic.auth.loginWithMagicLink({ email });
       log("magicLogin", "authenticated", { didToken: didToken?.slice(0, 20) + "..." });
 
-      const metadata = await magic.user.getInfo();
-      const userAddress = metadata.publicAddress ?? metadata.wallets?.ethereum?.publicAddress;
+      const userAddress = await resolveMagicEoa(magic);
       if (!userAddress) throw new Error("No public address from Magic");
 
       setAddress(userAddress);

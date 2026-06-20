@@ -95,6 +95,27 @@ async function loadSDKs() {
   }
 }
 
+// Magic v33 removed top-level metadata.publicAddress; the EVM address now lives under
+// wallets.ethereum. Fall back to the EIP-1193 provider for maximum version robustness.
+async function resolveMagicEoa(magic: any): Promise<string | null> {
+  try {
+    const meta = await magic.user.getInfo();
+    const fromMeta = meta?.publicAddress ?? meta?.wallets?.ethereum?.publicAddress;
+    if (fromMeta) return fromMeta;
+  } catch {
+    /* fall through to provider */
+  }
+  for (const method of ["eth_accounts", "eth_requestAccounts"]) {
+    try {
+      const accounts = await magic.rpcProvider.request({ method });
+      if (accounts?.[0]) return accounts[0];
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 function findDeepKey(value: unknown, targetKeys: string[], depth = 0): boolean {
   if (!value || depth > 8) return false;
   if (Array.isArray(value)) return value.some((item) => findDeepKey(item, targetKeys, depth + 1));
@@ -238,15 +259,15 @@ export default function ParticleProbePage() {
       await magic.auth.loginWithMagicLink({ email });
     }
 
-    const metadata = await magic.user.getInfo();
-    if (!metadata.publicAddress) throw new Error("Magic did not return publicAddress");
-    setOwnerAddress(metadata.publicAddress);
+    const eoa = await resolveMagicEoa(magic);
+    if (!eoa) throw new Error("Magic did not return an address");
+    setOwnerAddress(eoa);
 
     const universalAccount = new UniversalAccountCtor({
       projectId: process.env.NEXT_PUBLIC_PARTICLE_PROJECT_ID!,
       projectClientKey: process.env.NEXT_PUBLIC_PARTICLE_CLIENT_KEY!,
       projectAppUuid: process.env.NEXT_PUBLIC_PARTICLE_APP_ID!,
-      ownerAddress: metadata.publicAddress,
+      ownerAddress: eoa,
     });
     setUa(universalAccount);
 
@@ -487,9 +508,8 @@ export default function ParticleProbePage() {
     const loggedIn = await magic.user.isLoggedIn();
     if (!loggedIn) await magic.auth.loginWithMagicLink({ email });
 
-    const metadata = await magic.user.getInfo();
-    const eoa = metadata.publicAddress ?? metadata.wallets?.ethereum?.publicAddress;
-    if (!eoa) throw new Error("Magic did not return publicAddress");
+    const eoa = await resolveMagicEoa(magic);
+    if (!eoa) throw new Error("Magic did not return an address");
     setOwnerAddress(eoa);
 
     const ua7 = new UniversalAccountCtor({
