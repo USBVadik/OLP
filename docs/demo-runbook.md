@@ -119,3 +119,56 @@ Accounts:
 - Universal Accounts Track ($2,500): main submission (UA + 7702 + UX + proof + firewall; cross-chain is the gate).
 - Magic bonus ($500): **done** — Google OAuth + email onboarding live (no seed phrase, no extension); session persists across reload. Proven live 2026-06-21.
 - Arbitrum bonus ($2,000): **done** — SpendPolicy + ReceiptEmitter deployed on Arbitrum One; the Permission Firewall demo and the default invoice settlement run on Arbitrum. Proven live (MandateCharged `0x33a4e69e...`).
+
+## Live dry-run verification checklist (operator — before judging)
+
+> Purpose: run the wow flow end-to-end on the **live build** and confirm the build-verified
+> hardening holds against a real on-chain payment — specifically R15 (proof payer = on-chain
+> sender) and R17 (dashboard explorer links resolve to the correct chain), which were only
+> build/test-verified. Tick each box and capture the tx hashes noted. Recording this run doubles
+> as the R4 backup video.
+
+### 0. Pre-flight
+
+- [ ] Clean Chrome profile, no ad-block / extensions (R7).
+- [ ] Demo machine on the latest pushed commit: `git rev-parse --short HEAD` ≥ `5b5cf09`.
+- [ ] `.env.local` populated: Magic key, Particle project/client/app ids, `NEXT_PUBLIC_SPEND_POLICY_ADDRESS_ARBITRUM`, `RECEIPT_EMITTER_OWNER_PRIVATE_KEY`, Arbitrum RPC.
+- [ ] Demo wallet `0x53Bd…206a` funded: a little USDC on **Arbitrum** + a little ETH on Arbitrum (relayer/owner gas) and on Base (proof gas).
+- [ ] If serving a **deployed** build (not localhost): that build was built with `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` (R18). Confirm `/debug/*` shows the "disabled" stub.
+- [ ] `corepack pnpm dev` up; `/`, `/pay/<id>`, `/firewall`, `/agent`, `/dashboard` load with no console errors.
+
+### 1. Part A — checkout + proof receipt (verifies C8 / C20 + **R15**)
+
+- [ ] Open `/pay/<id>` (a fresh Arbitrum-settled link), Continue with Google, pay the invoice. **Record the payment tx hash** (settles on Arbitrum).
+- [ ] Open `/receipt/<id>`: shows verified → matched → recorded; "How is this verified?" disclosure reads correctly; payment-tx link → **arbiscan.io** (resolves), proof-tx (InvoicePaid) link → **basescan.org** (resolves). **Record the proof tx hash.**
+- [ ] **R15 check:** on basescan, open the InvoicePaid proof tx → Logs → confirm the `payer` argument equals the `Transfer.from` of the payment tx on arbiscan (the demo EOA). Payer is now always derived from the chain, so an honest run matches — and a tampered `payerAddress` in the mark-paid POST can no longer change it.
+
+### 2. Dashboard — chain-correctness (verifies **R17**)
+
+- [ ] `/dashboard` → enter the merchant address → find the completed link from step 1.
+- [ ] Per-link label reads "on **Arbitrum**" (not "on Base"); header chip reads "proof anchor **Base**".
+- [ ] "Payment transaction" link → **arbiscan.io** and resolves to the USDC transfer; "Proof transaction" link → **basescan.org** and resolves. (Pre-fix these both pointed at basescan — this is R17 live.)
+
+### 3. Part B — `/firewall` wow (verifies C14 / C15 / C16)
+
+- [ ] Google login → address `0x53Bd…206a` shows (C13).
+- [ ] Arm "Agent budget" preset (one sign + one approve); Budget HUD: 2.00/2.00 day, 10.00/10.00 total, expiry ~24h.
+- [ ] Run within budget → `[FIREWALL] Charged 0.10. Settled to merchant.`; HUD drains 2.00 → 1.90; "view tx" → arbiscan resolves. **Record the MandateCharged tx hash.**
+- [ ] Run over cap (0.20) → `[FIREWALL] BLOCKED: PerChargeExceeded. No funds moved, zero gas.` — confirm **no new tx** appears on arbiscan for that attempt.
+- [ ] Revoke → `Mandate revoked`; run again → `BLOCKED: MandateIsRevoked`.
+- [ ] (optional a11y) with VoiceOver/NVDA on, the "BLOCKED" line is announced aloud (aria-live fix).
+
+### 4. Part C — `/agent` x402 (verifies C17)
+
+- [ ] Login + Arm; Unified Balance HUD shows a real cross-chain balance — or "Balance unavailable — the rest of the demo still works" with **Retry** recovering it (R12). Demo proceeds either way.
+- [ ] Buy Market insight ($0.05) → `402 → Paying… → Charged 0.05 → 200 OK`, JSON appears; HUD drains.
+- [ ] Buy Premium dataset ($0.20, over cap) → `402 → BLOCKED: PerChargeExceeded` → resource withheld.
+
+### 5. Record the results
+
+- [ ] In `docs/honest-claim-ledger.md`, bump `last_verified` for the rows just proven live (C8/C16/C17/C20) and move R15/R17 from "build-verified" to "live-verified" in `docs/risk-register.md`, pasting the new tx hashes.
+- [ ] Save the recording as the R4 backup video, labeled "replay".
+
+### Fallbacks (R4)
+
+- [ ] If Arbitrum RPC / Magic / Particle flakes mid-run: cut to the pre-recorded backup. The on-chain proofs above are independently verifiable on arbiscan/basescan regardless of the live app.
