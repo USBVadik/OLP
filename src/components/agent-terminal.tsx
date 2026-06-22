@@ -9,17 +9,20 @@ type Props = {
   autoScroll?: boolean;
 };
 
+// Brand-aligned hues tuned for the dark terminal surface. The light-canvas
+// tokens (gold/verify/danger) are too dark for text on near-black, so these are
+// lightened variants of the same brand hues — keeping the console on-system.
 const SOURCE_COLOR: Record<LogEntry["source"], string> = {
-  AGENT: "text-cyan-300",
-  FIREWALL: "text-amber-300",
-  USER: "text-fuchsia-300",
+  AGENT: "text-[#9B86FF]", // iris-2 — the agent's voice
+  FIREWALL: "text-[#E0B25C]", // brand gold, lightened — the on-chain enforcer
+  USER: "text-[#E6DDCD]", // warm cream — the human
 };
 
 const TONE_COLOR: Record<LogEntry["tone"], string> = {
-  info: "text-zinc-300",
-  ok: "text-emerald-300",
-  blocked: "text-red-400",
-  error: "text-red-400",
+  info: "text-[#C9C0B2]", // warm neutral
+  ok: "text-[#45BE88]", // verify hue, lightened
+  blocked: "text-[#E86A4C]", // danger hue, lightened
+  error: "text-[#E86A4C]",
 };
 
 /**
@@ -41,12 +44,12 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
   }, [entries, autoScroll]);
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 shadow-card">
-      <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-2.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-        <span className="ml-2 font-mono text-xs text-zinc-400">ai-agent — sandbox</span>
+    <div className="rounded-2xl border border-[#2E2820] bg-[#18140E] shadow-card">
+      <div className="flex items-center gap-2 border-b border-[#2E2820] px-4 py-2.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#E86A4C]/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#E0B25C]/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#45BE88]/80" />
+        <span className="ml-2 font-mono text-xs text-[#8A8174]">ai-agent · sandbox</span>
       </div>
       <div
         ref={scrollRef}
@@ -57,7 +60,7 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
         className="h-72 overflow-y-auto px-4 py-3 font-mono text-[12.5px] leading-relaxed"
       >
         {entries.length === 0 ? (
-          <p className="text-zinc-600">
+          <p className="text-[#7A7165]">
             Idle. Trigger the agent to watch it pay inside the mandate — and get blocked when it
             tries to break out.
           </p>
@@ -66,10 +69,10 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
             <div
               key={`${e.ts}-${i}`}
               className={`mb-1.5 rounded ${
-                e.tone === "blocked" ? "animate-block-pulse bg-red-500/10 px-1.5 py-0.5" : ""
+                e.tone === "blocked" ? "animate-block-pulse bg-[#E86A4C]/10 px-1.5 py-0.5" : ""
               }`}
             >
-              <span className="text-zinc-600">{formatClockTime(e.ts)} </span>
+              <span className="text-[#7A7165]">{formatClockTime(e.ts)} </span>
               <span className={SOURCE_COLOR[e.source]}>[{e.source}]</span>{" "}
               <span className={TONE_COLOR[e.tone]}>{e.message}</span>
               {e.txUrl ? (
@@ -77,7 +80,7 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
                   href={e.txUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="ml-1 underline decoration-dotted underline-offset-2 text-zinc-400 hover:text-zinc-200"
+                  className="ml-1 underline decoration-dotted underline-offset-2 text-[#8A8174] hover:text-[#C9C0B2]"
                 >
                   view tx ↗
                 </a>
