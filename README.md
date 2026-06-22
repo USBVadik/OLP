@@ -8,7 +8,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 - **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` at zero gas. 22 Hardhat tests pass.
 - **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public receipt page at `/receipt/[id]`. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
-- **Walletless onboarding** — Magic embedded wallet (email today; Google OAuth shipping next).
+- **Walletless onboarding** — Magic embedded wallet, email + Google OAuth (live, with auto-detect on reload).
 - **EIP-7702 delegation** — Magic EOA delegated in-place via Particle UA (`useEIP7702: true`), proven on Base (tx `0x4ca6…cef0`).
 
 ## Honest scope
@@ -46,7 +46,9 @@ Built with **Particle** (Universal Accounts + EIP-7702), **Magic** (email/Google
 x-admin-create-token: <ADMIN_CREATE_TOKEN>
 ```
 
-`POST /api/payments/[id]/mark-paid` does not trust a frontend tx hash by itself. It fetches the Base mainnet receipt, parses Base USDC `Transfer`, verifies merchant and amount, then records `InvoicePaid` through the ReceiptEmitter owner key before marking Supabase as paid.
+`POST /api/payments/[id]/mark-paid` does not trust a frontend tx hash by itself. It fetches the settlement-chain receipt (Base or Arbitrum, per the invoice), parses the USDC `Transfer`, verifies merchant and amount, then records `InvoicePaid` through the ReceiptEmitter owner key — using the **actual on-chain sender** as the payer, never a client-supplied address — before marking Supabase as paid.
+
+`POST /api/mandates/charge` is public but gas-safe: funds are bounded by the EIP-712 mandate signature plus the on-chain caps, and the relayer is protected by an optional dedicated `RELAYER_PRIVATE_KEY` and a rolling-window budget on gas-spending sends. Over-cap charges are caught in simulation and cost zero gas.
 
 ## Required Env
 
@@ -68,10 +70,12 @@ NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
 ARBITRUM_MAINNET_RPC_URL=
 NEXT_PUBLIC_ARBITRUM_RECEIPT_EMITTER_ADDRESS=
 RECEIPT_EMITTER_OWNER_PRIVATE_KEY=
+RELAYER_PRIVATE_KEY=
 ADMIN_CREATE_TOKEN=
+NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false
 ```
 
-Never commit `.env.local`, private keys, seed phrases, or admin tokens.
+Never commit `.env.local`, private keys, seed phrases, or admin tokens. `RELAYER_PRIVATE_KEY` is optional (falls back to the ReceiptEmitter owner key). Keep `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` in any deployed build — it gates the `/debug/*` lab routes and is inlined at build time.
 
 ## Local Commands
 
@@ -104,12 +108,19 @@ This is the same hex address as the previous Base mainnet v1 deployment, but it 
 
 ## SDK Versions
 
-- `@particle-network/universal-account-sdk`: `1.1.1`
-- `magic-sdk`: `33.7.1`
-- `@magic-ext/evm`: `1.5.0`
-- `viem`: `2.48.8`
-- `ethers`: `6.16.0`
+Pinned to what's installed (verified against the lockfile). The crypto SDKs that carry the demo are on their latest releases.
+
+- `@particle-network/universal-account-sdk`: `1.1.1` (latest)
+- `@particle-network/chains`: `1.8.3` (latest)
+- `magic-sdk`: `33.7.1` (latest)
+- `@magic-ext/evm`: `1.5.1` (latest)
+- `@magic-ext/oauth2`: `15.8.0` (latest) — Google OAuth
+- `viem`: `2.53.1`
+- `ethers`: `6.17.0`
 - `next`: `14.2.35`
-- `@openzeppelin/contracts`: `5.6.1`
+- `@openzeppelin/contracts`: `5.6.1` (latest)
+- `hardhat`: `2.28.6`
+
+Intentionally held back (major upgrades require code changes; out of scope mid-hackathon): `next` 14 → 16, `zod` 3 → 4, `hardhat` 2 → 3.
 
 Known risk: Particle `createUniversalTransaction()` currently returns maintenance errors for custom calls in this project. The active fallback uses the working Particle transfer rail plus strict server-side verification and on-chain proof.
