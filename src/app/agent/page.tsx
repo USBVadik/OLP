@@ -388,6 +388,7 @@ export default function AgentPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                aria-label="Email address"
                 className="op-input"
               />
               <button onClick={connect} disabled={!email || !!busy} className="op-btn-primary w-full">
@@ -483,7 +484,7 @@ export default function AgentPage() {
           )}
 
           {error ? (
-            <div className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+            <div role="alert" className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
               {error}
             </div>
           ) : null}
