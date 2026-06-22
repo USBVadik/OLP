@@ -123,9 +123,18 @@ export default function HomePage() {
               </Link>
             </div>
 
+            <p
+              className="op-animate-rise mt-4 max-w-xl text-sm leading-relaxed text-muted"
+              style={{ animationDelay: "400ms" }}
+            >
+              <span className="font-semibold text-ink2">The 90-second path:</span> arm an agent
+              budget, clear one charge, watch an over-cap charge get blocked on-chain, revoke in one
+              click, then open the proof receipt.
+            </p>
+
             <div
               className="op-animate-rise mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted"
-              style={{ animationDelay: "430ms" }}
+              style={{ animationDelay: "480ms" }}
             >
               <span className="inline-flex items-center gap-2">
                 <IconCheck className="h-4 w-4 text-verify" /> Live on Base + Arbitrum
