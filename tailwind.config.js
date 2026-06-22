@@ -21,6 +21,12 @@ module.exports = {
         "verify-soft": "#E7F2EB",
         danger: "#B4452F",
         "danger-soft": "#F7E7E1",
+        // Located Particle-aligned accent (violet/iris) — used around Universal Account
+        // touchpoints and the particle-field signature, never as a full reskin.
+        iris: "#6E56F0",
+        "iris-2": "#9B86FF",
+        "iris-soft": "#ECE9FD",
+        "iris-ink": "#2A2350",
       },
       fontFamily: {
         display: ["var(--font-display)", "Fraunces", "ui-serif", "Georgia", "Cambria", "serif"],
@@ -34,6 +40,8 @@ module.exports = {
         card: "0 1px 2px rgba(35,32,27,0.04), 0 10px 30px -16px rgba(35,32,27,0.18)",
         lift: "0 2px 6px rgba(35,32,27,0.06), 0 24px 48px -24px rgba(35,32,27,0.28)",
         seal: "0 0 0 1px rgba(168,123,54,0.25), 0 12px 30px -12px rgba(168,123,54,0.35)",
+        glow: "0 0 0 1px rgba(110,86,240,0.25), 0 18px 50px -18px rgba(110,86,240,0.45)",
+        "glow-gold": "0 0 0 1px rgba(168,123,54,0.25), 0 18px 50px -18px rgba(168,123,54,0.40)",
       },
       keyframes: {
         rise: {
@@ -45,10 +53,41 @@ module.exports = {
           "60%": { opacity: "1", transform: "scale(1.04)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        pulseGlow: {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(110,86,240,0.0)" },
+          "50%": { boxShadow: "0 0 0 6px rgba(110,86,240,0.10)" },
+        },
+        floatY: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        blockPulse: {
+          "0%": { boxShadow: "0 0 0 0 rgba(180,69,47,0.5)" },
+          "70%": { boxShadow: "0 0 0 12px rgba(180,69,47,0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(180,69,47,0)" },
+        },
+        drawLine: {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+        countUp: {
+          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         rise: "rise 0.5s cubic-bezier(0.21,0.6,0.35,1) both",
         seal: "sealPop 0.6s cubic-bezier(0.21,0.8,0.3,1) both",
+        "pulse-glow": "pulseGlow 2.4s ease-in-out infinite",
+        "float-y": "floatY 6s ease-in-out infinite",
+        shimmer: "shimmer 2.2s linear infinite",
+        "block-pulse": "blockPulse 0.7s cubic-bezier(0.21,0.8,0.3,1) 1",
+        "draw-line": "drawLine 0.7s cubic-bezier(0.21,0.8,0.3,1) 0.45s both",
+        "count-up": "countUp 0.5s cubic-bezier(0.21,0.6,0.35,1) both",
       },
     },
   },

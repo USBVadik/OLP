@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDemoReplaySuccess } from "@/lib/demo/replay";
-import { getActivePaymentChain, getConfiguredPaymentMode } from "@/lib/config/payment";
+import { getActivePaymentChain, getConfiguredPaymentMode, getProofChain } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { Wordmark, VerifiedSeal, Field, TxReference, Chip, IconCheck, IconArrowUpRight } from "@/components/ui";
+import { VerificationMethod } from "@/components/proof-receipt";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
@@ -77,6 +78,14 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
             </Link>
           </div>
         </article>
+
+        <div className="mt-4">
+          <VerificationMethod
+            amountLabel={amount}
+            settlementChainName={ACTIVE_CHAIN.name}
+            proofChainName={getProofChain().name}
+          />
+        </div>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
           Demo replay: this certificate reflects an existing verified payment and proof transaction.

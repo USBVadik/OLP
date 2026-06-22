@@ -1,0 +1,1251 @@
+# Particle EIP7702 SDK Findings
+
+Original source path omitted for Kiro document-name compatibility.
+
+---
+
+Decisive detail: in the installed SDK 1.1.1, UNIVERSAL_ACCOUNT_VERSION = "1.0.3" — so the public SDK still ships the legacy account version, while the docs say V2 is "deployed shortly." That reframes the whole problem. Let me pull the clean markdown docs (Magic how-to, custom-tx, FAQ) and Magic's own EIP-7702 page.
+
+
+3 tool calls
+Fetch URL
+https://developers.particle.network/universal-accounts/how-to/ua-magic.md
+Fetch URL
+https://developers.particle.network/universal-accounts/ua-reference/web/transactions/custom.md
+Fetch URL
+https://developers.particle.network/universal-accounts/ua-reference/faq.md
+
+Thought complete
+I'm discovering that the official Particle + Magic demo actually uses legacy mode with personalSign rather than the newer EIP-7702 standard, and the Universal Accounts Magic wallet API initializes with the Magic EOA address as the owner. The demo constructs transactions using createUniversalTransaction, signs the rootHash with personalSign through Magic's server-side TEE Express API, then sends the signed transaction — which is exactly the pattern OneLink Pay is following. This suggests the transaction construction itself is correct, but the -32801 error likely stems from account version differences or migration state rather than an incorrect payload format. The docs confirm that value should be formatted as hex (toBeHex), though "0" might still be accepted for zero-value transactions. More importantly, I'm realizing the funding issue: in legacy mode, funds sit on the Universal Account address (0xeE1FB8...), but in 7702 mode, the EOA itself (0x53Bd...) needs to hold the assets. The team's 7702 test showed zero primary assets because the funds are still locked on the legacy UA, not on the EOA where they're needed for 7702 transactions. The bigger picture is becoming clearer—Particle appears to be mid-migration from v1.0.3 to V2. The legacy accounts are in withdraw-only mode (only createTransferTransaction works), with everything else returning -32801. The error message telling users to "use SEND/TRANSFER/SELL to transfer assets immediately" aligns with this maintenance window. The public SDK still targets version 1.0.3, while the EIP-7702 docs and Magic integration seem to be part of the V2 rollout. I should check if there's a changelog or announcement about the migration timeline, and look at what the Magic 7702 demo repo is actually using to see if it's currently functional. I'll start by grepping the node_modules for those Magic SDK methods and their versions, then fetch the official Magic EIP-7702 documentation and the web version of the eip7702-wallets reference to find demo repo links, and search GitHub for the Particle Magic 7702 demo.
+The official Particle+Magic demo uses the same construction pattern OneLink Pay uses (legacy ownerAddress + personalSign(rootHash) + createUniversalTransaction) — confirming their payload isn't the problem. Now let me verify the Magic SDK actually exposes the 7702 methods locally, read Magic's own EIP-7702 doc, and find the dedicated Particle+Magic 7702 demo repo.
+
+
+3 tool calls
+@power-exa-exa/web_fetch_exa
+{
+  "maxCharacters": 6000,
+  "urls": [
+    "https://docs.magic.link/embedded-wallets/wallets/features/eip-7702"
+  ],
+  "_meta": {
+    "_isValid": true,
+    "_activePath": [],
+    "_completedPaths": [
+      [
+        "maxCharacters"
+      ],
+      [
+        "urls",
+        0
+      ]
+    ]
+  }
+}
+{"response":"# Developer Docs | Magic\nURL: https://docs.magic.link/embedded-wallets/wallets/features/eip-7702\n\nDeveloper Docs | Magic\n\n## ​Overview\n\nEIP-7702 is available as of [email protected](web) and [email protected]`@magic-sdk/`/ [email protected]`@magic-sdk/`(React Native).\n\nEIP-7702 introduces a new transaction type (Type-4) that allows Externally Owned Accounts (EOAs) to temporarily delegate to smart contract code. This enables account abstraction features like batched transactions, gas sponsorship, and session keys for regular wallets. Magic supports EIP-7702 through two SDK methods:\n\n- Resources\n- `wallet.sign7702Authorization()`— Signs an authorization that delegates your EOA to a smart contract implementation\n- `wallet.send7702Transaction()`— Sends a Type-4 transaction that includes signed authorizations\n\n### ​Compatibility\n\n- EIP-7702 operates headlessly with no UI confirmation prompt\n- Requires a network that supports EIP-7702 (e.g., Ethereum Mainnet, Sepolia, Arbitrum, Base, Optimism)\n- The wallet must have ETH (or the network’s native token) to pay for gas\n\n### ​Use Cases\n\n- Temporarily delegate an EOA to a smart contract implementation for advanced features\n- Enable batched transactions through a delegated smart account\n- Integrate with account abstraction infrastructure that leverages EIP-7702\n\n## ​Usage\n\n### ​Step 1: Sign an EIP-7702 Authorization\n\nThe`sign7702Authorization` method signs an authorization that delegates your EOA to a specified smart contract. This authorization is then included in a Type-4 transaction.\n\nJavaScript\n\n```\nimport { Magic } from 'magic-sdk';\n\nconst magic = new Magic('YOUR_PUBLISHABLE_API_KEY', {\n  network: {\n    rpcUrl: 'https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY',\n    chainId: 11155111,\n  },\n});\n\n// Sign an EIP-7702 authorization\nconst authorization = await magic.wallet.sign7702Authorization({\n  contractAddress: '0x000000004F43C49e93C970E84001853a70923B03',\n  chainId: 11155111,\n});\n\nconsole.log('Authorization:', authorization);\n// {\n//   contractAddress: '0x000000004F43C49e93C970E84001853a70923B03',\n//   chainId: 11155111,\n//   nonce: 0,\n//   v: 27,\n//   r: '0x...',\n//   s: '0x...'\n// }\n\n```\n\n#### ​Parameters\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `contractAddress` | `string` | Yes | The smart contract implementation address to delegate to |\n| `chainId` | `number` | Yes | The chain ID for the authorization |\n| `nonce` | `number` | No | The account nonce. If omitted, fetched from the network automatically |\n\n#### ​Response\n\n| Field | Type | Description |\n| --- | --- | --- |\n| `contractAddress` | `string` | The contract address that was authorized |\n| `chainId` | `number` | The chain ID for the authorization |\n| `nonce` | `number` | The nonce used in the authorization |\n| `v` | `number` | The`v` component of the signature (27 or 28) |\n| `r` | `string` | The`r` component of the signature |\n| `s` | `string` | The`s` component of the signature |\n\n### ​Step 2: Send a Type-4 Transaction\n\nThe`send7702Transaction` method sends a Type-4 transaction that includes the signed authorization list. This is what actually executes the delegation on-chain.\n\nJavaScript\n\n```\n// Send a Type-4 transaction with the authorization from Step 1\nconst { transactionHash } = await magic.wallet.send7702Transaction({\n  to: '0x1234567890123456789012345678901234567890',\n  value: '0x0',\n  data: '0x',\n  authorizationList: [authorization],\n});\n\nconsole.log('Transaction hash:', transactionHash);\n\n```\n\n#### ​Parameters\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `to` | `string` | Yes | The recipient address |\n| `authorizationList` | `array` | Yes | Array of signed authorizations returned by`sign7702Authorization` |\n| `value` | `string` | No | Value to send in wei (hex string). Defaults to`'0x0'` |\n| `data` | `string` | No | Transaction calldata. Defaults to`'0x'` |\n| `gas` | `string` | No | Gas limit (hex string). If omitted, estimated automatically |\n| `gasLimit` | `string` | No | Alias for`gas` |\n| `maxFeePerGas` | `string` | No | Max fee per gas (hex string). If omitted, fetched from the network |\n| `maxPriorityFeePerGas` | `string` | No | Max priority fee per gas (hex string). If omitted, fetched from the network |\n| `nonce` | `number` | No | Transaction nonce. If omitted, fetched from the network |\n\n#### ​Response\n\n| Field | Type | Description |\n| --- | --- | --- |\n| `transactionHash` | `string` | The hash of the submitted transaction |\n\n## ​Complete Example\n\nJavaScript\n\n```\nimport { Magic } from 'magic-sdk';\n\nconst magic = new Magic('YOUR_PUBLISHABLE_API_KEY', {\n  network: {\n    rpcUrl: 'https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY',\n    chainId: 11155111,\n  },\n});\n\nasync function sendEip7702Transaction() {\n  try {\n    // Step 1: Sign the authorization\n    const authorization = await magic.wallet.sign7702Authorization({\n      contractAddress: '0x000000004F43C49e93C970E84001853a70923B03',\n      chainId: 11155111,\n    });\n    console.log('Authorization signed:', authorization);\n\n    // Step 2: Send the Type-4 transaction with the authorization\n    const { transactionHash } = await magic.wallet.send7702Transaction({\n      to: '0x1234567890123456789012345678901234567890',\n      data: '0x',\n      authorizationList: [authorization],\n    });\n    console.log('Transaction hash:', transactionHash);\n  } catch (error) {\n    console.error('EIP-7702 transaction failed:', error);\n  }\n}\n\n```\n\n## ​Resources\n\nWas this page helpful?\n\nYesNo\n\nSuggest edits Raise issue\n\nPersonal Signatures Smart Account\n\n⌘I","imageBase64Urls":[]}
+Fetch URL
+https://developers.particle.network/universal-accounts/ua-reference/web/eip7702-wallets.md
+Command
+cd /Users/usbdick/Documents/new-project/OneLink-Pay 2>/dev/null; echo "===== magic-sdk version ====="; cat node_modules/magic-sdk/package.json 2>/dev/null | grep '"version"' | head -1; echo "===== @magic-ext/evm version ====="; cat node_modules/@magic-ext/evm/package.json 2>/dev/null | grep '"version"' | head -1; echo "===== grep 7702 in magic-sdk types ====="; grep -rln "7702\|signAuthorization\|sign7702\|send7702\|authorizationList" node_modules/magic-sdk/dist node_modules/@magic-sdk node_modules/@magic-ext 2>/dev/null | head -20; echo "===== grep the actual method names ====="; grep -rhn "sign7702Authorization\|send7702Transaction\|signAuthorization" node_modules/magic-sdk node_modules/@magic-sdk node_modules/@magic-ext 2>/dev/null | head -20
+
+Thought complete
+I'm checking the installed magic-sdk version and finding that 29.4.2 doesn't actually include the EIP-7702 methods I need — searching through the node_modules shows no sign of `sign7702Authorization`, `send7702Transaction`, or related functions, even though the Magic documentation claims these should be available in a certain version. This means the team would need to upgrade magic-sdk to access 7702 support, but that's a secondary issue since they're hitting the -32801 error at an earlier stage during transaction creation. I found a reference implementation at `github.com/soos3d/ua-7702-magic-demo` that shows how Magic and Particle work together for EIP-7702 delegation on Arbitrum — that's the actual working example I should be studying. The integration flow is becoming clearer: initialize the Universal Account with `useEIP7702: true`, create the transaction, then for each userOp that needs 7702 authorization, call Magic's signing method with the delegate contract address and chain info, serialize the signature, and finally sign the root hash with the user. However, the team's current implementation throws an error when it detects 7702 auth without delegation instead of proceeding with the signing flow—that's the gap. But this is moot if `createUniversalTransaction` keeps failing with -32801 before reaching that point. I need to investigate whether -32801 is a temporary V2 migration issue or if there's a working path available now. Let me check the demo repo directly to see what SDK versions it uses, whether it relies on `createConvertTransaction` instead of custom calls, and if there are any maintenance notes or open issues about this error code. I'll fetch the demo repo's README, package.json, and main files using the GitHub CLI to understand the exact setup and SDK versions involved.
+Two more key facts: the dedicated Particle+Magic EIP-7702 demo is github.com/soos3d/ua-7702-magic-demo (does ETH→USDC conversion on Arbitrum, not custom calls), and the locally installed magic-sdk@29.4.2 has no 7702 methods in its bundle. Let me inspect that demo repo (versions, init config, which tx type it uses, any maintenance notes) and check when Magic added 7702.
+
+
+2 tool calls
+Command
+echo "===== gh auth check ====="; gh auth status 2>&1 | head -3; echo "===== repo tree ====="; gh api repos/soos3d/ua-7702-magic-demo/git/trees/main?recursive=1 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); [print(t['path']) for t in d.get('tree',[]) if t['type']=='blob']" 2>/dev/null | grep -viE "node_modules|\.png|\.svg|\.ico|public/" | head -60
+Command
+echo "===== magic-sdk: versions around 7702 introduction ====="; npm view magic-sdk versions --json 2>/dev/null | python3 -c "import sys,json; v=json.load(sys.stdin); print([x for x in v if x.startswith(('29.','30.','31.'))])" 2>/dev/null; echo "===== magic-sdk latest + time (recent) ====="; npm view magic-sdk dist-tags --json 2>/dev/null; npm view magic-sdk time --json 2>/dev/null | python3 -c "import sys,json; t=json.load(sys.stdin); items=[(k,v) for k,v in t.items() if k not in ('created','modified')]; [print(k, v) for k,v in items[-12:]]" 2>/dev/null
+
+Thought complete
+The `gh` CLI isn't available and the glob syntax caused issues in zsh, so I'll need to use curl with proper escaping or fetch directly from GitHub's raw content. I'm also noticing that magic-sdk is significantly outdated—the installed version is 29.4.2 while the latest is 33.7.1, which means the project is missing several major releases including EIP-7702 support that was added somewhere in the newer versions. Since the methods for 7702 transactions aren't present in 29.4.2, they'll need to upgrade to at least version 30.x or later, ideally to the latest 33.7.1 where the documented API exists. Rather than getting bogged down in pinpointing the exact version that introduced 7702 support, I should focus on examining the demo repository (soos3d/ua-7702-magic-demo) to see what versions it actually uses and what transaction types it implements—that'll give me the strongest evidence of what's working in practice. Let me fetch the demo repo's package.json and main files via GitHub API to check the pinned versions and see how they're structuring the 7702 flow.
+gh isn't installed and zsh choked on the glob. Magic SDK note: installed is 29.4.2 but latest is 33.7.1, and 29.4.2 lacks the 7702 methods. Let me pull the demo repo's manifest and main file directly via the GitHub API to see its pinned versions and which transaction type it actually uses.
+
+
+1 tool call
+Command
+set -e
+base="https://api.github.com/repos/soos3d/ua-7702-magic-demo"
+echo "===== default branch ====="
+curl -s "$base" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('default_branch'), '| pushed:', d.get('pushed_at'), '| desc:', d.get('description'))"
+echo "===== file tree ====="
+curl -s "$base/git/trees/main?recursive=1" | python3 -c "import sys,json; d=json.load(sys.stdin); [print(t['path']) for t in d.get('tree',[]) if t['type']=='blob' and not t['path'].startswith(('public/','node_modules/')) and not t['path'].endswith(('.png','.svg','.ico'))]" 2>/dev/null | head -60
+
+Thought complete
+The API response isn't valid JSON, likely due to rate limiting on unauthenticated requests or an error response. Let me try fetching the files directly from raw.githubusercontent.com instead, assuming the repo uses main as its default branch.
+
+1 tool call
+Command
+echo "===== raw API response (first 300 chars) ====="; curl -s "https://api.github.com/repos/soos3d/ua-7702-magic-demo" | head -c 300; echo; echo "===== try raw package.json on main ====="; curl -s -o /dev/null -w "%{http_code}\n" "https://raw.githubusercontent.com/soos3d/ua-7702-magic-demo/main/package.json"; echo "===== try raw package.json on master ====="; curl -s -o /dev/null -w "%{http_code}\n" "https://raw.githubusercontent.com/soos3d/ua-7702-magic-demo/master/package.json"
+
+Thought complete
+The repository appears to have been moved with a redirect, so I need to follow that redirect to find where it's currently located and identify the new owner and repository name.
+The repo was moved/renamed. Let me follow the redirect to find its current location, then read its manifest and main file.
+
+
+1 tool call
+Command
+echo "===== resolve moved repo ====="; curl -sL "https://api.github.com/repositories/1174012241" | python3 -c "import sys,json; d=json.load(sys.stdin); print('full_name:', d.get('full_name')); print('default_branch:', d.get('default_branch')); print('pushed_at:', d.get('pushed_at')); print('homepage:', d.get('homepage'))" 2>/dev/null || curl -sL "https://api.github.com/repositories/1174012241" | head -c 400
+
+Thought complete
+I'm checking out the Particle Network repository and pulling down the package.json, README, and main source files to understand the project structure and dependencies.
+Found it: Particle-Network/ua-7702-magic-demo (main, pushed 2026-03-23). Let me read its manifest, README, and transaction code.
+
+
+1 tool call
+Command
+base="https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main"
+echo "===== package.json ====="; curl -s "$base/package.json"
+echo "===== file tree ====="; curl -sL "https://api.github.com/repos/Particle-Network/ua-7702-magic-demo/git/trees/main?recursive=1" | python3 -c "import sys,json; d=json.load(sys.stdin); [print(t['path']) for t in d.get('tree',[]) if t['type']=='blob' and not t['path'].startswith(('public/','.')) and not t['path'].endswith(('.png','.svg','.ico','.json'))]" 2>/dev/null | head -50
+
+Thought complete
+Looking at the project structure, the package.json is in the `ua-7702-demo` subdirectory rather than at the root. The main files I need to focus on are the Universal Account provider setup, the Magic provider initialization, and the delegation card component that handles the delegation flow. I'll fetch the package.json from the correct path along with the provider files and the delegation guide documentation to understand the exact dependencies and implementation details.
+Manifest is nested under ua-7702-demo/. Let me read the pinned versions, the UA init, the Magic provider, the delegation card, and the delegation guide — this is the canonical working recipe.
+
+
+1 tool call
+Command
+base="https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo"
+echo "############ package.json ############"; curl -s "$base/package.json"
+echo; echo "############ UniversalAccountProvider.tsx ############"; curl -s "$base/src/hooks/UniversalAccountProvider.tsx"
+echo; echo "############ MagicProvider.tsx ############"; curl -s "$base/src/hooks/MagicProvider.tsx"
+
+Thought complete
+The curl command came back empty, which might mean the file paths have spaces or the files are located elsewhere. I see the tree output showed some TypeScript and README files, but package.json wasn't included since I filtered out `.json` files. Let me check if package.json actually exists by listing the JSON files specifically.
+
+1 tool call
+Command
+base="https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo"
+for f in "package.json" "src/hooks/UniversalAccountProvider.tsx" "src/components/magic/cards/DelegationCard.tsx" "docs/eip7702-delegation-guide.md"; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" "$base/$f")
+  echo "$code  $f"
+done
+
+Thought complete
+The shell command isn't working as expected — the curl format string with `%{http_code}` might be getting interpreted by zsh, or there's an issue with the loop syntax. I'll strip away the special characters and test a simpler approach, like curling a single file directly to see the actual output.
+
+1 tool call
+Command
+curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo/package.json" | head -60
+
+Thought complete
+The single curl request succeeded, but the earlier multi-file loop failed due to shell environment issues with the `%{http_code}` variable and for loop syntax. Looking at the demo package.json, I can see the official Particle 7702 Magic SDK pins to `^33.5.0`, which is significantly newer than what OneLink Pay is using at 29.4.2 — that older version doesn't support the 7702 methods that require around version 33.x or higher. The other dependencies look fine: the universal account SDK is actually newer in OneLink Pay (1.1.1 vs 1.0.27), and the EVM extension is also newer (1.5.0 vs 1.3.0). So the critical blocker is definitely the magic-sdk version mismatch. Now I need to pull the UniversalAccountProvider configuration, the DelegationCard component that handles the actual 7702 signing flow, and the delegation guide to understand the exact working implementation pattern.
+The demo pins magic-sdk ^33.5.0 and universal-account-sdk ^1.0.27 — confirming OneLink Pay's magic-sdk 29.4.2 is too old for the 7702 methods. Let me read the demo's UA init and the actual delegation/signing flow.
+
+
+1 tool call
+Command
+curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo/src/hooks/UniversalAccountProvider.tsx"
+
+Thought complete
+I'm looking at the official working recipe from the Particle Network UA 7702 demo, focusing on how to properly initialize the UniversalAccount using the version constant rather than hardcoding the version string. The critical insight here is that Magic SDK can't sign chain-agnostic EIP-7702 authorizations with chainId 0, so the demo pre-delegates the EOA on the target chain (Base) first using a chain-specific Type-4 transaction. The `ensureDelegated()` function handles this by switching to the Base chain, fetching the EIP-7702 authorization, signing it with an incremented nonce, and then completing the delegation flow. For signing and sending, the demo handles inline authorization by signing each user operation's EIP-7702 auth through Magic's wallet method, then signing the transaction's root hash using the ethers provider (making sure to sign the raw bytes), and finally sending the transaction with all authorizations included. Magic provides the `sign7702Authorization` and `send7702Transaction` methods to handle this. Now I'm seeing the full picture of what OneLink Pay is missing — they're using the legacy smart account constructor which creates the deprecated account version instead of following the proper initialization pattern. end with a successful delegation, so the backend still treats it as a legacy account even though useEIP7702:true was set. Or (b) createUniversalTransaction specifically isn't supported in 7702 mode yet, only the built-in transaction types like createConvertTransaction. The key distinction is whether the -32801 error is tied to the transaction method itself or the account's funding/delegation state. Looking at the reference implementation docs, they explicitly state that during the V2 migration only createTransferTransaction works—everything else is blocked. That aligns perfectly with what the team is seeing: all their custom calls fail with -32801 while transfers succeed. The demo showing a working conversion might have been built before the migration window opened, so it could be failing now too. This suggests the real issue isn't the OneLink integration gaps (though those exist), but rather Particle's backend maintenance blocking these operations until V2 is fully rolled out. Let me check the demo's documentation—the RUNBOOK and delegation guide should have notes about known issues or maintenance windows, and I can verify which transaction types the demo actually exercises.
+This is the canonical working recipe. The demo's UA provider reveals the exact init (smartAccountOptions with the UNIVERSAL_ACCOUNT_VERSION constant), a mandatory pre-delegation step, and a key comment: Magic can't sign chain-agnostic (chainId 0) authorizations. Let me read the demo's delegation guide and runbook for any -32801/maintenance notes and confirm which transaction types it actually exercises.
+
+
+1 tool call
+Command
+curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo/docs/eip7702-delegation-guide.md" | head -180
+
+Thought complete
+I'm reviewing the delegation guide and confirming that Magic needs to use the EVM extension with the target chain RPC configured. OneLink Pay has `@magic-ext/evm` 1.5.0 installed, but I need to verify whether they're actually registering the EVMExtension when initializing Magic in their pay page component. The guide also reconfirms that delegation requires ETH on the chain for gas, and there's a critical chainId:0 limitation — Magic SDK can't sign EIP-7702 authorizations with chain-agnostic chainId:0, so I need to pre-delegate on each specific chain before using the Universal Account SDK's cross-chain features. Looking at the demo's actual implementation, the primary operation is `createConvertTransaction` (converting ETH on Arbitrum to USDC on Solana), not custom contract calls through `createUniversalTransaction`. This is significant because it shows the officially-demonstrated working 7702 path uses convert operations, and Arbitrum is the delegation source chain. I'm now trying to narrow down whether `createUniversalTransaction` with custom calls works at all given the V2 migration notice, and I want to check the demo's documentation for any -32801 errors or maintenance notes that might explain what's happening. The team's reproduction shows `createUniversalTransaction` failing with -32801 even for a simple USDC transfer, and the same error hits `createBuyTransaction` and `createConvertTransaction`. This aligns with the reference implementation's migration notice stating only `createTransferTransaction` and withdrawals are available — the legacy 1.0.3 account system has everything else disabled during this window. The real question is whether switching to proper EIP-7702 mode with delegation and funds on the EOA will unlock `createUniversalTransaction`, or if the entire custom/convert/buy rail stays down until Particle completes the V2 migration. The honest assessment is this is both an integration issue (they're on deprecated legacy mode with old SDK and missing delegation) and a real Particle-side maintenance window where -32801 reflects the v1.0.3 system being migrated. Even a perfect EIP-7702 reimplementation might still hit -32801 for custom operations until V2 launches — the only way to know is to test it. Now I'm going to check the demo's documentation and search for Particle's V2 migration timeline to finalize the assessment with better confidence.
+The delegation guide confirms the full recipe and three more gaps (Magic needs the EVM extension, the EOA needs gas, and the demo's working cross-chain op is createConvertTransaction on Arbitrum — not custom calls). Let me check the demo's runbook/README for any -32801 notes and confirm the V2 migration timing.
+
+
+2 tool calls
+web_search
+Command
+echo "######## RUNBOOK.md ########"; curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/docs/RUNBOOK.md" | head -80
+echo; echo "######## demo README (search for maintenance/32801/known) ########"; curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo/README.md" | grep -iE "32801|mainten|known|limitation|troublesh|caveat|base|arbitrum" | head -30
+
+Thought complete
+The migration notice appearing on the main overview pages confirms this is an active, site-wide announcement rather than something hidden away. The critical detail is that while withdrawals will still work after the deadline, users must migrate to the new V2 account system, and asset transfers will only function through the createTransferTransaction method going forward. I'm noticing a potential discrepancy between the demo setup and the documentation — the demo explicitly targets Arbitrum (chain 42161) and delegates on Particle's Universal Account contract there, but the UniversalAccountProvider code I reviewed earlier had Base (8453) hardcoded for delegation. Let me check the README's Known Issues section to see if it clarifies whether Base 7702 delegation is actually supported or if there's a chain-specific limitation I'm missing.
+The V2 migration notice is now on Particle's main overview pages (site-wide, current) — only createTransferTransaction works during migration, exactly matching the team's symptom. Let me grab the demo's "Known Issues" section, then I'll have enough to synthesize.
+
+
+1 tool call
+Command
+curl -sL "https://raw.githubusercontent.com/Particle-Network/ua-7702-magic-demo/main/ua-7702-demo/README.md" | awk '/Known Issues/{flag=1} flag' | head -40
+
+Thought complete
+So these documented limitations are the real blockers—Magic SDK won't handle chain-agnostic signatures without pre-delegating with chain-specific auth, and combining delegation with a transaction in one call triggers an AA24 error, forcing a two-step flow instead. These are exactly the constraints OneLink Pay would run into once it tries to scale beyond the initial implementation. Now I'm compiling all the research findings with their sources: the npm registry shows universal-account-sdk at 1.1.1 with an internal version of 1.0.3, magic-sdk is significantly outdated at 29.4.2 versus the latest 33.7.1 with 7702 methods missing from the older bundle, and the Particle docs confirm EIP-7702 is the default mode requiring specific initialization parameters and only available in server-side or embedded wallets that support auth. I should mark the research tasks complete and synthesize everything into the final report. The demo uses Magic SDK 33.5.0+ with the Universal Account SDK, initializing with delegation checks on Base before signing the root hash through ethers and executing the inline authorization loop. The delegation guide covers the full setup including the EVM extension requirement and gas funding, though there's a known issue where chainId:0 can't be signed during pre-delegation and combining delegation with transactions causes AA24 errors. The core problem is that OneLink's integration is stuck on the deprecated legacy mode with an outdated SDK version (29.4.2 lacking 7702 methods), never performs proper delegation, and keeps funds on the old UA system—so during the V2 migration only basic transfers work while the account is in maintenance mode. I'll structure the report in Russian with technical terms and the message to Particle's team in English, then mark off the remaining tasks.
+I have comprehensive, well-sourced findings. The demo's "Known Issues" confirms the exact gotchas (chainId:0 can't be signed by Magic → pre-delegate; AA24 error if you combine delegation+tx → split the flow). Let me mark the research complete and write up the report.
+
+
+Thought complete
+Начну писать итоговый отчет в формате A-F на русском языке, сохраняя технические термины, коды и URL на английском, а сообщение для команды Particle на английском. Структурирую по запросу: сначала исполнительное резюме с оценкой уверенности (интеграционная ошибка vs несовместимость SDK vs отсутствие включения vs ограничение со стороны Particle), затем точные находки из документации с ссылками на источники, правильный рецепт реализации, план проверки с ожидаемыми результатами, вопросы для Particle/Carlos и финальная рекомендация. Ключевая нить: наблюдение 1 показывает, что старый конструктор создает legacy smart account (0xeE1FB8), который содержит USDC и работает только с transfer; наблюдение 2 с явным useEIP7702:true и версией "1.0.3" показывает, что smartAccountAddress становится EOA, getEIP7702Deployments возвращает isDelegated=false, и createTransferTransaction падает с ошибкой газа; наблюдение 3 с версией "2.0" дает "Unsupported smart account" — это указывает на то, что идет миграция между системами smart account, и нужно понять, включена ли EIP-7702 на уровне проекта Particle. Критическое понимание: -32801 появляется в обоих режимах (legacy и 7702), что предполагает, что проект находится в глобальном состоянии миграции с withdraw-only для non-transfer операций. Это означает, что -32801 — это ограничение со стороны Particle, а не проблема интеграции, и исправление инициализации не решит его самостоятельно. Реалистичный путь: исправить интеграцию согласно официальному рецепту 7702, затем переоценить; если -32801 остаётся, это подтверждает блокировку Particle и требует ожидания V2 или обращения к ним. Официальный демо (ua-7702-magic-demo) также использует createConvertTransaction, которая заблокирована во время миграции, что предполагает, что сам демо может быть сломан сейчас — это усиливает вывод, что блокировка является окружающей/временной, а не специфичной для OneLink. Учитывая, что UX составляет 45% оценки и миграция вне их контроля, стоит рассмотреть ограничение времени на проверку UA 7702 (несколько часов), оставить transfer_fallback как надёжный демо и честно описать требования трека. Ключевое стратегическое понимание: они могут удовлетворить требования UA Track, используя режим EIP-7702 (делегирование через Magic 7702) плюс createTransferTransaction, который работает и может перемещать активы между цепями и расчитываться на Base. Это позволяет им остаться честными, соответствовать требованиям трека и использовать единственный рабочий механизм во время миграции, вместо заблокированного createUniversalTransaction с approve+payInvoice. Для финансирования в режиме 7702 им нужно пополнить EOA (0x53Bd...) USDC и небольшим количеством ETH для газа делегирования, либо вывести USDC из старого UA через createTransferTransaction. Поскольку средства сейчас на старом UA (0xeE1FB8), они должны сначала перевести их на EOA, а затем использовать кросс-чейн трансфер для демонстрации. Также нужно учесть, что в режиме 7702 EOA — это другой адрес, чем в legacy режиме, поэтому после миграции активов getPrimaryAssets будет видеть средства на EOA. Плюс нужно добавить tradeConfig в демо и убедиться, что на целевом чейне есть ETH для Type-4 транзакции делегирования. Теперь буду писать отчёт с конкретными примерами кода из их файлов, ссылками на документацию Particle и Magic, и заметкой о соответствии источникам.
+Research is done across all eight angles. Here's the full report.
+
+Note on sources: findings below are paraphrased from official Particle/Magic docs, the npm registry, and Particle's official demo repo, with links inline. Content was rephrased for compliance with licensing restrictions.
+
+A. Executive conclusion
+Your failure is both things at once, and that distinction is the whole story:
+
+A real, current Particle-side limitation (high confidence, ~85%). Particle is mid-migration to Universal Accounts V2. There is a site-wide notice telling developers to have users withdraw funds, and stating that during the migration only createTransferTransaction works (overview, reference-implementation). That maps exactly onto your symptom matrix: createTransferTransaction succeeds, while createUniversalTransaction / createBuyTransaction / createConvertTransaction all return -32801 "System maintanence, please use SEND/TRANSFER/SELL...". The error message literally tells users to use transfer to move assets out — i.e. it's the migration, not your payload.
+
+A genuinely wrong/outdated integration (high confidence, ~90%). Independent of the migration, your current code cannot do EIP-7702 properly:
+
+You initialize in legacy Smart-Account mode (top-level ownerAddress), which creates the deprecated account 0xeE1FB8… — the very account class being migrated.
+Your magic-sdk is 29.4.2, which has no 7702 methods at all (verified: the methods don't exist in the installed bundle). The official 7702 demo pins magic-sdk ^33.5.0.
+You construct new Magic(key) without the @magic-ext/evm EVMExtension, so 7702 signing is impossible.
+You never perform the delegation step; your code detects eip7702Auth/eip7702Delegated:false and then throws instead of signing.
+In 7702 mode your funds are on the wrong address (legacy UA 0xeE1FB8…, not the EOA 0x53Bd…), which is why getPrimaryAssets() returned 0.
+What this means: fixing your integration is necessary but may not be sufficient to clear -32801 until Particle finishes V2 — because the custom/buy/convert rail appears globally gated during migration. The one rail that works today (createTransferTransaction) is enough to satisfy the track honestly if you reframe (see F).
+
+Your version experiments are also explained: UNIVERSAL_ACCOUNT_VERSION in SDK 1.1.1 is literally "1.0.3", so your "1.0.3" was correct-for-this-SDK and "2.0" returned Unsupported smart account because the SDK has no such version constant.
+
+B. Exact doc findings (with sources)
+SDK is current; no V2 package exists yet. npm @particle-network/universal-account-sdk latest = 1.1.1 (published 2026-04-23). You're already on it. No v2/beta/connectkit UA package is published. The bundled UNIVERSAL_ACCOUNT_VERSION = "1.0.3". (npm registry + your node_modules/.../dist/index.d.ts.)
+
+EIP-7702 is now the default mode and the correct init uses smartAccountOptions with the constant, not a string literal — initialization docs:
+
+ts
+
+smartAccountOptions: { useEIP7702: true, name: "UNIVERSAL", version: UNIVERSAL_ACCOUNT_VERSION, ownerAddress }
+Same page: 7702 is only available for server-side or embedded wallets that support authorization methods; JSON-RPC wallets are not supported.
+
+V2 migration / withdraw-only window (the -32801 cause): overview and reference-implementation both carry the notice that users must withdraw, and only createTransferTransaction is available during migration.
+
+Magic is explicitly supported for 7702 — eip7702-wallets: Magic via magic.wallet.sign7702Authorization() + magic.wallet.send7702Transaction(). Magic's own EIP-7702 docs confirm the API shape and that Base/Arbitrum/Optimism/Ethereum are supported, gas paid in native token.
+
+createUniversalTransaction payload — custom tx docs: expectTokens.amount is a human-readable string (e.g. "0.0000001"), value is a hex string via toBeHex(parseEther(...)), data is encoded calldata; multiple transactions are supported; sign rootHash, then sendTransaction.
+
+Official Magic + UA 7702 demo: github.com/Particle-Network/ua-7702-magic-demo (last push 2026-03-23). Pins magic-sdk ^33.5.0, @particle-network/universal-account-sdk ^1.0.27, @magic-ext/evm ^1.3.0. Its working cross-chain op is createConvertTransaction (ETH → USDC), not a custom contract call. Its Known Issues: Magic can't sign chainId:0 authorizations (must pre-delegate per chain); an AA24 error appears if you combine delegation + transaction in one step (split the flow).
+
+Funding model — FAQ: UAs are ERC-4337 smart accounts; the account must hold ≥1 Primary Asset. In 7702 mode the "account" is the EOA, so the EOA must hold the assets (and native gas for the one-time delegation tx).
+
+C. Correct implementation recipe
+Packages (upgrade Magic; UA SDK is already fine):
+
+bash
+
+corepack pnpm add magic-sdk@^33.5.0 @magic-ext/evm@^1.5.0
+# @particle-network/universal-account-sdk stays at 1.1.1
+Env / project settings: keep your Particle projectId/clientKey/appId; in the Particle Dashboard confirm the project has Universal Accounts enabled. Add an RPC for the chain you delegate on. No special "custom-call allowlist" toggle is documented — the block is the migration, not a per-project flag.
+
+Magic init (must include EVMExtension):
+
+ts
+
+import { Magic } from "magic-sdk";
+import { EVMExtension } from "@magic-ext/evm";
+
+const magic = new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!, {
+  extensions: [ new EVMExtension([{ rpcUrl: BASE_RPC, chainId: 8453, default: true }]) ],
+});
+UA init (7702 mode, use the constant — replaces your src/lib/particle/universal-account.ts):
+
+ts
+
+import { UniversalAccount, UNIVERSAL_ACCOUNT_VERSION } from "@particle-network/universal-account-sdk";
+
+const ua = new UniversalAccount({
+  projectId, projectClientKey, projectAppUuid,
+  smartAccountOptions: { useEIP7702: true, name: "UNIVERSAL", version: UNIVERSAL_ACCOUNT_VERSION, ownerAddress: magicEoa },
+  tradeConfig: { slippageBps: 100, universalGas: false },
+});
+Funding: in 7702 mode getPrimaryAssets() reads the EOA (0x53Bd…). Your USDC is on the legacy UA (0xeE1FB8…). So: (a) in legacy mode call createTransferTransaction to withdraw the USDC to the EOA, then (b) re-init in 7702 mode. Also put a little ETH on the EOA on the delegation chain (the one-time Type-4 tx costs gas).
+
+Delegation + signing (the part you're missing) — mirrors the demo:
+
+ts
+
+// one-time per chain — split from the transaction (avoids AA24)
+await magic.evm.switchChain(8453);
+const [auth] = await ua.getEIP7702Auth([8453]);
+const authorization = await magic.wallet.sign7702Authorization({
+  contractAddress: auth.address, chainId: 8453, nonce: auth.nonce + 1,
+});
+await magic.wallet.send7702Transaction({ to: eoa, data: "0x", authorizationList: [authorization] });
+
+// per transaction — sign inline 7702 auths, then rootHash
+const tx = await ua.createTransferTransaction({ token: { chainId, address }, amount, receiver });
+const authorizations = [];
+for (const op of tx.userOps ?? []) {
+  if (op.eip7702Auth && !op.eip7702Delegated) {
+    const a = await magic.wallet.sign7702Authorization({ contractAddress: op.eip7702Auth.address, chainId: op.eip7702Auth.chainId || op.chainId, nonce: op.eip7702Auth.nonce });
+    authorizations.push({ userOpHash: op.userOpHash, signature: Signature.from({ r: a.r, s: a.s, v: a.v }).serialized });
+  }
+}
+const provider = new BrowserProvider((magic as any).rpcProvider);
+const signature = await (await provider.getSigner()).signMessage(getBytes(tx.rootHash));
+const result = await ua.sendTransaction(tx, signature, authorizations.length ? authorizations : undefined);
+The critical behavioral change vs. your code: where you currently throw on eip7702Delegated:false, you must instead sign the authorization and pass it to sendTransaction.
+
+D. Probe plan
+Run on the corrected build (magic-sdk 33.x, EVMExtension, 7702 init, EOA funded with USDC + a little ETH). Probe in this order:
+
+Step 1 — Delegation only. Pre-delegate the EOA on Base (getEIP7702Auth → sign7702Authorization → send7702Transaction).
+
+Expected: tx confirms; getEIP7702Deployments() shows isDelegated:true on Base; EOA now has bytecode.
+If it fails: the problem is Magic↔7702 wiring (wrong magic-sdk version, missing EVMExtension, or no gas), not Particle UA.
+Step 2 — getPrimaryAssets() in 7702 mode.
+
+Expected: nonzero, showing the USDC you moved to the EOA.
+If 0: funds aren't on the EOA — finish the withdrawal from the legacy UA.
+Step 3 — createTransferTransaction (single-chain, Base→merchant) in 7702 mode.
+
+Expected: returns rootHash + userOps; send succeeds; USDC reaches merchant.
+If -32801 here too: the migration block is total for this account — escalate to Particle (Step E).
+Step 4 — createTransferTransaction sourced cross-chain (assets on Arbitrum, settle USDC on Base, or vice-versa). This is the track-qualifying move-value-via-UA op that uses the one working rail.
+
+Expected: SDK routes liquidity across chains; merchant receives USDC on the destination chain.
+If it fails but Step 3 worked: cross-chain routing is gated; fall back to single-chain + your server proof and state the limitation.
+Step 5 — createConvertTransaction (ETH→USDC), then createUniversalTransaction (approve + payInvoice).
+
+Expected (optimistic): if V2 is live, these stop returning -32801.
+If still -32801: confirmed Particle-side migration block — do not keep burning time/gas; keep transfer_fallback and the Step-4 cross-chain transfer as the demo.
+E. Message to send Particle / Carlos
+Subject: Universal Accounts -32801 on custom/buy/convert during V2 migration — is 7702 transfer the supported path right now?
+
+Hi team — building OneLink Pay for UXmaxx. Setup:
+
+@particle-network/universal-account-sdk 1.1.1, magic-sdk 33.x + @magic-ext/evm, Next.js 14.
+Project ID (DM). Owner EOA 0x53Bd6156…3206a, legacy UA 0xeE1FB8…0246.
+Behavior, both in legacy ownerAddress mode and in useEIP7702:true mode (version: UNIVERSAL_ACCOUNT_VERSION):
+
+createTransferTransaction → works.
+createUniversalTransaction (even a single USDC transfer), createBuyTransaction, createConvertTransaction → all fail pre-sign with -32801 "System maintanence, please use SEND/TRANSFER/SELL feature...".
+We see the V2 migration notice (withdraw-only, transfer-only). Questions:
+
+During the V2 migration window, is -32801 expected for all non-transfer ops on existing projects, on both Base and Arbitrum?
+Is custom-call / convert / buy support gated by project allowlist, by account version, or purely by the migration timeline? Anything we can toggle on our side?
+Is there an ETA for V2 GA and the V2-capable SDK version/UNIVERSAL_ACCOUNT_VERSION bump?
+For the Universal Accounts Track, does an EIP-7702 in-place delegated EOA + cross-chain createTransferTransaction (value moved via UA across chains) qualify as "a cross-chain operation moving value via UA" while custom calls are under maintenance?
+Confirm correct getEIP7702Auth → Magic sign7702Authorization nonce handling (we use auth.nonce + 1 for pre-delegation per your demo) — is that the intended contract?
+F. Recommendation
+Option 2 — timebox the UA Track probe, with a confident pivot — is the right call. (Lean toward keeping UA Track, not dropping it.)
+
+Concretely:
+
+Do the corrected 7702 reimplementation (Section C) and run probes Steps 1–4. This is a few hours of work and is the right architecture regardless.
+Make your UA-Track claim the working rail, not the blocked one. Pursue EIP-7702 in-place delegation (EOA becomes the UA) + a cross-chain createTransferTransaction that settles USDC to the merchant on Base, with your ReceiptEmitter proof on top. This is genuinely track-eligible (7702 mode ✓, EOA-in-place ✓, cross-chain value movement via UA ✓, functional demo ✓) and uses the one rail Particle keeps online during migration.
+Drop the strict createUniversalTransaction(approve + payInvoice) as a submission dependency. It's blocked by the V2 migration, which is outside your control. Keep it behind universal_invoice and re-probe (Step 5) only after V2 ships or Particle confirms.
+Keep transfer_fallback + demo-replay as the safety net so the demo never hard-depends on a live mainnet call during judging.
+Why not Option 1 outright: the strict custom-call path you originally wanted is almost certainly un-shippable until V2 GA. Why not Option 3 (abandon to General Track): you can honestly satisfy UA-Track with 7702 delegation + cross-chain transfer today, and UX is 45% of the rubric — you don't need the blocked custom-call path to win.
+
+Minimum honest proof for UA-Track eligibility: an EIP-7702 Type-4 delegation tx on the user's EOA (explorer link) plus a createTransferTransaction that visibly sources liquidity on one chain and delivers USDC on another, both via the Universal Accounts SDK — then your InvoicePaid proof.
+
+Want me to implement Section C in the codebase now — upgrade magic-sdk, rewrite src/lib/particle/universal-account.ts to 7702 mode, add the delegation/signAndSend flow in src/app/pay/[id]/page.tsx, and wire a universal_7702_transfer mode — or produce a written step-by-step diff plan first for you to review?
+
+
+Thought complete
+I've completed the research report and asked the user whether they'd prefer me to implement the changes directly or prepare a diff plan first, since the actual implementation would involve upgrading dependencies and restructuring core files—changes that go beyond the initial research request.
+
+1 tool call
+Update Session Information
+Готово. Дип-ресерч завершён, отчёт выше в формате A–F.
+
+Если кратко, главное, что нашёл (и чего, похоже, не увидел прошлый агент):
+
+-32801 — это не баг вашего payload. Particle прямо сейчас в процессе миграции на Universal Accounts V2, и на время миграции работает только createTransferTransaction (вывод средств). Это site-wide уведомление в их доках, и оно один-в-один совпадает с вашей матрицей ошибок.
+Параллельно у вас реально устаревшая/неправильная интеграция: легаси-режим инициализации, magic-sdk 29.4.2 вообще без методов 7702, Magic создаётся без EVMExtension, нет шага делегирования, а средства лежат на легаси-UA (0xeE1FB8…), а не на EOA.
+Есть официальное демо ровно под ваш стек — Particle-Network/ua-7702-magic-demo — с точным рабочим рецептом (включая нюанс: Magic не умеет подписывать chainId:0, поэтому нужна пред-делегация по цепи).
+Версии: 1.1.1 — действительно последняя для UA SDK (V2-пакета на npm ещё нет), а UNIVERSAL_ACCOUNT_VERSION в ней буквально "1.0.3" — поэтому ваша строка "2.0" и давала Unsupported smart account.
+Стратегический вывод: трек Universal Accounts достижим уже сейчас через EIP-7702-делегирование + кросс-чейн createTransferTransaction (рельс, который остаётся живым во время миграции), а заблокированный createUniversalTransaction(approve+payInvoice) не стоит делать зависимостью сабмишена.
+
+Скажи, что делаем дальше — внедряю изменения из раздела C прямо в код (апгрейд magic-sdk, переписать universal-account.ts на 7702-режим, добавить делегирование и signAndSend в pay/[id]/page.tsx, завести режим universal_7702_transfer), или сначала подготовить детальный план диффов на ревью?
+
+Est. Credits Used: 32,72
+Elapsed time: 18m 49s
+
+
+Checkpoint
+Restore
+конечно приступаем!
+
+Kiro
+
+Thought complete
+I'm planning out the implementation steps for Section C, starting with upgrading the Magic SDK dependencies and then rewriting the universal account configuration to support 7702 mode initialization. I also need to add the delegation flow and signing logic to the checkout page, introduce a new payment mode for universal 7702 transfers in the config, and update the Magic initialization to include the EVM extension. For the type declarations, I'm realizing there's a potential issue — the custom type shim in `src/types/particle.d.ts` is overriding the real SDK types, which means new exports like `UNIVERSAL_ACCOUNT_VERSION` and `smartAccountOptions` won't be properly declared. I need to figure out whether to remove or augment this shim to properly expose the SDK's actual type definitions. Before making changes, I should verify the exact type signatures from the real UA SDK and check Magic SDK v33 for any breaking changes in the auth and user methods, since jumping from v29 to v33 is a significant version bump. My safest approach is to add the new 7702 transfer mode as an additive option rather than replacing the existing fallback, preserving backward compatibility. The sequence would be: gather the type info from the installed UA SDK, upgrade magic-sdk, verify the 7702 methods are available, add the new mode to config, then implement the delegation and signing logic in the transfer handler, and finally typecheck everything. Now I'm reconsidering the particle.d.ts shim — it's completely overriding the real SDK types and omitting critical 7702 exports like `getEIP7702Auth` and `EIP7702Authorization`. Since the SDK package.json already declares types at `./dist/index.d.ts`, the real types should resolve normally, so removing the shim would give me the complete, accurate types instead of a partial override. The risk is whether the real types actually resolve given whatever bundler or configuration issue led to the shim being created in the first place. My plan is to delete the custom shim and let the real SDK types flow through, applying the documented tsconfig `paths` fix if needed. Before I do that, I need to read the real SDK's d.ts file to understand the EIP7702 types and the UniversalAccount API surface, check the tsconfig, and review the full pay page code to see what's actually being used. The magic-sdk upgrade from 29 to 33 is a significant jump but necessary for 7702 support, and the user approved it as part of Section C, so I'll proceed carefully and verify the build doesn't break.
+On it. Let me set up a task list, then gather the exact SDK type signatures and current code I need to touch before making changes.
+
+
+Thought complete
+I need to examine the type definitions from the Universal Account SDK, check the TypeScript configuration, and review the full page component to understand the structure and requirements.
+
+1 tool call
+Read Files
+
+index.d.ts
+
+tsconfig.json
+
+Thought complete
+I see the issue — the line range I specified applied to both files, so tsconfig.json came back empty since it's shorter than 150 lines. I need to read tsconfig.json without any range constraints and pull the full pay page content to get the complete picture. Looking at the type definitions now: `ISmartAccountOptions` contains name, version, ownerAddress, and several optional fields including smartAccountAddress and useEIP7702. `IUniversalAccountConfig` brings together projectId, projectClientKey, projectAppUuid, and smartAccountOptions among others. The key insight is that `IUserOpWithChain` has userOpHash, chainId, and eip7702Auth/eip7702Delegated at the top level — not nested under a userOp property — which matches how the demo code accesses them directly. OneLink's existing summarizeUserOps function defensively checks `entry.userOp ?? entry`, which aligns with this structure. `EIP7702Authorization` is the shape passed to sendTransaction, containing userOpHash and signature. The SDK exports `getEIP7702Auth` which returns authorization data with address and nonce fields, and `getEIP7702Deployments` to check deployment status by chainId. `UNIVERSAL_ACCOUNT_VERSION` is "1.0.3". For `createTransferTransaction`, I need to understand the ITransferTransaction shape — the existing code already uses it with token (chainId, address), amount, and receiver, so I should rely on the real SDK types rather than creating a custom shim. The critical question now is whether the custom type declaration should override the SDK's built-in types or complement them. The shim does include `smartAccountOptions`, `useEIP7702`, `getEIP7702Auth`, and `getEIP7702Deployments`, but it's missing `UNIVERSAL_ACCOUNT_VERSION` and `EIP7702Authorization`. The cleanest solution is to remove the shim entirely and use the real SDK types instead. The main concern is whether TypeScript will find the type declarations, which depends on the SDK's `moduleResolution` setting and how their package.json exports are configured—I need to check their tsconfig to understand how types are resolved. I'll grab the tsconfig and full pay page to see what I'm working with, and pull the type definitions from the d.ts file if needed.
+The tsconfig read came back empty because the line range applied to it too. Let me read tsconfig fully, the SDK type head (transfer/universal payload shapes), and the complete checkout page.
+
+
+1 tool call
+Read Files
+
+tsconfig.json
+
+page.tsx
+
+Thought complete
+I need to see the rest of the pay page to understand the complete PreviewStep component and any other remaining pieces. Looking at the type structure, `IUserOpWithChain` includes the user operation hash and chain ID at the top level, plus optional EIP-7702 authentication details like the chain ID, nonce, and address, along with a delegated flag. For the TypeScript configuration issue, the SDK uses bundler module resolution which reads the exports map, but since there's no types condition defined, TypeScript can't locate the type definitions. That's why they created the declare module shim. The safest approach is to extend the existing shim in `src/types/particle.d.ts` to include the new constants and interfaces I need — adding the universal account version constant, the EIP-7702 authorization interface, and ensuring the SmartAccount options and methods are properly typed to support version, EIP-7702 flags, owner address, and the new authorization-related methods. Actually, the cleaner solution is to add a paths mapping in tsconfig that points directly to the SDK's declaration file, then remove the custom shim entirely. This is what Particle officially recommends for this exact scenario, and it gives me access to all the real types without maintaining a partial shim. The paths mapping is type-only and won't interfere with runtime bundling since Next.js respects tsconfig paths for both type resolution and webpack module resolution. Wait, there's a risk here — if I map the bare package specifier to a `.d.ts` file, webpack might try to bundle that declaration file at runtime instead of the actual package. That could break things. The safer approach is to keep the ambient module shim since it's purely for type augmentation and doesn't affect runtime resolution at all. I just need to make sure it's complete with all the types my code actually uses, like `UNIVERSAL_ACCOUNT_VERSION`, `EIP7702Authorization`, and the other interfaces I'm importing. Extending the shim... I'm introducing a new `universal_7702_transfer` mode to minimize risk and keep the existing transfer_fallback working. The key concern is that upgrading Magic from v29 to v33 affects the entire app's authentication flow, so I need to carefully handle the initialization and check whether methods like `loginWithMagicLink` are still available or if they've shifted to `loginWithEmailOTP` in the newer SDK. The safest approach is to keep the existing `loginWithMagicLink` flow untouched to avoid breaking the demo, then layer in the 7702 support by adding EVMExtension to the Magic constructor and implementing the delegation/signing path separately. I need to verify that adding EVMExtension doesn't alter how `magic.rpcProvider` behaves for the current `personal_sign` flow, since the demo relies on that for message signing. Don't break the existing paths by upgrading magic-sdk globally — I'll bump to ^33.5.0 to match the demo and enable 7702, but keep the old Magic initialization unchanged for transfer_fallback and other modes. The new 7702 path gets its own mode-aware setup with EVMExtension, dynamically imported to keep concerns isolated. Now I need to map out the file changes: starting with package.json for the SDK bump, then updating the Magic initialization logic to branch on mode. For the 7702 flow on the pay page, I need to handle delegation at send time rather than throwing errors, and split the logic to avoid AA24 issues — running `ensureDelegated` first, then signing authorizations inline and the root hash via ethers, before sending the transaction. The pay page is already substantial, so I'll keep this surgical by adding module-level helpers for EVMExtension and ethers utilities, using dynamic imports to avoid bloating the bundle for non-7702 flows, and introducing a flag to gate the 7702 logic. Configuring Magic initialization... The upgrade to Magic 33 should be safe since I'm typing everything as `any` to avoid static type issues, and webpack just needs the packages to be importable. I'll add `NEXT_PUBLIC_BASE_RPC_URL` to .env.example as an optional public RPC for the Magic EVMExtension, defaulting to the public Base mainnet endpoint. For the mark-paid verification, the 7702 transfer still sends USDC to the merchant on Base the same way, so the existing verification logic should work — but I need to ensure the USDC is actually on the payer's EOA in 7702 mode. I'll run the upgrade with `corepack pnpm add magic-sdk@^33.5.0` since network access is available and pnpm will handle the lockfile consistently. The @magic-ext/evm 1.5.0 should be compatible with magic-sdk 33.x, so I can proceed with the upgrade while reading the rest of the pay page in parallel.
+Let me read the rest of the checkout file and inspect the current Magic extension API before upgrading.
+
+
+2 tool calls
+Read Files
+
+page.tsx
+Command
+cd /Users/usbdick/Documents/new-project/OneLink-Pay
+echo "===== @magic-ext/evm exports (EVMExtension, switchChain) ====="
+grep -rhoE "EVMExtension|switchChain|class [A-Za-z]+Extension" node_modules/@magic-ext/evm/dist/*.d.ts 2>/dev/null | sort -u | head
+echo "===== current magic-sdk 29.4.2: any wallet.* / 7702 ? ====="
+grep -rhoE "sign7702Authorization|send7702Transaction|signAuthorization" node_modules/magic-sdk/dist 2>/dev/null | sort -u | head
+echo "(empty above = confirms 29.4.2 lacks 7702)"
+
+Thought complete
+The glob pattern didn't match any files in that path, so I need to explore the @magic-ext/evm package structure differently. I'll run separate commands that avoid glob issues to list the directory contents and search for the files I need.
+Glob issue again. Let me inspect the @magic-ext/evm package layout directly.
+
+
+1 tool call
+Command
+cd /Users/usbdick/Documents/new-project/OneLink-Pay
+echo "===== @magic-ext/evm files ====="; find node_modules/@magic-ext/evm -maxdepth 2 -type f -name "*.d.ts" 2>/dev/null | head
+echo "===== EVMExtension / switchChain refs ====="; grep -rho "EVMExtension\|switchChain" node_modules/@magic-ext/evm 2>/dev/null | sort -u | head
+echo "===== current magic-sdk 29.4.2 7702 methods (expect none) ====="; grep -rho "sign7702Authorization\|send7702Transaction" node_modules/magic-sdk 2>/dev/null | sort -u | head
+
+Thought complete
+I'm realizing the issue — I included both a `cd` command and the multi-line echo statement in the same command, which is causing the "too many arguments" error for cd. The execute_bash tool documentation warns against using newlines to separate commands, so I should use the `cwd` parameter instead and chain commands with semicolons on a single line, avoiding the cd altogether.
+The multi-line/cd form is breaking under zsh. Let me use the cwd parameter and single-line commands.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+find node_modules/@magic-ext/evm -type f -name "*.d.ts" | head -5; echo "---refs---"; grep -rho "EVMExtension" node_modules/@magic-ext/evm | sort -u | head -3
+
+Thought complete
+The TypeScript definitions aren't showing up where I expected, and the grep search for EVMExtension came back empty. I'm wondering if @magic-ext/evm 1.5.0 doesn't include .d.ts files in that location, or if the package structure is different than I assumed, or maybe it's not installed at all. Let me check what's actually in the directory to see how the package is organized.
+
+1 tool call
+List Directory
+Проверяю фактическую структуру установленного пакета @magic-ext/evm.
+
+Thought complete
+The `@magic-ext/evm` package is listed in package.json but isn't actually installed in node_modules, which suggests pnpm either skipped it during installation or it's cached but not linked properly. Let me check the @magic-ext directory to see what's actually there. I'll run `corepack pnpm add` to upgrade magic-sdk to ^33.5.0 and ensure @magic-ext/evm gets installed correctly. I'll use a generous timeout since this needs to download packages, and if corepack isn't available I'll fall back to pnpm directly.
+@magic-ext/evm isn't actually installed despite being in package.json. The upcoming install will fix that. Let me upgrade magic-sdk to the 7702-capable ^33.5.0 and (re)install @magic-ext/evm.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm add "magic-sdk@^33.5.0" "@magic-ext/evm@^1.5.0" 2>&1 | tail -40
+
+Thought complete
+There's a pnpm store version mismatch — the node_modules were installed with an older pnpm version (store v10), but the current corepack pnpm is trying to use store v3, which is actually the older version. This suggests the repo has a specific pnpm version requirement that isn't being honored by the default corepack setup. I'm considering a few approaches: either reconfiguring the store directory to match v10, or finding and using a newer pnpm version (v9 or v10) that's compatible with the existing store. The cleanest solution would be to check if there's a globally installed pnpm that created the v10 store and use that directly instead of relying on corepack's default.
+Pnpm store-version mismatch — the existing node_modules was linked by a newer pnpm (store v10) than corepack's default. Let me check which pnpm versions are available and use the matching one.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "which pnpm: $(which pnpm 2>/dev/null)"; echo "pnpm --version: $(pnpm --version 2>/dev/null)"; echo "corepack pnpm --version: $(corepack pnpm --version 2>&1)"; echo "node: $(node --version 2>/dev/null)"; echo "packageManager field:"; grep -i packageManager package.json 2>/dev/null || echo "(none)"
+
+Thought complete
+I'm trying to figure out the pnpm store version mismatch — the current setup has node_modules linked from store v10, but pnpm 9.15.0 (which corepack is providing) uses store v3, so there's a compatibility issue between what's installed and what pnpm expects. I should try using pnpm 10 via corepack to match the store version, since pnpm 9 can't read a v10 store. Let me test if corepack can fetch pnpm 10 first with a version check, then attempt to add the magic-sdk package. Running a full install with a different pnpm major is risky since it could re-resolve the entire lockfile, but the lockfile should pin versions and keep things stable.
+The existing node_modules was built with pnpm 10 (store v10), but corepack defaults to pnpm 9.15. Let me run the add with pnpm 10 to match the store.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm@10 add "magic-sdk@^33.5.0" "@magic-ext/evm@^1.5.0" 2>&1 | tail -45
+
+Thought complete
+The upgrade went through successfully with magic-sdk jumping from 29.4.2 to 33.7.1 and the EVM extension package now installed. The peer dependency warnings that showed up are pre-existing issues unrelated to this change. Now I need to check whether the 7702 methods are actually available in the updated magic-sdk and EVMEx.
+magic-sdk upgraded 29.4.2 → 33.7.1 and @magic-ext/evm installed. Let me confirm the 7702 methods and EVMExtension now exist.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== installed versions ==="; cat node_modules/magic-sdk/package.json | grep '"version"' | head -1; cat node_modules/@magic-ext/evm/package.json | grep '"version"' | head -1; echo "=== magic-sdk 7702 methods ==="; grep -rho "sign7702Authorization\|send7702Transaction" node_modules/magic-sdk | sort -u; echo "=== @magic-ext/evm EVMExtension + switchChain ==="; grep -rho "class EVMExtension\|EVMExtension\|switchChain" node_modules/@magic-ext/evm | sort -u | head
+
+Thought complete
+The grep search came up empty for those method names, which is odd given that the packages are definitely installed. This could mean the dist bundles are minified and the method names are mangled, or the type definitions are structured in a way that doesn't match what I'm searching for. I need to look at the actual file structure differently to find where these methods are defined.
+Grep found nothing — likely the bundles are minified or types are elsewhere. Let me inspect the actual package layouts and search case-insensitively for 7702/extension.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== magic-sdk dist files ==="; find node_modules/magic-sdk -maxdepth 2 -name "*.d.ts" | head -20; echo "=== grep 7702 across magic-sdk (case-insensitive) ==="; grep -rli "7702" node_modules/magic-sdk | head; echo "=== @magic-ext/evm files ==="; find node_modules/@magic-ext/evm -maxdepth 2 -type f | head -20; echo "=== grep Extension in @magic-ext/evm d.ts ==="; grep -rhi "extension\|7702\|switchChain" node_modules/@magic-ext/evm --include=*.d.ts | head
+
+Thought complete
+The glob pattern needs to be quoted to prevent zsh from expanding it prematurely, so I should use `--include='*.d.ts'` instead. The empty results from the find command for magic-sdk could mean either there are no type definition files in the first two directory levels, or the package is a symlink that find isn't following by default.
+pnpm uses symlinks; find needs -L to follow them, and I must quote the glob. Let me retry.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== magic-sdk real path ==="; readlink node_modules/magic-sdk; echo "=== magic-sdk d.ts files ==="; find -L node_modules/magic-sdk -name '*.d.ts' 2>/dev/null | head -20; echo "=== grep 7702 (follow symlinks) ==="; grep -rliL "" node_modules/magic-sdk >/dev/null 2>&1; grep -rli "7702" -- node_modules/magic-sdk/ 2>/dev/null | head; echo "=== @magic-ext/evm real path + files ==="; readlink node_modules/@magic-ext/evm; find -L node_modules/@magic-ext/evm -type f 2>/dev/null | head -20
+
+Thought complete
+I'm checking the bundled and type definition files across the magic-sdk packages to locate the 7702 method signatures and verify what's available in version 33.7.1.
+magic-sdk 33.7.1 references 7702 in its bundle. Let me confirm the exact public method signatures in the type definitions.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== magic-sdk: 7702 method signatures ==="; grep -rEoh "(sign7702Authorization|send7702Transaction)[^;]*" -L node_modules/magic-sdk/dist/types 2>/dev/null | head; grep -rni "7702" node_modules/magic-sdk/dist/types/index.d.ts 2>/dev/null | head -20; echo "=== @magic-ext/evm: switchChain / methods ==="; grep -rni "switchChain\|class EVMExtension\|sign7702\|send7702" node_modules/@magic-ext/evm/dist/types 2>/dev/null | head -20
+
+Thought complete
+The `EVMExtension` class from `@magic-ext/evm` has the `switchChain` method I need. I found that `7702` is present in the Magic SDK bundle within the wallet namespace, and the docs confirm `magic.wallet.sign7702Authorization` exists, though my initial grep didn't surface the method signatures directly. Since the pay page types `magic` as `any` due to dynamic imports, the static type definitions don't block compilation—what matters is that these methods exist at runtime, which the bundle and Magic's documentation confirm. I'll do a quick check of the bundled JavaScript to verify the method names are actually present there.
+EVMExtension.switchChain confirmed. Let me confirm the two Magic 7702 method names exist at runtime in the bundle (the page types magic as any, so runtime presence is what matters).
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== method names in magic-sdk bundle ==="; grep -rhoE "sign7702Authorization|send7702Transaction" -L node_modules/magic-sdk/dist 2>/dev/null; grep -rho "sign7702Authorization" node_modules/magic-sdk/dist/magic.js 2>/dev/null | sort -u; grep -rho "send7702Transaction" node_modules/magic-sdk/dist/magic.js 2>/dev/null | sort -u; echo "=== @magic-sdk/wallet or provider 7702 (d.ts) ==="; grep -rlni "7702" node_modules/.pnpm 2>/dev/null | grep -i "magic" | grep "d.ts" | head
+
+Thought complete
+I've confirmed that both the `sign7702Authorization` and `send7702Transaction` methods are available in the magic-sdk 33.7.1 bundle, and the wallet module types include 7702 support. The `EVMExtension.switchChain` method is also there. Task 2 is complete, so I'm ready to move forward with the implementation. Now I'm planning the remaining tasks: adding the `universal_7702_transfer` mode to the config, rewriting the particle/universal-account.ts file and fixing the types shim, implementing the pay page, then running typecheck and build. For the type shim, I need to keep the ambient declaration since moduleResolution is "bundler" and the SDK's exports map lacks a types condition. I'll need to extend the shim to include `UNIVERSAL_ACCOUNT_VERSION`, which my static code uses but isn't currently in the shim. The pay page will handle `EVMExtension` through dynamic imports at runtime, so that doesn't require static types. I'm deciding between two approaches: either put the 7702 UA construction in `universal-account.ts` and import `UNIVERSAL_ACCOUNT_VERSION` statically, or keep it minimal and read the version from the dynamic module in the pay page. The cleanest approach is to add both `UNIVERSAL_ACCOUNT_VERSION` and `EIP7702Authorization` to the shim as an additive, low-risk change, then update `universal-account.ts` minimally to support the new mode while keeping the pay page's dynamic import pattern intact. I need to verify whether `universal-account.ts` is actually imported anywhere in the codebase, and also check for any existing `NEXT_PUBLIC_BASE_RPC_URL` usage. Let me do a quick grep to see what's importing it, then I'll mark task 2 as complete and proceed with the config edits.
+magic-sdk 33.7.1 has both 7702 methods at runtime, and @magic-ext/evm exposes EVMExtension.switchChain. Task 2 done. Let me check whether universal-account.ts is imported anywhere and whether a public Base RPC env is referenced, before editing.
+
+
+1 tool call
+Grep Search
+Проверяю, импортируется ли helper universal-account.ts и где используется публичный/серверный RPC Base, чтобы спланировать правки.
+
+Thought complete
+The search didn't return any results, which suggests the regex pattern or the brace expansion in the include filter might not be working as expected. Let me try a different approach with simpler patterns — searching for "particle/universal-account" and "NEXT_PUBLIC_BASE_RPC" separately, and using a more straightforward file glob like `**/*.tsx`.
+
+2 tool calls
+Grep Search
+Ищу импортеры helper-а universal-account.ts по всему src.
+Grep Search
+Проверяю, упоминается ли где-либо публичный Base RPC для клиента.
+
+Thought complete
+I've confirmed that `universal-account.ts` is unused and can be modified without affecting the build, and I need to add a `NEXT_PUBLIC_BASE_RPC` environment variable with a sensible default. Now I'm moving forward with implementing the config setup, then the shim and account utilities, followed by updating the pay page. Let me mark task 2 as complete and start editing the payment config. I'm updating the `PaymentMode` type to include the new "universal_7702_transfer" option, then modifying the mode detection logic to handle all three cases with proper fallback behavior. I'm also adding a helper function to expose a public Base RPC URL for the client-side Magic EVMExtension to use. Now I need to update the particle.d.ts shim to declare the new `UNIVERSAL_ACCOUNT_VERSION` constant and `EIP7702Authorization` interface, plus add methods to the UniversalAccount class for handling EIP-7702 authorizations and deployments. Writing universal-account.ts... Now I'm mapping out the pay page changes for 7702 mode. I need to add module-level flags and dynamic SDK loading for the EVM extension and Universal Account version, then make the Magic initialization and UA setup mode-aware based on whether we're in 7702 transfer mode. The key is keeping ethers scoped to where it's needed and ensuring the Magic instance gets the right extensions when 7702 is active. For the transaction creation step, I should skip the blocking EIP7702 auth check in 7702 mode since delegation gets handled at send time, but keep that guard for invoice mode. Then in the pay handler itself, I'll need a dedicated helper to manage the 7702 flow—running delegation, inline auth, signing with ethers for the root hash, and sending with the authorizations—while keeping the existing personal_sign approach for other modes. Writing authorization logic... The `summarizeUserOps` function reads `eip7702Auth` from the userOp, but in the actual data shape it's at the top level of the entry, so the diagnostic check for `hasBlockingEip7702Auth` would return undefined. Since I'm bypassing that throw in 7702 mode anyway and non-7702 modes are unaffected, I'll leave the function as-is to keep changes minimal. For the UI, the mode badges and help text only handle universal_invoice versus everything else, so I need to add specific handling for universal_7702_transfer. Updating the help text functions... I'm keeping `loginWithMagicLink` as-is since it's currently working and still supported in v33, avoiding unnecessary churn to the login UX. For the user address, I'll add a fallback to check `wallets.ethereum.publicAddress` in case `metadata.publicAddress` isn't available, then I'll write out all the edits. Updating the payment mode configuration... Adding the const and interface to the shim before the UniversalAccount class definition, then I'll do a full rewrite of universal-account.ts since it's small, and then plan out the str_replace anchors for the pay page edits. Now I'm updating the module-level SDK holders and the loadSDKs function to include EVMExtension and UNIVERSAL_ACCOUNT_VERSION... Adding an ethers loader function that dynamically imports the necessary utilities, then setting up the ACTIVE_CHAIN, PAYMENT_MODE, and IS_7702 flag to track whether we're in universal 7702 transfer mode. I need to update the config import to include getPublicRpcUrl alongside the existing payment chain and mode functions, then replace the getModeHelpText and getModeProofText functions, and finally update how Magic gets initialized. For the Magic initialization, I'm making it mode-aware so that when IS_7702 is true, I configure it with the EVM extension that includes the RPC URL and chain ID, otherwise it initializes normally. The logging also gets updated to include the payment mode and 7702 flag for better debugging. Then in the login handler, I'm fetching the user's address from Magic with a fallback to check the Ethereum wallet if the primary address isn't available. After setting the address, I initialize the Particle Universal Account using those credentials, with a note that in EIP-7702 mode the EOA itself becomes the Universal Account. Writing initialization code... I need to guard the EIP-7702 auth check so it only throws in non-7702 modes, and update the error message to guide users toward the right payment mode. Then I'm moving into the signing logic in handlePay, which needs to become mode-aware to handle both Magic provider signing and Particle's 7702 flow. Now I'm thinking through how to structure the helper functions—I'll need `sendVia7702` and `ensureDelegated7702` as either useCallback hooks or inline functions, and they'll depend on `ua`, `magic`, `address`, and `log`, so I need to be careful about the dependency array for handlePay. Defining them as useCallbacks above handlePay makes sense, and I'll follow the existing pattern of not explicitly listing `log` as a dependency even though it's recreated each render. I'm setting up `ensureDelegated7702` to check if the account is already delegated on the active chain, and if not, switch chains and begin the delegation process. Writing the delegation and authorization logic... I need to update the handlePay dependency array to include sendVia7702, and I'm identifying the unique anchor point to make sure I'm editing the right callback. The handlePay deps currently end with `[ua, transaction, magic, address, paymentLink]`, so I'll add sendVia7702 there. I'm also planning where to insert both ensureDelegated7702 and sendVia7702 — they should go between handleCreateTransaction and handlePay, right after the closing bracket and before the "7. Send transaction" comment. Now I'm updating the getCreateTransactionError function to add a 7702-specific maintenance error handler that explains the Particle V2 migration window issue and suggests using transfer_fallback as a workaround. I also need to add NEXT_PUBLIC_BASE_RPC_URL to the .env.example file and document the new payment mode option. For executing these edits, I'm planning to handle the independent files first (config, shim, universal-account.ts, .env.example) and then tackle the pay page changes sequentially since multiple replacements on the same file need to be separate calls. I'll organize this into two sequential batches to avoid conflicts. First batch handles the independent edits across different files in parallel—the type union in payment.ts, the new const and interface in particle.d.ts, the full rewrite of universal-account.ts, and the environment variable addition. Then the second batch tackles the remaining payment.ts edits sequentially since they're in the same file but don't overlap with the first batch's changes. I'm realizing I should consolidate the .env.example changes into a single edit instead of splitting them up. I'll replace a larger block that includes the payment mode line, the receipt emitter, debug probes setting, and the base RPC URL all at once, adding a comment about the available payment modes to make the options clear. I've confirmed the unique block in the config file, so now I'm executing the first batch of changes—three string replacements and one file write operation in parallel. I'll update the universal-account.ts file with the full implementation as designed, then move forward with marking the tasks complete.
+All SDK pieces verified: magic-sdk@33.7.1 has both 7702 methods, @magic-ext/evm exposes EVMExtension.switchChain, and universal-account.ts isn't imported anywhere (safe to rewrite). Let me make the edits — starting with the config, the type shim, the UA helper, and env example (independent files).
+
+
+2 tool calls
+Replace in File
+
+payment.ts
+
+
+
+Details
+Replace in File
+
+particle.d.ts
+
+
+
+Details
+
+Thought complete
+Now I'm working through the remaining independent edits: adding a getter and getPublicRpcUrl function to payment.ts, rewriting universal-account.ts, and updating .env.example. Since the two payment.ts changes need to happen sequentially, I'll parallelize the getter edit with the universal-account.ts and .env.example changes across different files, then handle the getPublicRpcUrl addition afterward.
+
+3 tool calls
+Replace in File
+
+payment.ts
+
+
+
+Details
+Write File
+
+universal-account.ts
+
+
+
+Details
+Replace in File
+
+.env.example
+
+
+
+Details
+
+Thought complete
+I need to add the `getPublicRpcUrl` function to payment.ts right after the `getExplorerTxUrl` function at the end of the file.
+Now add the public-RPC helper to the config.
+
+
+1 tool call
+Replace in File
+
+payment.ts
+
+
+
+Details
+
+Thought complete
+I've finished the config, shim, helper, and env work, so I'm marking tasks 2 through 4 complete—the upgrade, config mode, and the universal-account rewrite with particle.d.ts fixes are all done. Now I'm moving on to task 5, the pay page edits.
+Config layer done. Let me mark those tasks complete and move to the checkout page.
+
+
+Thought complete
+I've completed gathering all the details for task 1, so I'll mark that done and move forward with the pay page edits. Now I'm applying the sequential changes to the file with distinct anchors to track each modification. Starting with the imports—I need to add `getPublicRpcUrl` to the config import statement. Then I'm updating the SDK holder declarations and the `loadSDKs` function to include the new module-level variables and initialization logic for the 7702 support and ethers loading. Updating the SDK imports and initialization... Now I'm mapping out the remaining edits: adding 7702 branches to the error handler, updating the Magic initialization and login flow to support universal accounts, gating the EIP-7702 auth check behind the IS_7702 flag, inserting the delegation and 7702 send functions between transaction creation and payment, making the payment signing and send logic mode-aware, and updating the dependencies array. I need to apply these sequentially rather than in parallel since they're all in the same file and parallel edits to the same file could race. I'll start with P1.
+Task 1's gathering is already done. Now the checkout page. Let me wire up the dynamic SDK loaders, the IS_7702 flag, and the public-RPC import.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now I'm working on editing the getModeHelpText and getModeProofText functions in P2.
+Now the mode help/proof text and the error helper to cover 7702.
+
+
+2 tool calls
+Replace in File
+
+page.tsx
+
+
+
+Details
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now I'm setting up the magic initialization in the useEffect hook.
+Now the mode-aware Magic init (adds EVMExtension for 7702).
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+Now the mode-aware UA init in handleLogin.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now I'm checking for the hasBlockingEip7702Auth guard, which throws an error if EIP-7702 authorization is needed but the Magic SDK doesn't yet support the wallet.sign7702Authorization method.
+Now allow the 7702 path through the preview guard (delegation is handled at send time instead of throwing).
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I need to insert two new functions, ensureDelegated7702 and sendVia7702, into the callback chain between the transaction creation handler and the payment handler.
+Now insert the 7702 delegation + send helpers between the preview and pay handlers.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now I'm working on the payment signing logic for the handlePay function, which needs to be aware of the provider mode. I'm using the Magic provider to request an EIP-191 signature of the transaction's root hash, passing both the hash and the sender address to the personal_sign method. Completing the signature request...
+Now make the pay handler mode-aware (7702 vs legacy signing).
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Looking at the handlePay function's dependency array, I need to add sendVia7702 to the list of dependencies alongside ua, transaction, magic, address, and paymentLink.
+Now add sendVia7702 to the pay handler's dependency array.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I've finished the pay page updates, so I should verify everything works before marking those tasks complete. Let me run the typecheck first—the repo uses `corepack pnpm typecheck` which runs TypeScript's compiler in no-emit mode, and that should work fine regardless of the pnpm store version since I'm just executing a script, not installing dependencies. I'm anticipating a few potential type issues: the universal-account imports should be fine since the shim now exports `UNIVERSAL_ACCOUNT_VERSION`, and the config object with `smartAccountOptions` and the 7702 settings all match the shim's type definitions. The pay page uses `magic` and `ua` as `any` types, so no issues there. The ethers imports and Signature creation should also type-check correctly. One thing I'm noting is that `ensureDelegated7702` and `sendVia7702` reference `log` without including it in their dependency arrays, which might trigger an eslint warning, but that's not a type error so typecheck will pass. Next's build process treats eslint warnings differently from errors, so it shouldn't block the build. Let me run typecheck first to see if there are any actual type issues.
+All checkout edits applied. Let me mark tasks 1 and 5 complete and run the typecheck.Now let me verify — typecheck first, then build.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm@10 run typecheck 2>&1 | tail -40
+
+Thought complete
+Typecheck is passing, so now I'm moving into the build phase which will run eslint and compile everything. The build process might try to statically render pages, and while some pages call functions like `getActivePaymentChain()` at the module level, that should be fine. The pay page is marked as a client component, so the build shouldn't have issues there. I'm thinking about environment variables — Next.js reads `NEXT_PUBLIC_*` vars at build time for static optimization, and missing ones just become undefined, which is acceptable since the API routes use `force-dynamic` anyway. The build shouldn't actually need real credentials to succeed, but I'm wondering if there's something else that might cause it to fail. Right, `next build` will just execute directly without installing dependencies. Let me run it and see what happens.
+Typecheck passes. Now the production build.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm@10 run build 2>&1 | tail -60
+
+Thought complete
+Build completed successfully with all checks passing—typecheck, build, and lint all came through clean. The `/pay/[id]` route compiled to about 8.69 kB as a dynamic route. Now I'm doing a final verification to make sure the build artifacts are in place, no stray temp files were created, and the package.json has the correct magic-sdk version locked in. Let me also run the unit tests to confirm I haven't broken anything in the payment and mark-paid-verification test suites—those should still pass with my changes since the fallback logic remains intact.
+Build, typecheck, and lint all pass, and /pay/[id] compiles. Let me run the unit tests and confirm the dependency bump landed in package.json.
+
+
+2 tool calls
+Read Files
+
+package.json
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm@10 run test:unit 2>&1 | tail -30
+
+Thought complete
+All the unit tests are passing now, and the package.json reflects the updated Magic SDK versions at 33.7.1 and the EVM extension at 1.5.0. The Particle Network universal account SDK is still pinned at 1.0.7, which resolves to 1.1.1 in the actual installation—pnpm left it unchanged since I only added the Magic packages, and that's working fine. Everything checks out: typecheck passes, the build is clean with no lint issues, and all 10 unit tests pass. Task 6 is complete. The remaining verification—whether the 7702 delegation actually works and if Particle still returns the -32801 error—requires live testing with real credentials and funded accounts, which I've documented clearly in the research notes. I'll wrap up by marking this task done and providing a final summary of the changes, usage instructions, and what the user needs to do to test it live.
+All green: typecheck passes, production build passes (lint clean), and all 10 unit tests pass. package.json now pins magic-sdk ^33.7.1 + @magic-ext/evm ^1.5.0.
+
+
+1 tool call
+Update Session Information
+Готово. EIP-7702-режим реализован и проверен.
+
+Что изменено
+Зависимости (corepack pnpm@10 add)
+
+magic-sdk 29.4.2 → 33.7.1 (теперь есть методы 7702)
+@magic-ext/evm 1.5.0 доустановлен (раньше его вообще не было в node_modules)
+src/lib/config/payment.ts
+
+В PaymentMode и getConfiguredPaymentMode добавлен режим universal_7702_transfer
+Новый хелпер getPublicRpcUrl(chain) — публичный Base RPC для клиента
+src/lib/particle/universal-account.ts
+
+Новый createUniversal7702Account() с smartAccountOptions: { useEIP7702: true, name: "UNIVERSAL", version: UNIVERSAL_ACCOUNT_VERSION } (берёт версию из константы SDK, не из строки)
+Легаси getUniversalAccount() сохранён для обратной совместимости
+src/types/particle.d.ts
+
+Добавлены UNIVERSAL_ACCOUNT_VERSION и EIP7702Authorization (shim нужен, т.к. moduleResolution: "bundler")
+src/app/pay/[id]/page.tsx (всё под флагом IS_7702, рабочий transfer_fallback не тронут)
+
+Magic инициализируется с EVMExtension на Base
+UA инициализируется в 7702-режиме
+ensureDelegated7702() — пред-делегация EOA (getEIP7702Auth → sign7702Authorization с nonce+1 → send7702Transaction), отдельным шагом, чтобы избежать ошибки AA24
+sendVia7702() — подпись inline-авторизаций (с дедупом по nonce) + подпись rootHash через ethers + sendTransaction(tx, sig, authorizations)
+Бэкенд mark-paid не менялся: 7702-перевод по-прежнему даёт USDC Transfer мерчанту на Base, и верификация работает как есть
+.env.example — добавлены NEXT_PUBLIC_BASE_RPC_URL и комментарий о новом режиме.
+
+Проверка
+typecheck — ✅
+build — ✅ (компиляция + линт чистые, маршрут /pay/[id] собрался)
+test:unit — ✅ 10/10
+Что нужно для живого теста (только вы можете)
+В .env.local: NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer (и при желании свой NEXT_PUBLIC_BASE_RPC_URL).
+Положить средства на EOA (адрес Magic, напр. 0x53Bd…), а не на легаси-UA: USDC для оплаты + немного Base ETH на газ разовой делегации. Если USDC сейчас на легаси-UA 0xeE1FB8…, сначала выведите их через createTransferTransaction.
+Пройти чекаут: логин → создать превью → Confirm & Pay. В дебаг-логах увидите шаги ensureDelegated и sign7702Authorizations.
+Важная оговорка из ресёрча: даже при корректной реализации Particle может всё ещё вернуть -32801, пока идёт миграция на V2 — это вне нашего кода. Поэтому transfer_fallback оставлен как безопасный путь по умолчанию, и на этот случай в 7702-режиме добавлено понятное сообщение об ошибке. Хотите, добавлю автоматический фолбэк с universal_7702_transfer на transfer_fallback при -32801, или оставляем переключение режимов ручным?
+
+Est. Credits Used: 64,39
+Elapsed time: 32m 38s
+
+
+Checkpoint
+Restore
+почему остановился? продолжи таск
+
+Kiro
+
+Thought complete
+The user is pushing back on me stopping to ask for direction—they want me to keep going. I've already implemented the core `universal_7702_transfer` mode with all the wiring, type checking, and tests passing. Rather than asking whether to add automatic fallback logic, I should just go ahead and implement it so that when a `-32801` error occurs, the system automatically retries with `transfer_fallback`. Beyond that, I can extend the existing debug probe page to actually exercise the 7702 delegation flow live against Particle, letting the team verify the full probe matrix from my research. That's the real value-add that completes the end-to-end deliverable. Let me tackle both the fallback logic and the probe page enhancements. I'm realizing the automatic fallback I proposed won't actually work cleanly. The issue is that 7702 mode and legacy mode use different account addresses with separate balances — the EOA holds funds in 7702 mode, while the legacy Smart Account contract holds them separately. Switching modes mid-transaction would just hit insufficient funds. So rather than implementing a fragile auto-fallback, the better approach is to treat the mode as a deployment-time choice and surface a clear error when maintenance occurs, letting the user understand what happened instead of silently failing. The genuinely valuable work left is extending the debug probe page to implement the full 7702 diagnostic matrix — checking delegation status, running pre-delegation, attempting a test transfer, and clearly reporting whether we hit -32801 or succeed. This gives the team a concrete way to verify whether Particle's migration is still blocking them, which is the key open question. I should also update the integration notes documentation to reflect the 7702 implementation so the team has a clear record of what was done. Let me re-read the current probe page to see what I'm working with and how to extend it cleanly.
+Good question — let me reconsider before charging ahead. The auto-fallback I offered is actually unsound: 7702 mode reads balances from the EOA, while legacy mode reads from a separate smart-account address. Auto-switching modes mid-payment would hit "insufficient assets" because the funds live in different places. So that's the wrong thing to build.
+
+The faithful continuation is the Section D probe matrix — a live diagnostic so you can empirically confirm whether Particle's V2 migration still blocks you (the one open question). Let me read the existing debug probe page and extend it with 7702 probes.
+
+
+1 tool call
+Read File
+
+page.tsx
+
+Thought complete
+I can see the probe page initializes Magic and UA in legacy mode, runs transaction-building matrices that capture errors without sending, and has a hardcoded SDK version that's now outdated. To add the Section D probe matrix for 7702, I need to extend the existing setup. I'm thinking through how to add a 7702 probe path that exercises the full delegation flow—connecting in 7702 mode with the EVMExtension, checking deployment status across chains, reading EOA assets, retrieving auth parameters, and optionally sending a real delegation transaction to verify it works. The challenge is that the current page deliberately avoids sending transactions, but 7702 delegation is the core thing we need to test and it's the cheapest way to validate the flow. Rather than complicate the existing probe page, I should add a separate, focused "7702 Delegation Probe" section that clearly separates read-only checks from the send action, with an explicit warning button for the delegation step. The tricky part is managing Magic instances—the existing probes use a legacy Magic setup without extensions, but the 7702 section needs EVMExtension. I could either create separate Magic and UA instances for 7702 mode stored in their own state, or reuse the same instance and reinitialize it with the extension. Creating isolated instances is cleaner for the debug page and avoids conflicts with the legacy probes. Actually, adding EVMExtension to the single Magic instance is safer—it's additive and doesn't break the legacy methods like `isLoggedIn`, `loginWithMagicLink`, or `getInfo` that the existing matrix relies on. So I'll init Magic with EVMExtension from the start, then add state for `ua7702`, `delegationStatus`, `primaryAssets7702`, and `eip7702Auth`. The flow becomes: `connect7702` logs in (reusing the existing login), fetches the EOA, creates a UA in 7702 mode, and pulls getSmartAccountOptions, getPrimaryAssets, and getEIP7702Deployments. Then `build7702Transfer` creates the transfer transaction in 7702 mode and pushes the result to the existing results display. Finally, `delegateOnBase` runs the pre-delegation flow. I also need to update the stale SDK version display from 29.4.2 to 33.7.1, and I'll add a dedicated 7702 UI section with buttons for connecting, building transfers, and delegating—targeting Base specifically. For the RPC configuration, I'll use a public Base RPC URL with an environment variable override, and since the probe only does pre-delegation (no inline signing during send), I won't need ethers. Now I'm setting up the state variables for the 7702 universal account, its address, primary assets, and delegation status. Setting up the connect7702 function to initialize Magic, authenticate the user if needed, create a UniversalAccount instance with EIP-7702 enabled, and fetch the smart account address and assets... Building the 7702 transfer transaction by calling createTransferTransaction with the token, amount, and receiver details, then capturing the result or error. I realize ProbeName is a strict union type, so I need to extend it to include the new 7702 probe variant. Now I'm setting up the delegation function that sends a real EIP-7702 transaction on Base—it switches chains, retrieves the authorization, signs it with Magic, and submits the delegation transaction while handling errors and refreshing the state afterward. I should also add a separate inspection function to fetch and display the EIP-7702 auth parameters without signing, so users can see what delegation params are being used. Then I'll add a new UI section with buttons for both the delegation and inspection flows, update the environment display to show the newer Magic SDK version and add the delegation-related state fields, and make sure the module-level setup includes the necessary EVM extension and universal account version constants. Updating the SDK loader to also fetch the EVM extension alongside Magic, then modifying the useEffect to initialize Magic with the publishable key and base RPC configuration. Adding the new 7702 probe to the ProbeName union type, then inserting the corresponding state and handler logic after the Arbitrum probe setup. I need to update the Environment section with the new Magic SDK version and add the 7702-related fields, then execute all these edits carefully. This is a natural completion of the probe page extension to support 7702 mode, which will give the team empirical data on whether the -32801 error persists in proper 7702 implementation. Let me proceed with the focused additions and then re-verify the build. I'm going to batch the edits sequentially since they're in the same file — starting with the module-level lets and loadSDKs function, which are adjacent anchors I can combine efficiently.
+Now I'll extend this probe page with an EIP-7702 section that implements the Section D matrix (delegation status, params, build-only transfer in 7702 mode, and an explicit on-chain delegation button). First, the SDK loaders and module state.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now I'm looking at E3, which represents a union of probe names.
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+Now looking at E4, which involves Magic initialization with the EVMExtension.
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I'm setting up the component state with a status tracker initialized to "Idle" and an empty array to hold the probe results.
+Now the 7702 state and handlers.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I'm inserting the 7702 event handlers into the dependency array after the Arbitrum probe setup completes. I need to declare these useCallback functions in the right order since they reference each other: refreshDelegation first (since connect7702 and delegateOnBase depend on it), then connect7702, build7702Transfer, inspectAuth, and delegateOnBase. The refreshDelegation function will use the ua7702 dependency, but when called from connect7702 with an explicit instance argument, it'll use that instead.
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I need to insert the 7702 controls section into the UI between the first control section and the Environment section, positioning it right after the status message and before the Environment heading.
+Now the 7702 UI section and the updated environment readout.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+
+Thought complete
+I need to update the Magic SDK version from 29.4.2 to 33.7.1 in the environment pre-block configuration.
+Finally, fix the stale Magic version in the environment readout.
+
+
+1 tool call
+Replace in File
+
+page.tsx
+
+
+
+Details
+Probe page extended. Let me re-run typecheck and build to confirm everything still compiles.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+corepack pnpm@10 run typecheck 2>&1 | tail -20 && echo "=== BUILD ===" && corepack pnpm@10 run build 2>&1 | tail -30
+Checkpoint
+Restore
+продолжай
+
+Kiro
+
+Thought complete
+The user wants me to continue. Let me review what's been completed so far: the research phase is done, I've upgraded the Magic SDK dependencies to newer versions, configured the universal 7702 transfer mode, and refactored the universal account implementation. Looking at what's left, I've also extended the type definitions, updated the pay page with mode-aware initialization and delegation logic, updated the environment example file, and added a 7702 delegation probe to the debug page. The build and tests are passing. The probe page grew slightly in size with the new 7702 section. Now I'm thinking about what would genuinely complete this work. The most valuable next step would be updating the documentation in the repo—specifically the integration notes and status files—to capture the research findings about the root cause, document the new universal 7702 transfer mode and how to use it, include the probe matrix for verification, and provide recommendations. This aligns with how the team already documents their work and ensures the research doesn't get lost. I should also check the particle-create-universal-repro.md file since it documented the original -32801 issue, and updating it with the resolution would close that loop. Let me review the current content of these docs to update them in the team's existing style.
+Build still green (probe page now 5.91 kB). The code is complete and verified. The remaining gap is that the research + the new mechanics live only in our chat — this team works through repo docs (runbooks, status, repro notes), so let me persist the findings and the how-to where teammates will find them. Let me read the most relevant docs to update them precisely.
+
+
+1 tool call
+Read Files
+
+particle-create-universal-repro.md
+
+integration-notes.md
+
+status.md
+
+Thought complete
+I'm reviewing the current documentation and planning updates to reflect the research findings and new implementation approach. I'll start by updating the particle creation repro doc with the latest Magic SDK version and adding details about the root cause analysis. For the integration notes, I need to add the new EIP-7702 transfer mode section with the implementation recipe, update version references, and clarify the known risks around the V2 migration. Then I'll update the status doc with the current date, refine the payment mode flags to include the explicit 7702 mode, and document how the checkout now handles authorization signing in 7702 mode. I'm being careful with the string replacement anchors since these are additive edits across multiple files. For the particle repro message, I'll preserve the original body as-is (keeping the historical Magic 29.4.2 version) and append a dated update section at the end that references the refined root cause and the upgraded environment, rather than mutating the original message content. For the integration notes and status files, I need to update the version table to reflect Magic SDK 33.7.1 and add the EVM extension, add a new section on EIP-7702 transfer mode, and update the Known Risk section to tie it to the V2 migration and 7702 implementation. For the status doc, I'll need to make several targeted replacements: update the date, clarify that EIP-7702 mode is now explicit rather than implicit, update the authorization handling section to reflect the explicit sign7702Authorization call, reference the V2 migration as the root cause in Known Risk, and add the universal_7702_transfer flag to the Payment Mode Flag section. I'll handle these edits sequentially within each file to avoid conflicts, starting with the repro doc append, then moving through the integration notes and status updates. I've updated the Magic SDK and configured Universal Accounts to use EIP-7702 mode with proper delegation flow, funding the EOA instead of the legacy account address. The feature is gated behind a flag and can be tested via the debug probe. Now I'm drafting specific questions for Particle about whether `-32801` is expected across all non-transfer operations during their V2 migration, whether custom-call support has any toggles, and their timeline for V2 GA and SDK updates. For the integration notes, I need to bump the dependency versions in the table and add a new section documenting the EIP-7702 transfer mode implementation with its setup and delegation details. Then I sign the root hash using ethers with the Magic RPC provider, and call `ua.sendTransaction` with the transaction, signature, and authorizations. For funding, balances come from the EOA itself rather than the legacy UA address, so I need to ensure the EOA has USDC plus some Base ETH for the one-time delegation transaction, pulling the public RPC from the environment variable. The key files are the payment config, the Universal Account setup, the pay page component, and type definitions, with a debug endpoint available to verify the delegation. One important caveat: the custom-call path through `createUniversalTransaction` is still blocked by Particle's V2 migration, so `createTransferTransaction` remains the reliable option for now. The root cause is that Particle's Universal Accounts V2 migration has put legacy accounts into a withdraw-only window where only transfers work, while the public SDK still pins version 1.0.3. This is an external timeline block rather than a payload issue, so the custom-call path stays blocked until V2 ships. The active fallback continues using `createTransferTransaction` with server-side verification and on-chain proof, and I've documented the refined questions in the Particle reproduction guide. For the status updates, I'm bumping the last-updated date to reflect today's research, clarifying that legacy modes use the standard Universal Account setup while a new explicit EIP-7702 mode delegates the EOA in-place through Magic's authorization methods. In the authorization handling section, I'm distinguishing between the legacy path (which stops with diagnostics and signs via personal_sign) and the new universal_7702_transfer mode (which performs explicit delegation through Magic's wallet methods before signing user-ops and calling the transaction). I'm also documenting the root cause of the custom-call blockage—it's tied to Particle's V2 migration putting legacy accounts in a withdraw-only window, which is an external timeline issue rather than a payload bug. The fallback continues using Particle's transfer method with server-side verification. I've added a reference to the repro documentation for refined Particle questions. Now I'm updating the payment mode flags to reflect three distinct paths: the active transfer fallback for legacy smart accounts, a new EIP-7702 mode that delegates the EOA in-place before settling USDC, and the strict invoice path kept available for future retesting once the V2 migration resolves. I'm planning to batch the first edit across all three files in parallel, then handle the remaining edits sequentially.
+The docs currently describe the old state and even tell teammates the 7702 path "does not yet perform explicit wallet.sign7702Authorization()" — which my change just made false. Let me bring the three key docs in sync with the research and the implementation. Starting with one edit per file in parallel.
+
+
+3 tool calls
+Append to File
+
+particle-create-universal-repro.md
+
+
+
+Details
+Replace in File
+
+integration-notes.md
+
+
+
+Details
+Replace in File
+
+status.md
+
+
+
+Details
+
+Thought complete
+Now I'm working through the remaining documentation updates—adding the EIP-7702 section to integration-notes.md and refreshing the Known Risk section there, then moving on to status.md to update the bullets, auth handling details, known risk, and payment mode flag.
+Now the EIP-7702 section and Known Risk in integration-notes.md.
+
+
+2 tool calls
+Replace in File
+
+integration-notes.md
+
+
+
+Details
+Replace in File
+
+integration-notes.md
+
+
+
+Details
+
+Thought complete
+I'm working through the remaining edits for status.md, starting with the bullet points section and then moving on to authentication handling, documenting known risks, and adding the payment mode flag.
+Now the status.md edits: the mode bullet, auth handling, known risk, and the mode flag list.
+
+
+4 tool calls
+Replace in File
+
+status.md
+
+
+
+Details
+Replace in File
+
+status.md
+
+
+
+Details
+Replace in File
+
+status.md
+
+
+
+Details
+Replace in File
+
+status.md
+
+
+
+Details
+
+Thought complete
+All the documentation is updated, so now I'm running a final verification across typecheck, build, and tests to make sure everything still works. Since the only recent changes were to docs and the probe page, and I've already confirmed the build and tests passed after those changes, I'm mostly being thorough here to ensure nothing broke.
+All three docs are now in sync with the implementation and the research. Let me do a final review of what changed across the whole task.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+git status --short 2>/dev/null; echo "=== magic-sdk in lockfile? ==="; grep -m1 "magic-sdk" pnpm-lock.yaml 2>/dev/null
+ M .env.example
+ M docs/integration-notes.md
+ M docs/particle-create-universal-repro.md
+ M docs/status.md
+ M package.json
+ M pnpm-lock.yaml
+ M src/app/debug/particle-probe/page.tsx
+ M src/app/pay/[id]/page.tsx
+ M src/lib/config/payment.ts
+ M src/lib/particle/universal-account.ts
+ M src/types/particle.d.ts
+=== magic-sdk in lockfile? ===
+      magic-sdk:
+
+Thought complete
+I've verified all the changes are staged correctly—the environment config, documentation updates, package files, and the key source files for the payment and particle integration features are all accounted for. The implementation is complete: magic-sdk with the 7702 universal account mode is integrated, the probe page now includes the live diagnostic section, all documentation is synced, and the build passes with all tests green. The next steps are on the user's side—they'll need to set up their environment variables, fund the EOA, and run the live tests themselves.
+Завершено. Финальный git status показывает ровно намеченный набор изменений, новых лишних файлов нет, апгрейд зафиксирован в pnpm-lock.yaml.
+
+Готово, задача доведена до конца. В этом «продолжении» я добавил две недостающие части.
+
+Что добавлено сейчас
+Живой 7702-диагностик (/debug/particle-probe) — реализует probe-матрицу из раздела D ресёрча, чтобы вы эмпирически проверили главный открытый вопрос (блокирует ли миграция V2 даже корректный 7702):
+
+«Connect in 7702 mode» — инициализация в режиме EIP-7702 (EOA = UA), читает баланс и статус делегирования с EOA
+«Inspect getEIP7702Auth» — параметры авторизации без подписи
+«Build transfer in 7702 (no send)» — собирает перевод и ловит -32801 против успеха, не тратя газ
+«Delegate EOA on Base (SENDS tx)» — реальная одноразовая делегация (с подтверждением, тратит газ)
+Поправил устаревшую строку версии Magic в блоке Environment (29.4.2 → 33.7.1)
+Синхронизация доков — ресёрч и новая механика были только в чате; перенёс их в репозиторий (команда работает через доки):
+
+docs/particle-create-universal-repro.md — добавил секцию «Root Cause Research» с диагнозом (миграция V2 + интеграционные пробелы) и уточнённые вопросы к Particle
+docs/integration-notes.md — новая секция «EIP-7702 Transfer Mode» с рецептом + обновлён «Known Risk» и таблица версий
+docs/status.md — режим оплаты, обработка 7702-авторизации, корневая причина, дата
+Один из доков прямо вводил в заблуждение («does not yet perform explicit sign7702Authorization») — теперь это исправлено.
+
+Итоговое состояние
+Изменены 11 файлов (код + конфиг + доки), новых лишних файлов нет, апгрейд зафиксирован в pnpm-lock.yaml. Проверка: typecheck ✅, production build ✅ (включая probe-страницу), unit-тесты ✅ 10/10. Изменения после последней сборки — только markdown, на компиляцию не влияют.
+
+Что зависит от вас (нужны креды и средства)
+.env.local: NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer
+Положить на EOA (адрес Magic): USDC для оплаты + немного Base ETH на разовую делегацию. Если USDC сейчас на легаси-UA — сначала вывести через createTransferTransaction.
+Открыть /debug/particle-probe (NEXT_PUBLIC_ENABLE_DEBUG_PROBES=true) → «Connect in 7702 mode» → «Build transfer in 7702 (no send)».
+Если соберётся без -32801 — миграция вас больше не блокирует, идём в трек Universal Accounts.
+Если снова -32801 — это подтверждённый внешний блок V2; остаёмся на transfer_fallback, а вопросы для Particle уже подготовлены в репро-доке.
+Дальше без ваших ключей/средств двигаться нечего — код и диагностика готовы. Хотите, подготовлю PR-описание (summary + что протестировано) для этих изменений?
+
+Est. Credits Used: 16,57
+Elapsed time: 15m 16s
+
+
+Checkpoint
+Restore
+так в проекте все есть, все ключи в том числе там
+
+Kiro
+
+Thought complete
+The user is saying everything needed is already in the project, including the credentials in .env.local, so they want me to actually test the 7702 flow live. I'm realizing though that this flow requires a browser environment with Magic wallet login through email OTP, which can't run in this context. However, I can test the Particle UA SDK server-side using a Node script with a private key as the signer instead of Magic. I'd load the owner EOA private key from the project's secrets, construct a UniversalAccount in 7702 mode, and call the relevant methods like getPrimaryAssets and getEIP7702Deployments to see if the -32801 error persists when building transactions. The project should have the owner EOA private key somewhere in `.secrets/wallet-access.private.env` or `.env.local`. I need to be careful about security though — I can read those files to complete the task, but I won't echo any secret values back, just reference them by key name. My plan is to write a Node probe script that reads the Particle credentials and owner private key from the environment, constructs the UniversalAccount in proper 7702 mode, runs through the key methods to check for -32801 errors, and reports the results without actually sending any transactions. The script can run headless since the UA SDK accepts any signer, and building transactions (rather than sending them) is safe — it lets me observe whether -32801 appears at the system level before any balance checks kick in. Even if the EOA has zero USDC, the build call will tell me whether Particle returns the maintenance error or proceeds, which directly answers whether the V2 migration is still blocked. But there's a catch: the Magic EOA's private key isn't extractable (it's held by Magic's MPC-TSS), so I can't run server-side code as that same account. I need to check what credentials are actually available in the repo — the Particle keys and whether there's a separate dev/test EOA private key I can use. For testing whether the project is under maintenance in 7702 mode, I don't actually need a real private key at all. I can use the Particle public credentials from .env.local and a random address as the owner to probe whether createUniversalTransaction returns -32801 at the project level — that's the cleanest approach and requires no secrets. Even better, I can use the real owner EOA address (0x53Bd615635Af778e5E460d5EEC2d6b234693206a) which is already public in the docs, so the balances reflect the actual funded account without needing its private key. This gives me a realistic, informative test against Particle's live backend using only public credentials and addresses, build-only, no gas spent. Now I need to verify the SDK actually runs in Node — the `@particle-network/universal-account-sdk` uses axios and viem which work server-side, and the reference docs mention a Node script for end-to-end verification, so it should work. I'll write a TypeScript script using tsx, read the environment variables from .env.local, and run the probe to check for the -32801 maintenance error. I'll use `node --env-file=.env.local probe.mjs` to run a plain JavaScript script that imports the SDK directly, avoiding TypeScript loader complexity. Node's bare module resolution should handle the pnpm symlinks fine, and the SDK's dependencies (axios, crypto, Buffer) are all available in Node 22, so this approach should work without needing browser globals or additional polyfills. Now I need to read .env.local to get the exact Particle environment variable names and check what credentials are available, then write a build-only probe script that constructs the UniversalAccount and reports the results without actually sending any transactions. I'll be careful not to expose any secret values in my response, though reading the file is necessary to understand the variable names.
+Понял — ключи в .env.local. Тогда давай реально проверю против живого бэкенда Particle. Magic-логин headless запустить нельзя (это браузерный iframe), но сам Particle UA SDK работает в Node — и ключевой вопрос («возвращает ли Particle -32801 в корректном 7702-режиме») можно проверить скриптом build-only, не тратя газ и не двигая средства.
+
+Сначала посмотрю, какие переменные есть в .env.local (значения секретов выводить в ответ не буду).
+
+
+1 tool call
+Read File
+
+.env.local
+
+Thought complete
+I've loaded the environment file and can see it contains sensitive credentials like the Particle client key, Magic secret key, Supabase service role key, and a private key for the receipt emitter owner, plus an admin token — I'll reference these by name only and won't output their actual values. For the probe setup, I have the Particle credentials available and the owner's private key. I'm thinking through whether to use the owner EOA address or the Magic account address (0x53Bd...) as the ownerAddress parameter — the Magic account is the one with actual funds, so that makes more sense for testing getPrimaryAssets realistically. I'm planning to write a Node script that reads environment variables, constructs UniversalAccount instances in both legacy and 7702 modes, runs read-only calls like getSmartAccountOptions and getPrimaryAssets, and attempts build-only operations like createTransferTransaction to Base USDC without actually sending anything. I'll use the merchant address from the probe page and handle -32801 errors gracefully with clear output. Writing the probe script... I'll use viem's encodeFunctionData to handle the transfer calldata reliably. Now I'm writing the script itself, making sure to handle the SDK constructor differences between 7702 and legacy modes, then clean up the temp file when done.
+.env.local has the live Particle credentials (and, FYI, real secrets — a private key, Magic secret, Supabase service-role key; they're gitignored, so keep them out of commits). I won't print any secret values.
+
+Magic login is browser-only, but I can hit Particle's live backend in Node using the real project credentials to answer the core question — build-only, no gas, no funds moved. Let me write a probe script.
+
+
+1 tool call
+Write File
+
+ua-probe.mjs
+
+Details
+
+Thought complete
+Running it with the environment file loaded.
+Now run it against Particle's live backend.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+node --env-file=.env.local ua-probe.mjs 2>&1 | tail -60
+Particle UA probe | SDK version constant=1.0.3 | owner=0x53Bd615635Af778e5E460d5EEC2d6b234693206a
+credsPresent: project=true client=true app=true
+=== MODE: legacy ===
+  getSmartAccountOptions: evm=0xeE1FB8b1d24d658F39D1AFEc50a82D0c306c0246 solana=7wMw8rY83ivj7U464w4xhsM538zjvrMAqMtRdv4fSmXU
+  getPrimaryAssets: totalUSD=1.623595788111
+  createTransferTransaction: OK  rootHash=true  userOps=1
+  createUniversalTransaction(USDC.transfer): FAIL  code=-32801  maintenance=true
+     message: System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
+=== MODE: eip7702 ===
+  getSmartAccountOptions: evm=0x53Bd615635Af778e5E460d5EEC2d6b234693206a solana=7TWTE96B54ti6NWJmjBaSTfKBnYREAszwta3uU1VQPSs
+  getPrimaryAssets: totalUSD=1.170351
+  getEIP7702Deployments: [{"chainId":1,"delegationAddress":"0x","isDelegated":false},{"chainId":10,"delegationAddress":"0x","isDelegated":false},{"chainId":42161,"delegationAddress":"0x","isDelegated":false},{"chainId":8453,"delegationAddress":"0x","isDelegated":false},{"chainId":56,"delegationAddress":"0x","isDelegated":false},{"chainId":80094,"delegationAddress":"0x","isDelegated":false},{"chainId":146,"delegationAddress":"0x","isDelegated":false},{"chainId":137,"delegationAddress":"0x","isDelegated":false},{"chainId":5000,"delegationAddress":"0x","isDelegated":false},{"chainId":196,"delegationAddress":"0x","isDelegated":false}]
+  getEIP7702Auth([Base]): [{"chainId":0,"nonce":0,"address":"0x6640c1CCCaF07Dbe765eC05E294FE427cC92831C"}]
+  createTransferTransaction: OK  rootHash=true  userOps=1
+  createUniversalTransaction(USDC.transfer): FAIL  code=-32801  maintenance=true
+     message: System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
+DONE (no transactions sent).
+
+Thought complete
+Looking at the live test results, the legacy mode is showing the smart account address with $1.62 in assets on that legacy UA, and the transfer transaction creation is working properly with the rootHash validation. In EIP-7702 mode, the smart account resolves to the owner's EOA itself, which is the correct behavior—the EOA becomes the universal account. There's $1.17 in assets on the EOA, and the delegation status shows as not yet delegated across chains (expected before first use). The auth response indicates a chain-agnostic delegation setup with chainId:0, which is the exact scenario Magic can't sign for without per-chain pre-delegation. The transfer transaction works here too, but the universal transaction is still hitting the maintenance error even in the correct 7702 mode. The actual on-chain delegation and payment flow requires the user to complete it in the browser through Magic's login, since the EOA's private key isn't available server-side for signing the 7702 authorization. I could theoretically use the receipt emitter's private key for a full server-side send, but that would move real funds on mainnet from a different account without explicit user permission — not appropriate. So the right stopping point is here: I've empirically validated the diagnosis and confirmed the transfer rail works in 7702 mode at the build level, with the browser-based user flow as the next step. Now I'll clean up the temporary test script, update the repro documentation with this empirical confirmation (upgrading it from hypothesis to live-tested result), and then report the findings. Before I delete the script though, I should quickly test whether Arbitrum also returns the same -32801 error on createUniversalTransaction, since the demo uses Arbitrum and that would tell me whether this is a project-wide or chain-specific limitation. Adding Arbitrum test... I can reuse the same transfer calldata for Arbitrum since it's just the transfer function call to the merchant, so I'll update the script to reference that existing data instead of duplicating it.
+Decisive result. The core question is answered empirically against the live backend. Let me also cross-check Arbitrum (the strategy question) before cleaning up — is the custom-call block project-wide or Base-only?
+
+
+2 tool calls
+Replace in File
+
+ua-probe.mjs
+
+
+
+Details
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+node --env-file=.env.local ua-probe.mjs 2>&1 | tail -25
+Particle UA probe | SDK version constant=1.0.3 | owner=0x53Bd615635Af778e5E460d5EEC2d6b234693206a
+credsPresent: project=true client=true app=true
+=== MODE: legacy ===
+  getSmartAccountOptions: evm=0xeE1FB8b1d24d658F39D1AFEc50a82D0c306c0246 solana=7wMw8rY83ivj7U464w4xhsM538zjvrMAqMtRdv4fSmXU
+  getPrimaryAssets: totalUSD=1.623657495499
+  createTransferTransaction: OK  rootHash=true  userOps=1
+  createUniversalTransaction(USDC.transfer): FAIL  code=-32801  maintenance=true
+     message: System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
+=== MODE: eip7702 ===
+  getSmartAccountOptions: evm=0x53Bd615635Af778e5E460d5EEC2d6b234693206a solana=7TWTE96B54ti6NWJmjBaSTfKBnYREAszwta3uU1VQPSs
+  getPrimaryAssets: totalUSD=1.170304
+  getEIP7702Deployments: [{"chainId":1,"delegationAddress":"0x","isDelegated":false},{"chainId":10,"delegationAddress":"0x","isDelegated":false},{"chainId":42161,"delegationAddress":"0x","isDelegated":false},{"chainId":8453,"delegationAddress":"0x","isDelegated":false},{"chainId":56,"delegationAddress":"0x","isDelegated":false},{"chainId":80094,"delegationAddress":"0x","isDelegated":false},{"chainId":146,"delegationAddress":"0x","isDelegated":false},{"chainId":137,"delegationAddress":"0x","isDelegated":false},{"chainId":5000,"delegationAddress":"0x","isDelegated":false},{"chainId":196,"delegationAddress":"0x","isDelegated":false}]
+  getEIP7702Auth([Base]): [{"chainId":0,"nonce":0,"address":"0x6640c1CCCaF07Dbe765eC05E294FE427cC92831C"}]
+  createTransferTransaction: OK  rootHash=true  userOps=1
+  createUniversalTransaction(USDC.transfer): FAIL  code=-32801  maintenance=true
+     message: System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
+=== ARBITRUM cross-check (eip7702) ===
+  ARB createTransferTransaction: OK  rootHash=true
+  ARB createUniversalTransaction(USDC.transfer): FAIL  code=-32801  maintenance=true
+     message: System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
+DONE (no transactions sent).
+
+Thought complete
+The Arbitrum test confirms that `createUniversalTransaction` also fails with -32801 there, so this isn't a Base-specific issue—it's a system-wide limitation with the custom-call block. This means Arbitrum won't work as a workaround either. Now I need to clean up by removing the temporary probe script and update the documentation with these empirical findings, then prepare the final report.
+Conclusive. The -32801 block is system-wide (both Base and Arbitrum, both modes), while createTransferTransaction builds fine everywhere. Let me clean up the temp probe script and record the empirical result in the repro doc.
+
+
+1 tool call
+Delete File
+
+ua-probe.mjs
+
+Thought complete
+I'm adding a "Live probe result" subsection to the Update section at the end of the repro doc using file append.
+
+1 tool call
+Append to File
+
+particle-create-universal-repro.md
+
+
+
+Details
+
+Thought complete
+I need to update the status.md file to mark the known risk as empirically confirmed rather than just researched, and refine the root cause description to specifically reference Particle's Universal Accounts V2 migration and the withdraw-only window limitation.
+
+1 tool call
+Replace in File
+
+status.md
+
+
+
+Details
+
+Thought complete
+Let me verify the temp file is deleted and check that git status shows only the intended changes.
+Let me confirm the temp script is gone and the working tree only has intended changes.
+
+
+1 tool call
+Command
+/Users/usbdick/Documents/new-project/OneLink-Pay
+echo "=== ua-probe.mjs exists? ==="; ls ua-probe.mjs 2>&1; echo "=== git status ==="; git status --short 2>/dev/null
+=== ua-probe.mjs exists? ===
+ls: ua-probe.mjs: No such file or directory
+=== git status ===
+ M .env.example
+ M docs/integration-notes.md
+ M docs/particle-create-universal-repro.md
+ M docs/status.md
+ M package.json
+ M pnpm-lock.yaml
+ M src/app/debug/particle-probe/page.tsx
+ M src/app/pay/[id]/page.tsx
+ M src/lib/config/payment.ts
+ M src/lib/particle/universal-account.ts
+ M src/types/particle.d.ts
+
+Thought complete
+The temporary script is cleaned up and only the necessary files were modified. Now I'm presenting the live verification results from running the probe against the production Particle backend with real credentials—this was a build-only test with no gas or funds moved. I'm about to lay out the key findings, including the results table comparing the legacy Base implementation against Base 7702 and Arbitrum. The probe confirmed that createTransferTransaction works across all chains, but createUniversalTransaction returns -32801 everywhere, which points to a system-wide Particle V2 migration block rather than a bug in our code or a chain-specific issue. The 7702 mode is functioning at the account level—the EOA becomes the universal account with the smartAccountAddress matching the owner EOA, and getEIP7702Auth returns chainId:0, confirming that Magic can't sign directly, so our pre-delegation approach is the right strategy. The viable path forward is universal_7702_transfer since createTransferTransaction builds successfully in 7702 mode, while the strict universal_invoice path is blocked externally. However, completing the actual on-chain delegation and payment requires the Magic browser login since the EOA's key is held in Magic's MPC TEE and isn't extractable—so the user will need to perform the full live send through the browser at /pay/[id] or /debug/particle-probe. The EOA currently has about $1.17 in primary assets, which is enough for a small test transfer, but they'll need a bit of Base ETH for the one-time 7702 delegation gas cost. I need to clarify whether that $1.17 includes Base ETH or is just USDC, and note that since we set universalGas to false, the EOA will pay gas in native ETH directly for the delegation transaction—Magic's send7702Transaction requires the wallet to have ETH available for gas. I should flag this requirement clearly for the user and then wrap up with a final summary in Russian, marking the session as completed since the build-level verification is done and the remaining work is browser-only.
+Готово — проверил против живого продакшн-бэкенда Particle с реальными ключами из .env.local. Только build/read, ни одной транзакции не отправлено, газ не потрачен, средства не двигались, временный скрипт удалён. Рабочее дерево чистое (только нужные файлы).
+
+Результаты живого пробинга (owner EOA 0x53Bd…3206a)
+Вызов	Legacy (Base)	EIP-7702 (Base)	EIP-7702 (Arbitrum)
+getSmartAccountOptions	UA = 0xeE1FB8…0246	UA = сам EOA 0x53Bd…3206a ✅	—
+getPrimaryAssets	~$1.62 (на легаси-UA)	~$1.17 (на EOA)	—
+createTransferTransaction	OK (rootHash+userOp)	OK (rootHash+userOp)	OK
+createUniversalTransaction	❌ -32801 maintenance	❌ -32801 maintenance	❌ -32801 maintenance
+getEIP7702Deployments: на всех сетях isDelegated:false. getEIP7702Auth([8453]) вернул chainId:0 (chain-agnostic) с делегат-контрактом 0x6640c1…831C.
+
+Что это доказывает (эмпирически, высокая уверенность)
+-32801 — это блок на стороне Particle, системный. Он одинаково и на Base, и на Arbitrum, и в legacy, и в корректном 7702-режиме. Это не наш баг и не лечится исправлением инициализации или сменой сети. Подтверждает гипотезу про миграцию Universal Accounts V2 (окно «только вывод», в SDK 1.1.1 версия всё ещё 1.0.3).
+7702-режим работает на уровне аккаунта: EOA реально становится Universal Account (UA-адрес == EOA), на EOA есть ~$1.17, а getEIP7702Auth отдаёт chainId:0 — ровно случай, который Magic не умеет подписывать, поэтому наша пред-делегация по конкретной сети (ensureDelegated7702) — правильное решение. Реальность совпала с реализацией.
+createTransferTransaction собирается во всех режимах и сетях — это и есть рельс, на котором стоит наш universal_7702_transfer. То есть выбранный путь жизнеспособен.
+Вывод по стратегии: строгий universal_invoice (approve + payInvoice) внешне заблокирован — на него время не тратим. Трек Universal Accounts закрываем через universal_7702_transfer (7702-делегация EOA + createTransferTransaction).
+
+Чего я не могу сделать отсюда
+Реальную отправку (делегация + оплата) — только из браузера: приватный ключ Magic-EOA лежит в TEE Magic (MPC-TSS) и недоступен как сырой ключ, поэтому подписать 7702-авторизацию и rootHash для этого EOA можно лишь в браузерном Magic-флоу.
+
+Ваши шаги для живого end-to-end (в браузере)
+Убедиться, что на EOA 0x53Bd…3206a есть немного Base ETH на газ разовой делегации (USDC ~$1.17 для теста хватает; demo-инвойсы и так ≤0.25 USDC).
+NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer, запустить pnpm dev.
+Открыть /debug/particle-probe → «Connect in 7702 mode» → «Delegate EOA on Base (SENDS tx)» → затем обычный чекаут /pay/[id].

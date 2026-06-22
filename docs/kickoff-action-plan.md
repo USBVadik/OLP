@@ -11,7 +11,8 @@ Current repo state:
 - Base fallback works.
 - Arbitrum exploratory.
 - AuthKit inactive.
-- `transfer_fallback` default.
+- `transfer_fallback` stable fallback.
+- `universal_7702_transfer` is the active Universal Accounts Track candidate.
 - `universal_invoice` gated and blocked by Particle `-32801` for now.
 - Demo replay exists for safe judge walkthroughs.
 
@@ -38,6 +39,13 @@ Update:
 - README claims if needed
 
 Stop if the rules conflict with the current architecture.
+
+Current captured Universal Accounts Track requirement:
+
+- Universal Accounts SDK in EIP-7702 mode is required.
+- At least one cross-chain operation moving value via UA is required.
+- Functional demo may be deployed or locally runnable.
+- Judging weights: UX 40%, UA + EIP-7702 usage 30%, adoption potential 20%, technical quality/polish 10%.
 
 ## 2. Check Final Partner Bounties
 
@@ -138,6 +146,41 @@ Record for each:
 
 Do not send transactions from the probe page.
 
+## 4.5 Close Cross-Chain Proof Gap
+
+This is P0 for the Universal Accounts Track. Use `docs/cross-chain-proof-runbook.md`.
+
+Current honest status:
+
+- Base EIP-7702 delegation is proven.
+- Base-to-Base transfer/proof is proven.
+- Final-rule-compliant cross-chain value movement is not yet proven.
+
+Preferred proof:
+
+```text
+Arbitrum USDC held by the EOA
+-> Particle UA EIP-7702 transfer
+-> merchant receives Base USDC
+-> server verifies Base USDC Transfer
+-> ReceiptEmitter proof
+-> dashboard PAID
+```
+
+Before spending:
+
+- Confirm EOA has non-Base source funds.
+- Build/preview with Particle first.
+- Get explicit approval before any live payment.
+
+Acceptance:
+
+- source funds came from non-Base chain;
+- destination settlement is Base USDC;
+- EIP-7702 mode is active;
+- payment tx and proof tx are visible;
+- dashboard and success page show PAID/proof ok.
+
 ## 5. Choose Chain
 
 Default: keep Base.
@@ -164,10 +207,16 @@ Before activating Arbitrum:
 
 ## 6. Choose Payment Mode
 
-Default:
+Stable fallback:
 
 ```text
 NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback
+```
+
+Universal Accounts Track candidate:
+
+```text
+NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer
 ```
 
 Keep `transfer_fallback` if:
@@ -176,6 +225,13 @@ Keep `transfer_fallback` if:
 - final rules accept SEND/TRANSFER;
 - custom universal calls still return `-32801`;
 - server verification and ReceiptEmitter proof remain stable.
+
+Use `universal_7702_transfer` if:
+
+- Base delegation remains `isDelegated: true`;
+- `createTransferTransaction` builds;
+- the demo needs explicit EIP-7702 mode;
+- cross-chain sourcing can be proven through the transfer rail.
 
 Switch to:
 

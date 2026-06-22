@@ -4,11 +4,29 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
 import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
-import { getActivePaymentChain, getConfiguredPaymentMode, getExplorerTxUrl } from "@/lib/config/payment";
+import {
+  getActivePaymentChain,
+  getConfiguredPaymentMode,
+  getExplorerTxUrl,
+  getPaymentChainById,
+  getProofChain,
+  type ChainPaymentConfig,
+} from "@/lib/config/payment";
 import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck } from "@/components/ui";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
+const PROOF_CHAIN = getProofChain();
+
+/** Resolve a link/payment's settlement chain by id, falling back to the default chain on bad data. */
+function chainForId(chainId: number | null | undefined): ChainPaymentConfig {
+  if (chainId == null) return ACTIVE_CHAIN;
+  try {
+    return getPaymentChainById(chainId);
+  } catch {
+    return ACTIVE_CHAIN;
+  }
+}
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -89,8 +107,16 @@ function DashboardContent() {
     return payments.find((payment) => payment.payment_link_id === linkId && payment.status === "completed");
   }
 
-  function TxLink({ hash, label }: { hash: string | null | undefined; label: string }) {
-    return <TxReference label={label} hash={hash} href={hash ? getExplorerTxUrl(ACTIVE_CHAIN, hash) : null} />;
+  function TxLink({
+    hash,
+    label,
+    chain,
+  }: {
+    hash: string | null | undefined;
+    label: string;
+    chain: ChainPaymentConfig;
+  }) {
+    return <TxReference label={label} hash={hash} href={hash ? getExplorerTxUrl(chain, hash) : null} />;
   }
 
   return (
@@ -106,7 +132,7 @@ function DashboardContent() {
             mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
           </Chip>
           <Chip>
-            chain <span className="ml-1 font-mono text-ink">{ACTIVE_CHAIN.name}</span>
+            proof anchor <span className="ml-1 font-mono text-ink">{PROOF_CHAIN.name}</span>
           </Chip>
           <Chip>
             proof <span className="ml-1 font-semibold text-ink">ReceiptEmitter</span>
@@ -238,7 +264,7 @@ function DashboardContent() {
                       <div className="min-w-0">
                         <p className="font-semibold text-ink">{l.label || l.id.slice(0, 8)}</p>
                         <p className="mt-0.5 text-sm text-muted">
-                          {formatLinkAmount(l)} on {ACTIVE_CHAIN.name}
+                          {formatLinkAmount(l)} on {chainForId(l.destination_chain_id).name}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           <span className="op-chip-concept">mode {PAYMENT_MODE}</span>
@@ -279,8 +305,16 @@ function DashboardContent() {
                     {completedPayment && (
                       <div className="mt-3 space-y-2 border-t border-line pt-3">
                         <p className="op-eyebrow">Verified payment proof</p>
-                        <TxLink hash={completedPayment.tx_hash} label="Payment transaction" />
-                        <TxLink hash={completedPayment.receipt_tx_hash} label="Proof transaction" />
+                        <TxLink
+                          hash={completedPayment.tx_hash}
+                          label="Payment transaction"
+                          chain={chainForId(completedPayment.source_chain_id ?? l.destination_chain_id)}
+                        />
+                        <TxLink
+                          hash={completedPayment.receipt_tx_hash}
+                          label="Proof transaction"
+                          chain={PROOF_CHAIN}
+                        />
                       </div>
                     )}
                   </li>

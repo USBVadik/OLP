@@ -125,10 +125,40 @@
 
 @media (prefers-reduced-motion: reduce) {
   .op-animate-rise,
-  .op-animate-seal {
+  .op-animate-seal,
+  .animate-float-y,
+  .animate-shimmer,
+  .animate-pulse-glow,
+  .animate-ping,
+  .animate-draw-line,
+  .animate-count-up,
+  .animate-block-pulse {
     animation: none !important;
   }
   * {
     scroll-behavior: auto !important;
+  }
+}
+
+/* Custom cursor: hide the OS cursor only while the bespoke cursor is active (landing). */
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+
+/* Film grain — a fixed, subtle texture overlay for a premium finish (landing). */
+.op-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .op-grain {
+    display: none;
   }
 }

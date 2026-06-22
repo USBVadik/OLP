@@ -1,26 +1,42 @@
 # OneLink Pay
 
-OneLink Pay is a pre-hackathon checkout prototype: a merchant creates a USDC invoice, a customer signs in with Magic, Particle Universal Accounts builds a transfer preview, the merchant receives Base USDC, and the backend records an on-chain `InvoicePaid` proof after server-side verification.
+**On-chain spending limits for the agent era.** Sign one scoped mandate; your AI agent (or a merchant) can charge USDC — but only inside the per-charge, daily, and total caps you approved. Over-cap, off-merchant, or post-revoke charges revert on-chain at zero gas. Every payment ships a public, verifiable proof receipt.
 
-## Active Milestone B Fallback Path
+Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-hackathon) (Encode Club + 7702 Collective).
 
-- Wallet/auth: Magic embedded wallet.
-- Chain abstraction: Particle Universal Account SDK in EIP-7702 Universal Account mode.
-- Payment execution: `createTransferTransaction()` to send Base mainnet USDC to the merchant.
-- Backend verification: Base mainnet USDC `Transfer` log must match merchant and invoice amount.
-- Contract proof: backend calls `ReceiptEmitter.recordVerifiedPayment()` and emits `InvoicePaid`.
-- Database/status: Supabase `payment_links` and `payments`.
-- Token policy: Base mainnet USDC only.
-- Default payment mode: `transfer_fallback`.
-- Active ReceiptEmitter v1.1: `0x89CF50C01BDb8b47fc8f38AE4dB495FCCC685bC3` on Base mainnet.
-- Deploy tx: `0x6148c0780797c91210c62650b5f4d79316995ff21112616e04d4b18c626afc57`.
-- Explorer: `https://basescan.org/address/0x89CF50C01BDb8b47fc8f38AE4dB495FCCC685bC3`.
+## What's live
 
-The strict `createUniversalTransaction(approve + payInvoice)` path remains in code behind `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`, but the default is `transfer_fallback` while Particle returns `-32801 System maintanence...` for custom universal calls.
+- **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` at zero gas. 22 Hardhat tests pass.
+- **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public receipt page at `/receipt/[id]`. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
+- **Walletless onboarding** — Magic embedded wallet (email today; Google OAuth shipping next).
+- **EIP-7702 delegation** — Magic EOA delegated in-place via Particle UA (`useEIP7702: true`), proven on Base (tx `0x4ca6…cef0`).
 
-Arbitrum config exists for exploration only. It is not the active product chain.
+## Honest scope
+
+- ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
+- ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
+- 🚧 Cross-chain value movement via the Universal Account is in progress. The strict `createUniversalTransaction` custom-call path returns `-32801 System maintenance` during Particle's V2 migration; the active rail is `createTransferTransaction` + server-verified proof. Circle Gateway is the documented backup rail.
+- ❌ No gas sponsorship is claimed. Particle AuthKit is installed but not on the live path.
+
+The strict `createUniversalTransaction(approve + payInvoice)` path remains in code behind `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`, but the default is `transfer_fallback` while Particle returns `-32801` for custom universal calls.
 
 `@particle-network/authkit` is installed, but it is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
+
+## How OneLink compares (prior art)
+
+Scoped spend permissions are not new — OneLink builds on the wave rather than reinventing it. The wedge is the packaging: an on-chain, revocable mandate bound to the **x402** agent-payment rail, entered through a **Particle Universal Account + EIP-7702**, with a public proof receipt.
+
+| Prior art | What it is | Where OneLink differs |
+|-----------|-----------|------------------------|
+| [Coinbase / Base Spend Permissions](https://docs.base.org/base-account/improve-ux/spend-permissions) | Allowance (token, period, amount) + revoke for smart wallets | Wallet-agnostic — the mandate lives on the 7702 Universal Account, not a specific smart wallet; adds a public proof receipt + x402 binding |
+| [ERC-7715](https://eips.ethereum.org/EIPS/eip-7715) / [ERC-7710](https://eips.ethereum.org/EIPS/eip-7710) | Emerging standard: wallet-granted scoped permissions + delegation | A focused, auditable payments-specific mandate aligned to that vocabulary, shipping today |
+| [ZeroDev session keys](https://docs.zerodev.app/smart-accounts/permissions/intro) | Low-level account-layer delegation (rate limits, allowed calls) | We enforce a payment policy (per-charge / daily / total / merchant) with legible consent + on-chain proof |
+| [Google AP2](https://cloud.google.com/blog/products/ai-machine-learning/announcing-agents-to-payments-ap2-protocol/) | Agent "mandates" as off-chain Verifiable Credentials | Same word "mandate", but enforced on-chain at the user's account — a promise becomes a guarantee |
+| [x402 (Coinbase)](https://docs.x402.org/) | HTTP 402 pay-per-call rail for agents; no spend controls | OneLink is the spending-limit layer that bounds x402 spend |
+
+**The wedge:** OneLink Pay is the on-chain, revocable spending limit for the x402 agent economy — built on Particle Universal Accounts + EIP-7702, with a public proof receipt for every payment.
+
+Built with **Particle** (Universal Accounts + EIP-7702), **Magic** (email/Google embedded wallet), and **Arbitrum** (settlement).
 
 ## Security Notes
 
@@ -89,7 +105,8 @@ This is the same hex address as the previous Base mainnet v1 deployment, but it 
 ## SDK Versions
 
 - `@particle-network/universal-account-sdk`: `1.1.1`
-- `magic-sdk`: `29.4.2`
+- `magic-sdk`: `33.7.1`
+- `@magic-ext/evm`: `1.5.0`
 - `viem`: `2.48.8`
 - `ethers`: `6.16.0`
 - `next`: `14.2.35`

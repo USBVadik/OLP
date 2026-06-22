@@ -4,7 +4,9 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia"
+    "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "deploy:spend-policy:base-sepolia": "hardhat run scripts/deploy-spend-policy.ts --network baseSepolia",
+    "deploy:spend-policy:base": "hardhat run scripts/deploy-spend-policy.ts --network base"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

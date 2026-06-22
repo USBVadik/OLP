@@ -8,28 +8,36 @@ import {
   RECEIPT_EMITTER_ABI,
 } from "@/lib/contracts/receipt-emitter";
 import {
+  ARBITRUM_CHAIN,
+  BASE_CHAIN,
+  OPTIMISM_CHAIN,
   getActivePaymentChain,
   getConfiguredPaymentMode,
   getExplorerTxUrl,
+  getPaymentChainById,
+  getProofChain,
   getPublicRpcUrl,
 } from "@/lib/config/payment";
 import {
   Wordmark,
   Chip,
-  ConceptTag,
   Dot,
   Disclosure,
   VerifiedSeal,
-  TxReference,
   Field,
   IconShield,
   IconLock,
   IconCheck,
+  IconArrowUpRight,
 } from "@/components/ui";
+import { PermissionFirewall } from "@/components/permission-firewall";
+import { ProofReceiptCard } from "@/components/proof-receipt";
+import { LoginWithGoogleButton } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
 let Magic: any = null;
 let EVMExtension: any = null;
+let OAuthExtension: any = null;
 let UniversalAccount: any = null;
 let SUPPORTED_TOKEN_TYPE: any = null;
 let UNIVERSAL_ACCOUNT_VERSION: any = null;
@@ -40,6 +48,10 @@ async function loadSDKs() {
     Magic = magicMod.Magic;
     const evmMod = await import("@magic-ext/evm");
     EVMExtension = evmMod.EVMExtension;
+  }
+  if (!OAuthExtension) {
+    const oauthMod = await import("@magic-ext/oauth2");
+    OAuthExtension = oauthMod.OAuthExtension;
   }
   if (!UniversalAccount) {
     const particleMod = await import("@particle-network/universal-account-sdk");
@@ -77,6 +89,47 @@ async function resolveMagicEoa(magic: any): Promise<string | null> {
     }
   }
   return null;
+}
+
+// One-time EIP-7702 delegation of the EOA on a chain (split flow). Sends a real Type-4 tx
+// (needs native gas on that chain) and waits until Particle reports the delegation, so the
+// next createTransferTransaction build is already-delegated (no inline auth -> avoids AA24).
+async function delegateChain7702(
+  magic: any,
+  ua: any,
+  ownerAddress: string,
+  chainId: number,
+  logFn?: (action: string, result: string, data?: any) => void
+): Promise<void> {
+  const deployments = await ua.getEIP7702Deployments();
+  const dep = (deployments || []).find((d: any) => d.chainId === chainId);
+  if (dep?.isDelegated) {
+    logFn?.("ensureDelegated", "already delegated", { chainId });
+    return;
+  }
+  logFn?.("ensureDelegated", "delegating", { chainId });
+  await magic.evm.switchChain(chainId);
+  const [auth] = await ua.getEIP7702Auth([chainId]);
+  const authorization = await magic.wallet.sign7702Authorization({
+    contractAddress: auth.address,
+    chainId,
+    nonce: auth.nonce + 1,
+  });
+  const delegationTx = await magic.wallet.send7702Transaction({
+    to: ownerAddress,
+    data: "0x",
+    authorizationList: [authorization],
+  });
+  logFn?.("ensureDelegated", "submitted", { chainId, delegationTx });
+  for (let i = 0; i < 15; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const fresh = await ua.getEIP7702Deployments();
+    if ((fresh || []).find((d: any) => d.chainId === chainId)?.isDelegated) {
+      logFn?.("ensureDelegated", "confirmed", { chainId });
+      return;
+    }
+  }
+  logFn?.("ensureDelegated", "submitted but not confirmed in time", { chainId });
 }
 
 const ACTIVE_CHAIN = getActivePaymentChain();
@@ -162,6 +215,57 @@ function extractEvmTxHash(value: any, keyHint?: string): string | null {
   return null;
 }
 
+// A cross-chain UA op produces userOps/tx hashes on multiple chains. mark-paid must verify
+// the merchant Transfer on the SETTLEMENT chain, so pick the tx hash tied to that chainId.
+function extractSettlementTxHash(value: any, settlementChainId: number): string | null {
+  const matches: string[] = [];
+  function walk(node: any) {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    const chainId = (node as any).chainId;
+    const txHash = (node as any).txHash ?? (node as any).transactionHash;
+    if (
+      typeof chainId === "number" &&
+      chainId === settlementChainId &&
+      typeof txHash === "string" &&
+      /^0x[a-fA-F0-9]{64}$/.test(txHash)
+    ) {
+      matches.push(txHash);
+    }
+    for (const nested of Object.values(node)) walk(nested);
+  }
+  walk(value);
+  return matches[0] ?? null;
+}
+
+// Particle splits a cross-chain transfer into deposit/lending/settlement phases. Only the
+// SETTLEMENT phase contains the actual merchant delivery on the settlement chain — deposit
+// and lending hashes are internal solver legs and must NOT be used for verification.
+function getSettlementOpHash(status: any, settlementChainId: number): string | null {
+  const ops = status?.settlementUserOperations ?? [];
+  const match = ops.find(
+    (op: any) =>
+      op?.chainId === settlementChainId &&
+      typeof op?.txHash === "string" &&
+      /^0x[a-fA-F0-9]{64}$/.test(op.txHash)
+  );
+  return match?.txHash ?? null;
+}
+
+// UA_TRANSACTION_STATUS terminal-failure codes (from the SDK enum). Reaching any of these
+// without a settlement hash means the merchant was never paid (and the principal wasn't moved).
+const UA_FAILED_STATUS: Record<number, string> = {
+  6: "EXECUTION_FAILED",
+  8: "REFUND_LOCAL",
+  9: "REFUND_PENDING",
+  10: "REFUND_FAILED",
+  11: "REFUND_FINISHED",
+  14: "PENNY_FAILED",
+};
+
 function getPaymentAmountLabel(paymentLink: PaymentLink): string {
   try {
     const token = resolvePaymentToken(paymentLink.token, paymentLink.destination_chain_id);
@@ -174,6 +278,17 @@ function getPaymentAmountLabel(paymentLink: PaymentLink): string {
 function shortAddress(address: string | null | undefined) {
   if (!address) return "Not connected";
   return `${address.slice(0, 10)}...${address.slice(-6)}`;
+}
+
+// The settlement chain (where the merchant actually receives USDC) is per-invoice and may
+// differ from the proof chain (always Base). Fall back to the active chain before the link loads.
+function getSettlementChainForLink(paymentLink: PaymentLink | null) {
+  if (!paymentLink) return ACTIVE_CHAIN;
+  try {
+    return getPaymentChainById(paymentLink.destination_chain_id);
+  } catch {
+    return ACTIVE_CHAIN;
+  }
 }
 
 function getSettlementChainIds(tx: any): number[] {
@@ -189,7 +304,7 @@ function getModeHelpText() {
     return "Strict invoice mode: Particle builds approve + payInvoice.";
   }
   if (PAYMENT_MODE === "universal_7702_transfer") {
-    return "EIP-7702 mode: your Magic EOA is delegated in-place to the Universal Account, then Particle settles USDC to the merchant on Base.";
+    return "EIP-7702 mode: your Magic EOA is delegated in-place to the Universal Account, then Particle attempts settlement on the invoice's chain. Cross-chain sourcing remains experimental during Particle's V2 migration.";
   }
   return "Fallback mode: Particle sends USDC on Base, then backend verifies the Transfer and records proof.";
 }
@@ -264,12 +379,14 @@ export default function PayPage({ params }: { params: { id: string } }) {
         setPaymentLink(data.link);
         log("fetchPaymentLink", "ok", { id: params.id });
         if (data.link.status === "completed" && data.link.paid_tx_hash) {
+          const settlementChain = getPaymentChainById(data.link.destination_chain_id);
+          const proofChain = getProofChain();
           setTxResult({
             txHash: data.link.paid_tx_hash,
-            paymentExplorer: getExplorerTxUrl(ACTIVE_CHAIN, data.link.paid_tx_hash),
+            paymentExplorer: getExplorerTxUrl(settlementChain, data.link.paid_tx_hash),
             proofTxHash: data.link.latest_payment?.receipt_tx_hash ?? null,
             proofExplorer: data.link.latest_payment?.receipt_tx_hash
-              ? getExplorerTxUrl(ACTIVE_CHAIN, data.link.latest_payment.receipt_tx_hash)
+              ? getExplorerTxUrl(proofChain, data.link.latest_payment.receipt_tx_hash)
               : null,
             verification: { deduped: true, link: data.link },
           });
@@ -292,20 +409,97 @@ export default function PayPage({ params }: { params: { id: string } }) {
     loadSDKs().then(() => {
       const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!;
       // EIP-7702 needs Magic's EVM extension (sign7702Authorization / send7702Transaction
-      // and evm.switchChain are exposed through it on the configured chain).
+      // and evm.switchChain). Configure all settlement chains so cross-chain settlement can
+      // sign inline 7702 auths on whichever chain the SDK routes through (incl. Optimism,
+      // the zero-balance cross-chain target).
       const m = IS_7702
         ? new Magic(key, {
             extensions: [
               new EVMExtension([
-                { rpcUrl: getPublicRpcUrl(ACTIVE_CHAIN), chainId: ACTIVE_CHAIN.chainId, default: true },
+                { rpcUrl: getPublicRpcUrl(BASE_CHAIN), chainId: BASE_CHAIN.chainId, default: true },
+                { rpcUrl: getPublicRpcUrl(ARBITRUM_CHAIN), chainId: ARBITRUM_CHAIN.chainId },
+                { rpcUrl: getPublicRpcUrl(OPTIMISM_CHAIN), chainId: OPTIMISM_CHAIN.chainId },
               ]),
+              new OAuthExtension(),
             ],
           })
-        : new Magic(key);
+        : new Magic(key, { extensions: [new OAuthExtension()] });
       setMagic(m);
       log("initMagic", "ok", { mode: PAYMENT_MODE, eip7702: IS_7702, key: key?.slice(0, 10) + "..." });
     });
   }, []);
+
+  // After Magic loads, surface an existing session (set by an email login or by
+  // the OAuth round-trip via /auth/callback) so the page does not show the login
+  // form to a user who is already authenticated. Mirrors the same pattern in
+  // /firewall/page.tsx.
+  const completePostAuth = useCallback(async (magicInstance: any) => {
+    await loadSDKs();
+    const userAddress = await resolveMagicEoa(magicInstance);
+    if (!userAddress) throw new Error("No public address from Magic");
+
+    setAddress(userAddress);
+    log("magicLogin", "got address", { address: userAddress });
+
+    // 4. Init Particle UA. In EIP-7702 mode the EOA itself becomes the Universal Account.
+    const particleCreds = {
+      projectId: process.env.NEXT_PUBLIC_PARTICLE_PROJECT_ID!,
+      projectClientKey: process.env.NEXT_PUBLIC_PARTICLE_CLIENT_KEY!,
+      projectAppUuid: process.env.NEXT_PUBLIC_PARTICLE_APP_ID!,
+    };
+    const universalAccount = IS_7702
+      ? new UniversalAccount({
+          ...particleCreds,
+          smartAccountOptions: {
+            useEIP7702: true,
+            name: "UNIVERSAL",
+            version: UNIVERSAL_ACCOUNT_VERSION,
+            ownerAddress: userAddress,
+          },
+          // Matches Particle's official Magic 7702 demo. universalGas:true was tested for
+          // cross-chain settlement gas but it stripped the inline 7702 auth and failed
+          // simulation (-32613), so we keep the proven false path.
+          tradeConfig: { slippageBps: 100, universalGas: false },
+        })
+      : new UniversalAccount({ ...particleCreds, ownerAddress: userAddress });
+    setUa(universalAccount);
+    log("initParticleUA", "ok", { mode: PAYMENT_MODE, eip7702: IS_7702, ownerAddress: userAddress });
+
+    // 5. Fetch balances
+    setStep("balances");
+    try {
+      const assets = await universalAccount.getPrimaryAssets();
+      setBalances(assets);
+      log("getPrimaryAssets", "ok", { assets });
+      setStep("preview");
+    } catch (e: any) {
+      log("getPrimaryAssets", "error", { message: e.message, stack: e.stack });
+      setBalances({ error: e.message });
+      setStep("preview"); // proceed anyway to show preview
+    }
+  }, []);
+
+  // Auto-restore an existing Magic session (from email login persisted across reload,
+  // or from the Google OAuth round-trip on /auth/callback). Without this, a logged-in
+  // user lands on the email form again because nothing else triggers post-auth init.
+  useEffect(() => {
+    if (!magic) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const isLoggedIn = await magic.user.isLoggedIn();
+        if (cancelled || !isLoggedIn) return;
+        log("autoLogin", "restoring Magic session", {});
+        await completePostAuth(magic);
+      } catch (e: any) {
+        // No active session — render the login UI normally.
+        log("autoLogin", "no active session", { message: e?.message });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [magic, completePostAuth]);
 
   // 3. Login with Magic
   const handleLogin = useCallback(async (email: string) => {
@@ -315,52 +509,13 @@ export default function PayPage({ params }: { params: { id: string } }) {
       log("magicLogin", "starting", { email });
       const didToken = await magic.auth.loginWithMagicLink({ email });
       log("magicLogin", "authenticated", { didToken: didToken?.slice(0, 20) + "..." });
-
-      const userAddress = await resolveMagicEoa(magic);
-      if (!userAddress) throw new Error("No public address from Magic");
-
-      setAddress(userAddress);
-      log("magicLogin", "got address", { address: userAddress });
-
-      // 4. Init Particle UA. In EIP-7702 mode the EOA itself becomes the Universal Account.
-      const particleCreds = {
-        projectId: process.env.NEXT_PUBLIC_PARTICLE_PROJECT_ID!,
-        projectClientKey: process.env.NEXT_PUBLIC_PARTICLE_CLIENT_KEY!,
-        projectAppUuid: process.env.NEXT_PUBLIC_PARTICLE_APP_ID!,
-      };
-      const universalAccount = IS_7702
-        ? new UniversalAccount({
-            ...particleCreds,
-            smartAccountOptions: {
-              useEIP7702: true,
-              name: "UNIVERSAL",
-              version: UNIVERSAL_ACCOUNT_VERSION,
-              ownerAddress: userAddress,
-            },
-            tradeConfig: { slippageBps: 100, universalGas: false },
-          })
-        : new UniversalAccount({ ...particleCreds, ownerAddress: userAddress });
-      setUa(universalAccount);
-      log("initParticleUA", "ok", { mode: PAYMENT_MODE, eip7702: IS_7702, ownerAddress: userAddress });
-
-      // 5. Fetch balances
-      setStep("balances");
-      try {
-        const assets = await universalAccount.getPrimaryAssets();
-        setBalances(assets);
-        log("getPrimaryAssets", "ok", { assets });
-        setStep("preview");
-      } catch (e: any) {
-        log("getPrimaryAssets", "error", { message: e.message, stack: e.stack });
-        setBalances({ error: e.message });
-        setStep("preview"); // proceed anyway to show preview
-      }
+      await completePostAuth(magic);
     } catch (e: any) {
       log("magicLogin", "error", { message: e.message });
       setError(e.message);
       setStep("error");
     }
-  }, [magic]);
+  }, [magic, completePostAuth]);
 
   // 6. Create transaction preview
   const handleCreateTransaction = useCallback(async () => {
@@ -368,9 +523,10 @@ export default function PayPage({ params }: { params: { id: string } }) {
     setIsCreatingTx(true);
     setError(null);
     try {
+      const settlementChain = getPaymentChainById(paymentLink.destination_chain_id);
       const token = resolvePaymentToken(paymentLink.token, paymentLink.destination_chain_id);
-      if (token.symbol !== "USDC" || paymentLink.destination_chain_id !== ACTIVE_CHAIN.chainId) {
-        throw new Error(`Active prototype supports ${ACTIVE_CHAIN.name} USDC invoices only`);
+      if (token.symbol !== "USDC") {
+        throw new Error("Active prototype supports USDC invoices only");
       }
       if (!paymentLink.contract_invoice_id || !paymentLink.registered_tx_hash) {
         throw new Error("Invoice is not registered on-chain yet. Missing contract_invoice_id or registered_tx_hash.");
@@ -381,7 +537,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
       log("createTransaction", "starting", {
         mode: PAYMENT_MODE,
-        chainId: ACTIVE_CHAIN.chainId,
+        settlementChainId: settlementChain.chainId,
         merchant: paymentLink.merchant_address,
         contractInvoiceId: paymentLink.contract_invoice_id,
         receiptEmitter: receiptEmitterAddress,
@@ -389,6 +545,17 @@ export default function PayPage({ params }: { params: { id: string } }) {
         amountForParticle: particleAmount,
         token: token.address,
       });
+
+      // EIP-7702: pre-delegate ONLY the gas-funded source chain (Base). Per Particle's
+      // official Magic 7702 demo, delegating one chain is sufficient — the SDK requests
+      // inline 7702 authorizations for any OTHER chains during the transaction (handled in
+      // sendVia7702), which are signed off-chain and need no native gas on those chains.
+      // This is what makes a cross-chain settlement to a zero-balance chain (Optimism)
+      // possible without the payer holding gas there. Pre-delegating the settlement chain
+      // on-chain (the old behavior) would require native gas on that chain and is unnecessary.
+      if (IS_7702) {
+        await delegateChain7702(magic, ua, address, ACTIVE_CHAIN.chainId, log);
+      }
 
       let tx: any;
       if (PAYMENT_MODE === "universal_invoice") {
@@ -427,8 +594,8 @@ export default function PayPage({ params }: { params: { id: string } }) {
       } else {
         const txPayload = {
           token: {
-            chainId: ACTIVE_CHAIN.chainId,
-            address: token.address,
+            chainId: settlementChain.chainId,
+            address: (paymentLink.destination_token_address as Address | null) ?? token.address,
           },
           amount: particleAmount,
           receiver: paymentLink.merchant_address,
@@ -480,35 +647,13 @@ export default function PayPage({ params }: { params: { id: string } }) {
     } finally {
       setIsCreatingTx(false);
     }
-  }, [ua, paymentLink, address, isCreatingTx]);
+  }, [ua, paymentLink, address, isCreatingTx, magic]);
 
   // EIP-7702: pre-delegate the EOA on the active chain (split from the payment tx to
   // avoid the AA24 error seen when delegation + transaction are combined in one step).
   const ensureDelegated7702 = useCallback(async () => {
     if (!ua || !magic || !address) throw new Error("Universal Account or wallet not ready");
-    const deployments = await ua.getEIP7702Deployments();
-    const dep = (deployments || []).find((d: any) => d.chainId === ACTIVE_CHAIN.chainId);
-    if (dep?.isDelegated) {
-      log("ensureDelegated", "already delegated", { chainId: ACTIVE_CHAIN.chainId });
-      return;
-    }
-    setPayPhase(`Step 1/2: delegating your account on ${ACTIVE_CHAIN.name} (one-time)...`);
-    log("ensureDelegated", "delegating", { chainId: ACTIVE_CHAIN.chainId });
-    await magic.evm.switchChain(ACTIVE_CHAIN.chainId);
-    // getEIP7702Auth returns chain-specific params; Magic cannot sign chainId:0 auths,
-    // so we pre-delegate per chain. nonce is incremented by 1 for the standalone tx.
-    const [auth] = await ua.getEIP7702Auth([ACTIVE_CHAIN.chainId]);
-    const authorization = await magic.wallet.sign7702Authorization({
-      contractAddress: auth.address,
-      chainId: ACTIVE_CHAIN.chainId,
-      nonce: auth.nonce + 1,
-    });
-    const delegationTx = await magic.wallet.send7702Transaction({
-      to: address,
-      data: "0x",
-      authorizationList: [authorization],
-    });
-    log("ensureDelegated", "ok", { delegationTx });
+    await delegateChain7702(magic, ua, address, ACTIVE_CHAIN.chainId, log);
   }, [ua, magic, address]);
 
   // EIP-7702: pre-delegate, sign any inline authorizations the SDK still needs, sign the
@@ -521,18 +666,41 @@ export default function PayPage({ params }: { params: { id: string } }) {
     setPayPhase("Step 2/2: signing and settling the payment...");
 
     const authorizations: Array<{ userOpHash: string; signature: string }> = [];
-    const nonceMap = new Map<number, string>();
+    const nonceMap = new Map<string, string>();
     for (const op of tx.userOps ?? []) {
       if (op.eip7702Auth && !op.eip7702Delegated) {
-        let serialized = nonceMap.get(op.eip7702Auth.nonce);
+        // Particle issues cross-chain legs with a chain-agnostic authorization (chainId 0)
+        // and bundles the authorization tuple using THAT chainId. We must sign over the same
+        // chainId, otherwise the recovered authority won't match and the bundler rejects the
+        // op with AA24 (signature error) — which is exactly what substituting op.chainId did.
+        const authChainId = op.eip7702Auth.chainId ?? op.chainId;
+        const cacheKey = `${authChainId}:${op.eip7702Auth.nonce}`;
+        let serialized = nonceMap.get(cacheKey);
         if (!serialized) {
-          const a = await magic.wallet.sign7702Authorization({
-            contractAddress: op.eip7702Auth.address,
-            chainId: op.eip7702Auth.chainId || op.chainId,
-            nonce: op.eip7702Auth.nonce,
-          });
+          let a: any;
+          try {
+            a = await magic.wallet.sign7702Authorization({
+              contractAddress: op.eip7702Auth.address,
+              chainId: authChainId,
+              nonce: op.eip7702Auth.nonce,
+            });
+            log("sign7702Auth", "signed", { authChainId, leg: op.chainId, nonce: op.eip7702Auth.nonce });
+          } catch (signErr: any) {
+            // Some Magic builds reject the chain-agnostic chainId 0. Fall back to the leg's
+            // concrete chainId so we at least produce a chain-specific authorization.
+            log("sign7702Auth", "chainId0 rejected; retrying with leg chainId", {
+              authChainId,
+              leg: op.chainId,
+              error: signErr?.message,
+            });
+            a = await magic.wallet.sign7702Authorization({
+              contractAddress: op.eip7702Auth.address,
+              chainId: op.chainId,
+              nonce: op.eip7702Auth.nonce,
+            });
+          }
           serialized = Signature.from({ r: a.r, s: a.s, v: a.v }).serialized;
-          nonceMap.set(op.eip7702Auth.nonce, serialized);
+          nonceMap.set(cacheKey, serialized);
         }
         authorizations.push({ userOpHash: op.userOpHash, signature: serialized });
       }
@@ -589,26 +757,52 @@ export default function PayPage({ params }: { params: { id: string } }) {
       log("sendTransaction", "ok", result);
 
       if (paymentLink && address) {
-        let txHash = extractEvmTxHash(result);
-        // Particle settles the UA transfer on-chain asynchronously, so the Base tx hash
-        // (e.g. under userOps[].txHash) is usually absent from the immediate send result.
-        // Poll getTransaction until it surfaces instead of failing on the first miss.
+        const settlementChain = getPaymentChainById(paymentLink.destination_chain_id);
+        const proofChain = getProofChain();
+
+        const isCrossChainSettlement = settlementChain.chainId !== proofChain.chainId;
+
+        // Resolve the merchant-delivery tx hash. Prefer the settlement phase (true cross-chain
+        // delivery lives there). Otherwise trust the settlement-chain hash only once the UA tx
+        // is FINISHED — same-chain transfers (Arbitrum/Base) put the transfer in a non-
+        // "settlement" userOp, and gating on FINISHED avoids grabbing an intermediate
+        // deposit/lending leg of an in-flight cross-chain op.
+        const UA_FINISHED = 7;
+        let txHash: string | null = getSettlementOpHash(result, settlementChain.chainId);
+
+        // Particle settles asynchronously, so the settlement hash is usually absent from the
+        // immediate result. Poll getTransaction, and fail fast (clear message) if the
+        // transaction reaches a terminal failure/refund state without settling.
         if (!txHash && transaction.transactionId) {
-          setPayPhase("Waiting for on-chain settlement...");
-          for (let attempt = 0; attempt < 12 && !txHash; attempt++) {
+          setPayPhase(
+            isCrossChainSettlement
+              ? "Waiting for cross-chain settlement on " + settlementChain.name + "..."
+              : "Waiting for on-chain settlement..."
+          );
+          for (let attempt = 0; attempt < 20 && !txHash; attempt++) {
             await new Promise((resolve) => setTimeout(resolve, 3000));
             const status = await ua.getTransaction(transaction.transactionId);
-            txHash = extractEvmTxHash(status);
+            const statusCode = Number(status?.status);
+            txHash =
+              getSettlementOpHash(status, settlementChain.chainId) ??
+              (statusCode === UA_FINISHED
+                ? extractSettlementTxHash(status, settlementChain.chainId) ?? extractEvmTxHash(status)
+                : null);
             log(
               "getParticleTransaction",
-              txHash ? `hash found (attempt ${attempt})` : `pending (attempt ${attempt})`,
-              status
+              txHash ? `settled (attempt ${attempt})` : `status ${statusCode} (attempt ${attempt})`,
+              { status: statusCode, settlementOps: (status?.settlementUserOperations ?? []).length }
             );
+            if (!txHash && statusCode in UA_FAILED_STATUS) {
+              throw new Error(
+                `Particle did not complete the ${settlementChain.name} settlement (status ${statusCode} = ${UA_FAILED_STATUS[statusCode]}). No USDC reached the merchant and your principal was not moved — only the small routing fee was taken. This is a Particle Universal Accounts V2 migration limitation, not a OneLink Pay error.`
+              );
+            }
           }
         }
         if (!txHash) {
           throw new Error(
-            "Particle has not surfaced a Base settlement tx hash yet. The transfer may still be processing. If USDC already left your wallet, do NOT retry — verify with the Particle transactionId instead."
+            `Particle has not surfaced a ${settlementChain.name} settlement tx hash yet. The transfer may still be processing. If USDC already left your wallet, do NOT retry — verify with the Particle transactionId instead.`
           );
         }
 
@@ -626,10 +820,10 @@ export default function PayPage({ params }: { params: { id: string } }) {
         setTxResult({
           particle: result,
           txHash,
-          paymentExplorer: getExplorerTxUrl(ACTIVE_CHAIN, txHash),
+          paymentExplorer: getExplorerTxUrl(settlementChain, txHash),
           proofTxHash: markPaidData.proofTxHash ?? markPaidData.payment?.receipt_tx_hash ?? null,
           proofExplorer: markPaidData.proofTxHash
-            ? getExplorerTxUrl(ACTIVE_CHAIN, markPaidData.proofTxHash)
+            ? getExplorerTxUrl(proofChain, markPaidData.proofTxHash)
             : null,
           verification: markPaidData,
         });
@@ -664,14 +858,14 @@ export default function PayPage({ params }: { params: { id: string } }) {
         </header>
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
-          <CheckoutBadges />
+          <CheckoutBadges paymentLink={paymentLink} />
 
           {/* STEP: Loading */}
           {step === "loading" && <LoadingState title="Loading invoice" detail="Fetching payment link details." />}
 
           {/* STEP: Login */}
           {step === "login" && paymentLink && (
-            <LoginForm paymentLink={paymentLink} onLogin={handleLogin} />
+            <LoginForm paymentLink={paymentLink} onLogin={handleLogin} magic={magic} returnTo={`/pay/${params.id}`} />
           )}
 
           {/* STEP: Balances loading */}
@@ -741,14 +935,15 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
 // --- Sub-components ---
 
-function CheckoutBadges() {
+function CheckoutBadges({ paymentLink }: { paymentLink: PaymentLink | null }) {
+  const settlementChain = getSettlementChainForLink(paymentLink);
   return (
     <div className="mb-5 flex flex-wrap gap-2" title={getModeHelpText()}>
       <Chip>
         mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
       </Chip>
       <Chip>
-        chain <span className="ml-1 font-mono text-ink">{ACTIVE_CHAIN.name} {ACTIVE_CHAIN.chainId}</span>
+        chain <span className="ml-1 font-mono text-ink">{settlementChain.name} {settlementChain.chainId}</span>
       </Chip>
     </div>
   );
@@ -788,6 +983,9 @@ function PaymentSummary({
   paymentLink: PaymentLink;
   address?: string | null;
 }) {
+  const settlementChain = getSettlementChainForLink(paymentLink);
+  const proofChain = getProofChain();
+  const isCrossChain = settlementChain.chainId !== proofChain.chainId;
   return (
     <section className="overflow-hidden rounded-3xl border border-line bg-paper">
       <div className="flex items-center justify-between px-5 pt-5">
@@ -809,22 +1007,15 @@ function PaymentSummary({
       <dl className="divide-y divide-line px-5">
         <Field
           label="Merchant receives"
-          value={`${getPaymentAmountLabel(paymentLink)} on ${ACTIVE_CHAIN.name}`}
+          value={`${getPaymentAmountLabel(paymentLink)} on ${settlementChain.name}`}
         />
-        <Field label="Active chain" value={`${ACTIVE_CHAIN.name} (${ACTIVE_CHAIN.chainId})`} />
+        <Field label="Settlement chain" value={`${settlementChain.name} (${settlementChain.chainId})`} />
+        {isCrossChain ? (
+          <Field label="Proof anchored on" value={`${proofChain.name} (${proofChain.chainId})`} />
+        ) : null}
         <Field label="Payment mode" value={PAYMENT_MODE} mono />
         <Field label="Merchant" value={shortAddress(paymentLink.merchant_address)} mono />
         {address ? <Field label="Your wallet" value={shortAddress(address)} mono /> : null}
-        <div className="flex items-center justify-between gap-4 py-3">
-          <div>
-            <p className="text-sm text-muted">Spend caps</p>
-            <p className="mt-0.5 text-xs text-faint">Scoped limits for future automation</p>
-          </div>
-          <span className="flex items-center gap-2">
-            <span className="text-sm font-medium text-ink">Off</span>
-            <ConceptTag />
-          </span>
-        </div>
       </dl>
 
       <div className="m-5 mt-3 rounded-2xl border border-line bg-paper2 p-4">
@@ -832,6 +1023,14 @@ function PaymentSummary({
           <Dot tone="gold" /> Proof behavior
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">{getModeProofText()}</p>
+        {isCrossChain ? (
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Cross-chain candidate: you hold no USDC on {settlementChain.name}. Particle&apos;s
+            Universal Liquidity attempts to source from your balances on other chains and settle
+            on {settlementChain.name}. If settlement completes, the InvoicePaid proof is anchored
+            on {proofChain.name}.
+          </p>
+        ) : null}
         <p className="mt-2 text-xs font-medium">
           <span className={paymentLink.registered_tx_hash ? "text-verify" : "text-muted"}>
             {paymentLink.registered_tx_hash
@@ -851,45 +1050,58 @@ function SuccessState({
   paymentLink: PaymentLink | null;
   txResult: any;
 }) {
-  return (
-    <div className="py-2">
-      <div className="mb-5 text-center">
+  if (!paymentLink || !txResult?.txHash) {
+    return (
+      <div className="py-2 text-center">
         <VerifiedSeal animate />
         <p className="mt-4 font-display text-2xl font-semibold text-ink">Payment verified</p>
         <p className="mt-1 text-sm text-muted">
           USDC transfer verified and an InvoicePaid proof was recorded on-chain.
         </p>
       </div>
+    );
+  }
 
-      {paymentLink && txResult?.txHash ? (
-        <div className="rounded-2xl border border-line bg-paper2 p-4">
-          <dl className="divide-y divide-line">
-            <Field label="Amount" value={getPaymentAmountLabel(paymentLink)} emphasis />
-            <Field label="Merchant" value={shortAddress(paymentLink.merchant_address)} mono />
-            <Field label="Invoice ID" value={paymentLink.contract_invoice_id ?? "—"} mono />
-            <Field label="Payment mode" value={PAYMENT_MODE} mono />
-          </dl>
-          <div className="mt-4 space-y-2">
-            <TxReference label="Payment transaction" hash={txResult.txHash} href={txResult.paymentExplorer} />
-            <TxReference label="Proof transaction" hash={txResult.proofTxHash} href={txResult.proofExplorer} />
-          </div>
-        </div>
-      ) : null}
+  const settlementChain = getSettlementChainForLink(paymentLink);
+  const proofChain = getProofChain();
+  const isCrossChain = settlementChain.chainId !== proofChain.chainId;
 
-      {txResult ? (
-        <div className="mt-4">
-          <Disclosure summary="Raw payment result">
-            <pre className="max-h-72 overflow-auto text-left text-xs text-muted">
-              {JSON.stringify(txResult, null, 2)}
-            </pre>
-          </Disclosure>
-        </div>
-      ) : null}
+  return (
+    <div className="py-1">
+      <ProofReceiptCard
+        amountLabel={getPaymentAmountLabel(paymentLink)}
+        merchant={paymentLink.merchant_address}
+        invoiceId={paymentLink.contract_invoice_id}
+        mode={PAYMENT_MODE}
+        settlementChainName={settlementChain.name}
+        proofChainName={proofChain.name}
+        isCrossChain={isCrossChain}
+        payment={{ hash: txResult.txHash, href: txResult.paymentExplorer }}
+        proof={{ hash: txResult.proofTxHash ?? null, href: txResult.proofExplorer ?? null }}
+      />
+      <div className="mt-4 flex justify-center">
+        <a
+          href={`/receipt/${paymentLink.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="op-btn-ghost"
+        >
+          View shareable receipt
+          <IconArrowUpRight className="h-4 w-4" />
+        </a>
+      </div>
+      <div className="mt-4">
+        <Disclosure summary="Raw payment result">
+          <pre className="max-h-72 overflow-auto text-left text-xs text-muted">
+            {JSON.stringify(txResult, null, 2)}
+          </pre>
+        </Disclosure>
+      </div>
     </div>
   );
 }
 
-function LoginForm({ paymentLink, onLogin }: { paymentLink: PaymentLink; onLogin: (email: string) => void }) {
+function LoginForm({ paymentLink, onLogin, magic, returnTo }: { paymentLink: PaymentLink; onLogin: (email: string) => void; magic: any | null; returnTo: string }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -898,7 +1110,13 @@ function LoginForm({ paymentLink, onLogin }: { paymentLink: PaymentLink; onLogin
       <PaymentSummary paymentLink={paymentLink} />
       {paymentLink.label ? <p className="px-1 text-sm text-muted">{paymentLink.label}</p> : null}
 
-      <div className="space-y-3 rounded-2xl border border-line bg-paper2 p-4">
+      <div className="space-y-4 rounded-2xl border border-line bg-paper2 p-4">
+        <LoginWithGoogleButton magic={magic} returnTo={returnTo} />
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
+          <span className="h-px flex-1 bg-line" />
+          <span>or with email</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
         <div>
           <label htmlFor="op-email" className="mb-1 block text-sm font-medium text-ink">
             Email to sign in
@@ -948,6 +1166,10 @@ function PreviewStep({
   onPay: () => void;
 }) {
   const settlementChainIds = transaction ? getSettlementChainIds(transaction) : [];
+  const settlementChain = getSettlementChainForLink(paymentLink);
+  const previewToken = resolvePaymentToken(paymentLink.token, paymentLink.destination_chain_id);
+  const previewTokenAddress =
+    (paymentLink.destination_token_address as Address | null) ?? previewToken.address;
   return (
     <div className="space-y-4">
       {/* Wallet info */}
@@ -957,6 +1179,16 @@ function PreviewStep({
       </div>
 
       <PaymentSummary paymentLink={paymentLink} address={address} />
+
+      <PermissionFirewall
+        merchantAddress={paymentLink.merchant_address}
+        tokenAddress={previewTokenAddress}
+        chainId={paymentLink.destination_chain_id}
+        amountAtomic={paymentLink.amount}
+        symbol={previewToken.symbol}
+        decimals={previewToken.decimals}
+        payerAddress={address}
+      />
 
       {/* Balances */}
       <div className="rounded-2xl border border-line bg-paper p-4">
@@ -998,7 +1230,7 @@ function PreviewStep({
               <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               {PAYMENT_MODE === "universal_invoice"
                 ? "Particle builds approve + payInvoice as a universal transaction."
-                : `Merchant receives USDC on ${ACTIVE_CHAIN.name} through your Universal Account.`}
+                : `Merchant receives USDC on ${settlementChain.name} through your Universal Account.`}
             </li>
             <li className="flex gap-2">
               <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />

@@ -4,7 +4,13 @@ import { DEMO_REPLAY_PAYMENT_LINK, isDemoReplayRequest } from "@/lib/demo/replay
 import {
   RECEIPT_EMITTER_ABI,
 } from "@/lib/contracts/receipt-emitter";
-import { getActivePaymentChain } from "@/lib/config/payment";
+import {
+  ARBITRUM_CHAIN,
+  BASE_CHAIN,
+  OPTIMISM_CHAIN,
+  getPaymentChainById,
+  getProofChain,
+} from "@/lib/config/payment";
 import { createPublicClient, createWalletClient, http, keccak256, stringToBytes, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
@@ -12,14 +18,22 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-const MAX_DEMO_USDC_ATOMIC = BigInt(250000);
-const ACTIVE_CHAIN = getActivePaymentChain();
-
 const CreateLinkSchema = z.object({
   merchantAddress: z.string().startsWith("0x"),
   amount: z.string(),
   token: z.literal("USDC"),
-  destinationChainId: z.literal(ACTIVE_CHAIN.chainId).default(ACTIVE_CHAIN.chainId),
+  destinationChainId: z
+    .number()
+    .refine(
+      (id) =>
+        id === BASE_CHAIN.chainId ||
+        id === ARBITRUM_CHAIN.chainId ||
+        id === OPTIMISM_CHAIN.chainId,
+      {
+        message: "destinationChainId must be Base, Arbitrum, or Optimism",
+      }
+    )
+    .default(ARBITRUM_CHAIN.chainId),
   label: z.string().optional(),
   expiresInHours: z.number().optional(),
 });
@@ -63,13 +77,28 @@ export async function POST(request: Request) {
     const parsed = CreateLinkSchema.parse(body);
     const amountAtomic = BigInt(parsed.amount);
     if (amountAtomic <= BigInt(0)) throw new Error("Amount must be greater than 0");
-    if (amountAtomic > MAX_DEMO_USDC_ATOMIC) {
-      throw new Error("Demo invoices are capped at 0.25 USDC until Milestone B is stable");
+
+    // Settlement chain = where USDC is delivered to the merchant (Base or Arbitrum).
+    // Proof chain = where the ReceiptEmitter + owner gas wallet live (always Base). The
+    // invoice is registered and proven on the proof chain regardless of settlement chain.
+    const settlementChain = getPaymentChainById(parsed.destinationChainId);
+    const proofChain = getProofChain();
+    // Per-chain demo caps (atomic USDC). Optimism is the cross-chain target; allow up to
+    // 3 USDC so the amount comfortably exceeds the routing fee (small amounts can be skipped
+    // by solvers as uneconomical).
+    const maxAtomicByChain: Record<number, bigint> = {
+      [BASE_CHAIN.chainId]: BigInt(250_000),
+      [ARBITRUM_CHAIN.chainId]: BigInt(3_000_000),
+      [OPTIMISM_CHAIN.chainId]: BigInt(3_000_000),
+    };
+    const maxAtomic = maxAtomicByChain[settlementChain.chainId] ?? BigInt(250_000);
+    if (amountAtomic > maxAtomic) {
+      throw new Error(`Demo invoices on ${settlementChain.name} are capped at ${Number(maxAtomic) / 1_000_000} USDC`);
     }
 
     const expiresAt = new Date(Date.now() + (parsed.expiresInHours ?? 24) * 3600_000).toISOString();
-    const receiptEmitterAddress = ACTIVE_CHAIN.receiptEmitterAddress;
-    if (!receiptEmitterAddress) throw new Error(`${ACTIVE_CHAIN.name} ReceiptEmitter address is not configured`);
+    const receiptEmitterAddress = proofChain.receiptEmitterAddress;
+    if (!receiptEmitterAddress) throw new Error(`${proofChain.name} ReceiptEmitter address is not configured`);
 
     const { data, error } = await supabaseAdmin
       .from("payment_links")
@@ -77,8 +106,8 @@ export async function POST(request: Request) {
         merchant_address: parsed.merchantAddress,
         amount: parsed.amount,
         token: parsed.token,
-        destination_chain_id: ACTIVE_CHAIN.chainId,
-        destination_token_address: ACTIVE_CHAIN.usdcAddress,
+        destination_chain_id: settlementChain.chainId,
+        destination_token_address: settlementChain.usdcAddress,
         merchant_id: parsed.merchantAddress, // simplified for MVP
         label: parsed.label ?? null,
         status: "active",
@@ -102,7 +131,7 @@ export async function POST(request: Request) {
         args: [
           contractInvoiceId,
           parsed.merchantAddress as Address,
-          ACTIVE_CHAIN.usdcAddress,
+          settlementChain.usdcAddress,
           amountAtomic,
           deadline,
         ],

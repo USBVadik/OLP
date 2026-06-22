@@ -1,0 +1,875 @@
+# Kiro Strategy Ideas OneLink Pay
+
+Original source path omitted for Kiro document-name compatibility.
+
+---
+
+окей у тебя есть пока идеи как улучшить/усилить проект ? мне кажется наша идея поверхностная и примитивная, недостаточно хороша для победы
+
+Kiro
+
+Thought complete
+The user wants to elevate their project beyond surface-level work to make it competitive for the hackathon. I need to think strategically about what would actually differentiate it, starting with understanding the hackathon's focus on EIP-7702 and the broader context of UXmaxx and Encode Club. Looking at the rubric — UX is weighted heavily at 40%, with EIP-7702 understanding at 30% — I should focus on what makes this project uniquely leverage 7702's capabilities rather than just being a generic crypto payment tool. The key insight is that 7702 lets existing EOAs gain smart account powers temporarily and reversibly, which opens up possibilities around scoped permissions and session keys that weren't feasible before. That's the defensible, 7702-native angle worth exploring. The real opportunity here is reframing away from "crypto checkout" and toward the safety problem that 7702 actually creates. The ecosystem is genuinely worried about delegation risks and phishing attacks when you hand over your EOA to a contract. If OneLink Pay positions itself as the consent and permission-safety layer that lets users see exactly what they're authorizing and set spending limits before delegating, that's solving a real pain point that judges will recognize as deeply 7702-native. The concrete features that would stand out: a clear, human-readable consent receipt showing the exact scope of what you're signing (amount, recipient, expiration), and then the ability to set session-based spend caps so subsequent charges within that mandate don't require re-signing. That's the killer use case for subscriptions and agentic payments — all controlled by the user and revocable on-chain. The proof mechanism ties it together: cryptographically linking what you consented to against what actually executed, so a verifier can confirm the merchant stayed within bounds. And the agentic angle is hot right now — letting an AI agent pay on your behalf but only within a scoped mandate feels very 2026. The challenge is that true on-chain enforced session keys would need a smart-account module or policy contract that the 7702 delegation points to, which is significant work and might be outside what we can control with Particle's UA. But the spend-cap feature is the strongest differentiator and can be demoed same-chain without cross-chain complexity. I'm weighing three approaches: building our own 7702-compatible policy contract for full on-chain enforcement (impressive but risky on time), anchoring a consent mandate on-chain with server-side verification backed by cryptographic proofs (achievable and reuses existing infrastructure), or focusing on the UX and demo layer with beautiful consent flows and revocation — since UX is 40% of the judging criteria and that's where we can really shine. The user wants depth, not surface-level features, so I should reframe this around a core thesis: OneLink Pay as the consent and guardrail layer that transforms 7702 delegation from a scary blind signature into a legible, scoped, revocable mandate with cryptographic proof of execution. The demo would show a user signing once to grant a merchant permission to charge within specific limits (amount per transaction, daily cap, token type, recipient address) across a 7-day window, all recorded on-chain and auditable. The real differentiator is the "overcharge blocked" moment—when the merchant tries to charge $5 against a $2-per-transaction cap and gets rejected. To make that genuine rather than theater, I'd need on-chain enforcement through a MandateRegistry contract that validates every charge against the consented terms before allowing the transfer, or use 7702's session validators to restrict what the delegated account can do. The MandateRegistry approach is more achievable in the timeframe: the merchant calls a contract function that checks the mandate's caps and expiry, then either executes the USDC transfer or attests the charge as valid. The implementation is clean—user signs the mandate off-chain (EIP-712), approves the registry as a spender up to the total cap, and then the merchant submits charges through the contract, which enforces per-transaction and per-day limits before pulling funds. Revocation is just a matter of zeroing the allowance or calling a revoke function. This is self-contained, doesn't rely on Particle's cross-chain infrastructure, and pairs naturally with UA and 7702. I'm also thinking about the agentic extension: an AI shopping agent holding a session key scoped to this mandate, paying as the user shops but never exceeding the limits—that's a compelling 2026 narrative. Now I need to be realistic about the timeline. The hackathon may have already started, so I should propose something impactful but achievable, and be clear about what's MVP versus stretch. I'm going to structure my response around diagnosing why the current approach feels generic, reframing it around 7702's core tension between delegation power and drain risk, and positioning the consent layer as the real differentiator. The hero feature is the on-chain-enforced spend caps with the "overcharge blocked" moment and revocation. I'll map out a concrete build plan tied to the rubric, offer the agentic vision as the extension, and then brainstorm a few other strong directions to make sure I'm recommending the best one. The consent and guardrail layer is my top pick—it's 7702-native, UX-heavy, has a clear adoption story, and uses the proof infrastructure we already have. But I'm also seeing that agentic commerce rails and subscription payments for crypto are really just applications of that same core mechanism, just with different framings and personas. Subscriptions especially are a relatable pain point in crypto. So I'll propose the consent mandate as the engine, subscriptions as the demo, and agents as the visionary kicker. The cryptographic depth here is what makes it compelling: the mandate is a signed EIP-712 object with terms like max per charge, max total, daily limits, and expiry. It gets registered on-chain, and each charge is validated against those terms before execution. Anyone can verify the charge history against the mandate to prove consent was honored. This connects to our existing receipt infrastructure. The 7702 angle is critical because it's what makes this actually different from just a normal smart contract with an approve. With 7702, the EOA becomes a user account in a single operation—so you can delegate, approve the mandate, and execute the first charge all in one signed UserOp. Even better, you could delegate to a session validator that only permits transfers matching active mandates, making the guardrail enforced at the account level itself. And clearing the delegation is a nuclear revoke if needed. For the MVP, we'll stick with the simpler MandateRegistry plus approve approach through UA's existing 7702 delegate—that's cleaner than building a custom session validator and keeps us aligned with the timeline. We still get the UX wins from UA: email login, unified balance, sign-once batching. The multi-chain 7702 delegation is already live across Base, Arbitrum, and Optimism, so we can show the account is ready everywhere, and we're honest that cross-chain settlement is pending Particle V2. On the UX side, I need to nail the consent card with plain language and visual scoping, plus a live dashboard showing remaining budget, charge history, time left, and a revoke button. The real demo moments are the blocked overcharge toast—visceral proof the guardrail works—and maybe a shareable consent receipt for verification. A toggle between "blind sign (old way)" and "OneLink consent (legible)" makes the contrast concrete. I should frame this as the safety layer for 7702, since delegation has a known dark side with phishing and drainers. That gives the project urgency and relevance. The MandateRegistry contract is sound: approve the registry for a max total, create a mandate with terms, merchant calls charge() which validates caps and transfers USDC, user can revoke. Standard Solidity, and we already have Hardhat set up with a deployed ReceiptEmitter, so adding this is feasible. But there's a blocker: the UA's custom-transaction path is currently returning -32801 (maintenance), so we can't batch arbitrary contract calls like approve + createMandate in a single UserOp right now—only transfers work through the UA. This means I need to rethink the flow. The merchant-side charge() is straightforward since the merchant server controls that key and calls it directly. For the payer side, if UA custom calls are blocked, I have a few paths: use Magic's EOA directly for normal transactions (loses the "sign once" benefit and requires gas), explore whether send7702Transaction can batch calls via the delegate, or structure it so the payer only does a USDC transfer (which UA supports) and signs an EIP-712 mandate off-chain, letting the registry validate the signature without a separate tx. Actually, there's a cleaner approach: the payer signs an off-chain EIP-712 mandate and a permit signature (USDC on Base supports EIP-2612 permit), so the registry can pull funds without the payer needing to submit any contract calls. This is fully gasless for the payer and sidesteps the UA custom call limitation entirely. But this raises a question about 7702 centrality — we could make the payer's 7702-delegated account itself enforce the mandate through a session-validator contract, so the account's delegated code checks the mandate before executing charges. That would make 7702 the core mechanism rather than just a login layer. The tradeoff is clear: we could build our own minimal session-validator contract and delegate the Magic EOA to it directly via 7702, letting the payer hand scoped session keys to merchants or agents while the validator enforces spending limits on-chain. It's the most 7702-native approach and the strongest demo for the collective — "your email wallet becomes programmable and enforces your rules" — but it means abandoning Particle's UA for execution and writing a validator contract ourselves, which is more work within the hackathon timeline. So I'm thinking a tiered approach: lock in an MVP first using MandateRegistry + EIP-712 mandates + EIP-2612 permits for gasless payouts, where merchants pull within caps and the contract enforces overcharge protection and revocation. It's reliable, uses Magic's 7702 for the multi-chain story, and we've already proven the flow works. Then if time allows, layer on the custom SessionValidator as the stretch goal to show the full vision. The user wants to win and isn't afraid to build, so I'll pitch both but recommend the MVP as the safe path. Now I'm settling on the narrative angle: "The seatbelt for 7702" — it's sticky and directly addresses the ecosystem's real fear around drainers. I'll frame the two killer use cases as subscriptions (proven adoption pattern) and agentic payments (trendy, forward-looking), then map it all back to the rubric and lay out the concrete build plan. The MVP is achievable without cross-chain complexity, and I can stretch toward the custom SessionValidator if time allows. I should be clear about what's already proven — the Magic email login, the 7702 delegation, the proof infrastructure — so this feels like an evolution, not a restart. The user's right that polishing the current checkout won't cut it; the mandate reframe adds real depth and a memorable hook.
+Хороший инстинкт — и ты прав. Давай честно поставлю диагноз, а потом дам конкретный реврейм, который, по-моему, реально может выиграть.
+
+Почему сейчас ощущается «плоско»
+«Крипто-чекаут со ссылкой и пруфом оплаты» — это коммодити. Платёжные ссылки есть у всех, а «доказательство оплаты» само по себе не вау. Наш реальный актив — это слой, который сейчас стоит заглушкой Spend caps: Off. Мы спрятали самое ценное.
+
+И есть очень своевременный угол: EIP-7702 — это палка о двух концах. Делегируя EOA контракту, ты даёшь ему власть над аккаунтом — и весь экосистемный страх 2026 года вокруг 7702 это дрейнеры/фишинг через злонамеренную делегацию. Никто пока не сделал «ремень безопасности» для этого.
+
+Реврейм (тезис)
+OneLink Pay — слой осознанного согласия и гард-рейлов для Universal Accounts на EIP-7702. Подпиши один раз, задай лимиты, которые невозможно превысить, и получи криптодоказательство, что исполнение совпало с согласием.
+
+Платёж перестаёт быть продуктом — он становится демонстрацией безопасной, ограниченной, проверяемой авторизации. «Seatbelt for 7702».
+
+Геройская механика: programmable consent mandates
+Вместо «оплати инвойс» — пользователь выдаёт mandate (ограниченный мандат):
+
+«Этот мерчант может списывать до $2 за раз, максимум $10 за 24ч, только USDC, только на этот адрес, 7 дней, отзывается в любой момент.»
+Подпись один раз (EIP-712, без газа для плательщика через permit).
+Дальше списания идут без переподписи, но контракт-реестр ревертит всё, что выходит за рамки.
+Три «денежных» момента для демо:
+
+Overcharge BLOCKED — мерчант пытается списать $5 при лимите $2 → ончейн-реверт, видно вживую. Гард-рейл реально работает, а не на словах.
+Revoke в один тап — мандат гаснет; плюс «ядерная» опция очистить саму 7702-делегацию. Обратимость 7702 как фича безопасности.
+Provable consent — любой может реплейнуть события Charged(mandateId, …) и доказать, что сумма не превысила согласованное. Это эволюция нашего InvoicePaid, а не выброс.
+Два убойных фрейминга (для «adoption 20%»)
+Подписки за стейблы: «Stripe-подписки для крипты» — реальная боль (крипта не умеет recurring без кастодиала). Мандат = подписка.
+Агентные платежи (очень в тренде 2026): «Дай AI-агенту кошелёк с ограничителями: $20/день, max $5/покупка — он платит, пока ты шопишься, но не больше.» Сессионный ключ, ограниченный мандатом. Это прямо в тему 7702 Collective.
+Почему это бьёт в рубрику
+UX 40%: контраст «слепая подпись хеша (как у всех)» против «легибельного согласия с явным scope» + дашборд остатка лимита + анимация блокировки овердрафта.
+UA + 7702 30%: мандат подписывается 7702-аккаунтом; в максимальной версии EOA делегируется в наш session-validator, который сам отказывается переплачивать.
+Adoption 20%: подписки + агенты — конкретные рынки.
+Polish 10%: у нас уже неплохой UI, докрутим до «consent receipt», который можно расшарить и проверить.
+План (важно — НЕ зависит от сломанного кросчейна)
+Эволюция того, что есть, не переписывание:
+
+MVP (надёжно, реально успеть): контракт MandateRegistry на Base + подпись мандата EIP-712 + permit USDC (плательщик подписывает один раз, без газа), мерчант-пулл в пределах лимитов, реверт на превышение, события для пруфа. Логин/UA/мульти-чейн-7702 остаются как есть. Демо: создать мандат → 2 успешных списания → попытка овердрафта (блок) → revoke. Это самодостаточно и не упирается ни в Particle cross-chain, ни в createUniversalTransaction (он у нас в maintenance).
+HERO (если успеваем, максимальный 7702): свой минимальный 7702 SessionValidator, в который делегируем Magic-EOA (через тот самый sign7702Authorization/send7702Transaction, который мы уже доказали рабочим) — аккаунт enforce-ит мандат на уровне самого аккаунта + сессионный ключ для агента. Вот это «вау» прямо под 7702 Collective.
+Важно: то, что мы УЖЕ сделали (email→UA, 7702 на Base+Arbitrum+Optimism, ReceiptEmitter, same-chain settlement, consent-UI), всё переиспользуется — мандат это и есть «consent + proof + permission-safety», только сделанный по-настоящему.
+
+Моё предложение: берём MVP-мандаты как геройскую фичу и я прямо сейчас начинаю — пишу MandateRegistry.sol + флоу подписи мандата, и перестраиваю чекаут в «consent mandate». Хочешь — стартую с контракта и схемы данных, покажу каркас через несколько шагов. И параллельно держим HERO-версию (7702 session-validator) как стретч, если останется время.
+
+Сказать с чего начать — с контракта мандатов или сперва накидать пользовательский флоу/экраны?
+
+Est. Credits Used: 5,64
+Elapsed time: 3m 31s
+
+
+Checkpoint
+Restore
+не стесняйся выжать что то действительно крутое! Сделай глубокое исследование на тему! Про время не волнуйся у нас в распоряжении множество ресурсов и агентов так что успеем, смотри не на ограничения по ресурсам и времени а в первую очередь на то какой крутой продукт в целом возможно выжать, так что бы мы действительно победили
+
+Kiro
+
+Thought complete
+I need to dig into the current state of account abstraction and agentic payment infrastructure—EIP-7702, universal accounts, x402—to identify what would actually be a breakthrough product in this space by 2026. The goal is to find the sharpest, most defensible angle that could genuinely win, leveraging the resources and agent capabilities available. I need to prioritize my research around agentic payment standards like x402 and AP2, since those represent the cutting edge and would signal deep expertise to the judges. I'll search for information on session keys and permissions mechanisms via 7702, the security vulnerabilities that need solving, and what the 7702 Collective is actually focused on this year.
+Отлично — тогда давай копнём по-настоящему глубоко. Я сделаю ресёрч по самому переднему краю (7702 + агентные платежи + стандарты согласия в 2026), найду незанятую нишу и соберу из этого амбициозную, но связную продуктовую идею. Сначала факты.
+
+
+4 tool calls
+web_search
+web_search
+web_search
+web_search
+
+Thought complete
+EIP-7702 phishing attacks are a documented and serious threat—there's actual research showing how authorization exploits have been weaponized by criminal contracts, which strongly validates the need for a safety layer. Wallets like MetaMask Smart Account, Ambire, and Daimo are actively dealing with delegation phishing risks. What's crystallizing now is that x402 (Coinbase's HTTP 402 protocol) is becoming THE agentic payment rail—agents pay per API request in USDC with AWS CloudFront integration planned for mid-2026, settling onchain through signed token transfer authorizations. Meanwhile, AP2 (Google's Agent Payments Protocol) is the trust and authorization layer—it uses three cryptographically signed Mandates as W3C Verifiable Credentials, donated to the FIDO Alliance in 2026, which is essentially the scoped authorization framework I was conceptualizing, now backed by Google and industry standards. EIP-7702 session keys from thirdweb and Coinbase enforce spending limits through delegate contracts with daily caps and per-transaction restrictions. The landscape is converging around agent identity verification standards from Mastercard, Visa, Google, and crypto-native DIDs—and the real opportunity sits at the intersection of x402 as the payment mechanism and AP2 as the authorization layer. But there's a critical gap: x402 lets agents pay and AP2 defines the mandate as an off-chain Verifiable Credential, yet there's no on-chain enforcement mechanism that actually prevents a compromised or rogue agent from draining beyond the user's intent. EIP-7702 delegation is powerful but also the exact vector drainers exploit. So the killer insight is that OneLink Pay becomes the on-chain guardrail—it translates the AP2 mandate concept into an on-chain-enforced 7702 session policy on a Universal Account, integrates with x402 so real AI agents can pay through it, but ensures they can never exceed the user's signed mandate with every transaction auditable and enforced. This sits at the intersection of three 2026 trends (x402 agentic payments, AP2 mandates, and 7702 account programmability) and directly solves the documented 7702 risk of over-delegation and draining. The product reframes from crypto checkout to a safety and consent rail where a human grants an AI agent a scoped, on-chain-enforced, revocable spending mandate on their EIP-7702 Universal Account. The demo flow is: user logs in via email to a Universal Account, creates a mandate specifying daily and per-call spend limits in USDC to x402 endpoints with a 24-hour expiration, signs it once as an AP2-style EIP-712 credential, and the 7702 delegation points to a SessionMandate validator that enforces these rules. When the agent hits an x402-paywalled API and needs to pay, the validator checks the mandate on-chain and either allows the transaction or reverts if it exceeds limits. The wow moments are: the agent runs autonomously making multiple micropayments with the budget visibly ticking down (no human signing each time), any attempt to exceed the cap or pay a non-whitelisted address gets blocked on-chain as a visible safety feature, and revoking the mandate instantly clears the 7702 delegation and strips the agent's spending power. Every charge produces a provable receipt linking the mandate to execution, with a public verification page. This hits all the key angles—7702 gets a novel session-mandate validator with reversibility as safety, Universal Accounts provides chain-abstracted balance and login, x402 becomes the credible agentic payment rail, AP2 mandates get on-chain enforcement teeth via 7702, and the UX delivers legible consent with live budget visibility and clear blocking when limits are exceeded. Now I need to dig deeper into the technical specifics to make sure I'm representing x402, AP2, and 7702 accurately—specifically how x402 payment authorization actually flows, how 7702 session keys enforce spending limits, and the AP2 mandate structure so I can map everything correctly. Let me research the x402 integration details, the session-key delegate pattern for spending limits, and the AP2 mandate format.
+This research is striking. The pieces fit together into something much bigger than a checkout. Let me pull the technical specifics on the two rails I'd build on, so the architecture is credible and accurate.
+
+
+2 tool calls
+@power-exa-exa/web_fetch_exa
+{
+  "maxCharacters": 5000,
+  "urls": [
+    "https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works",
+    "https://eco.com/support/en/articles/15039722-eip-7702-stablecoin-use-cases"
+  ],
+  "_meta": {
+    "_isValid": true,
+    "_activePath": [],
+    "_completedPaths": [
+      [
+        "maxCharacters"
+      ],
+      [
+        "urls",
+        0
+      ],
+      [
+        "urls",
+        1
+      ]
+    ]
+  }
+}
+# How x402 Works - Coinbase Developer Documentation
+URL: https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works
+
+> ## Documentation Index
+> 
+> Fetch the complete documentation index at: https://docs.cdp.coinbase.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# How x402 Works
+
+This page explains the complete payment flow in x402, from initial request to payment settlement.
+
+## Overview
+
+x402 enables programmatic payments over HTTP using a simple request-response flow. When a client requests a paid resource, the server responds with payment requirements, the client submits payment, and the server delivers the resource.
+
+## Payment Flow
+
+### Step-by-Step Process
+
+1. Client makes HTTP request - The client sends a standard HTTP request to a resource server for a protected endpoint.
+2. Server responds with 402 - The resource server returns an HTTP 402 Payment Required status code with payment requirements in the `PAYMENT-REQUIRED` header.
+3. Client creates payment - The client examines the payment requirements and creates a payment payload using their wallet based on the specified scheme.
+4. Client resubmits with payment - The client sends the same HTTP request again, this time including the `PAYMENT-SIGNATURE` header containing the signed payment payload.
+5. Server verifies payment - The resource server validates the payment payload either: Locally (if running their own verification) Via a facilitator service (recommended)
+6. Facilitator validates - If using a facilitator, it checks the payment against the scheme and network requirements, returning a verification response.
+7. Server processes request - If payment is valid, the server fulfills the original request. If invalid, it returns another 402 response.
+8. Payment settlement - The server initiates blockchain settlement either: Directly by submitting to the blockchain Through the facilitator's `/settle` endpoint
+9. Facilitator submits onchain - The facilitator broadcasts the transaction to the blockchain based on the payment's network and waits for confirmation.
+10. Settlement confirmation - Once confirmed onchain, the facilitator returns a payment execution response.
+11. Server delivers resource - The server returns a 200 OK response with: The requested resource in the response body A `PAYMENT-RESPONSE` header containing the settlement details
+
+## Key Components
+
+- Client & Server - The roles and responsibilities of each party
+- Facilitator - Optional service that handles payment verification and settlement
+- HTTP 402 - How payment requirements are communicated
+- Networks & Facilitators - Available networks and facilitator options
+
+## Why This Design?
+
+The x402 protocol is designed to be:
+
+- Stateless - No sessions or authentication required
+- HTTP-native - Works with existing web infrastructure
+- Blockchain-agnostic - Supports multiple networks through facilitators
+- Developer-friendly - Simple integration with standard HTTP libraries
+
+## Next Steps
+
+- Ready to accept payments? See Quickstart for Sellers
+- Want to make payments? See Quickstart for Buyers
+- Looking for specific networks? Check Network Support
+
+# EIP-7702 Stablecoin Use Cases | Support
+URL: https://eco.com/support/en/articles/15039722-eip-7702-stablecoin-use-cases
+
+EIP-7702 Stablecoin Use Cases | Support
+
+Table of contents
+
+EIP-7702 Stablecoin Use Cases | Support
+[Skip to main content](#main-content)
+[![Support](https://downloads.intercomcdn.com/i/o/bswxc49x/589158/b7d7ffc062cc9d65848ad33aab14/6fa94b672e312a4371e8e3cecece1edf.png)](https://eco.com/support/en/)
+Search for articles...
+# EIP-7702 Stablecoin Use Cases
+Pectra upgrade unlocks batched USDC, gasless pay, recovery, and pull payments for EOAs
+Written by Eco
+Updated over 3 weeks ago
+Table of contents
+[](#h_cf66fe6233)
+[](#h_7342c3a186)
+[](#h_ae2c9fd556)
+[](#h_680b125053)
+[](#h_5d5b8eb3ce)
+[](#h_6072ddf401)
+[](#h_35f09acdad)
+[](#h_068bb0d0f9)
+[](#h_7a2f616161)
+[](#h_9ace5b14af)
+[](#h_af59e00e43)
+[](#h_62fdfa3784)
+[](#h_375be34954)
+[](#h_936b730196)
+[](#h_568f4878ba)
+[](#h_3e46e90c62)
+[](#h_bb0864bc93)
+[](#h_9f5982fe27)
+[](#h_8a7b40135d)
+[](#h_fb940dd4d6)
+[](#h_587fbaeb4c)
+[![EIP-7702 for Stablecoin Payments](https://eco-c1bf1945b488.intercom-attachments-1.com/i/o/bswxc49x/2377007819/052bd154bbbfac90c62b3a19f39a/hero_15039722.png?expires=1781919000&signature=d66ea187bc873b1abbe7462d5759fc73708b0d58fd7bbffb98f40bc502eab3ef&req=diMgEcl%2BmoleUPMW1HO4zaRcI3EoYNrViJNXwaVa2xHKOwmQm9AxNhGDnqGG%0AJHt4tUQ%2Fj3NlTDJ%2F664%3D%0A)]( )
+EIP-7702 lets a regular Ethereum address (an EOA, the kind MetaMask hands you when you create a wallet) temporarily borrow the powers of a smart contract. For one transaction, or for a longer window if you choose, your address can batch calls, sponsor its own gas, recover from a lost key, or auto-route a payment, then snap back to a normal EOA. It shipped with the Pectra upgrade in May 2025 and changed what stablecoin payments can look like without forcing anyone to migrate funds.
+​
+This article walks through what EIP-7702 actually does, how it differs from ERC-4337, and the six stablecoin payment patterns it unlocks: batched USDC transfers, gasless payments via paymaster, social recovery, auto-swap on receive, merchant pull payments, and subscription debits. We close with the delegation phishing risk and how live wallets like MetaMask Smart Account, Ambire, and Daimo are handling it.
+​
+# What EIP-7702 actually changes
+An Externally Owned Account is the wallet you control with a private key. It can sign transactions, but it cannot run code. A smart contract account can run code, but historically you had to deploy a new contract and move funds into it, which most users never bothered to do.
+​
+EIP-7702 introduces a new transaction type (0x04) that carries an authorization list. Each authorization signs over a contract address. When the transaction executes, the EOA's code field temporarily points at that contract. Any call to the EOA during the transaction runs the contract's logic, with the EOA's storage and balance. When the transaction ends, the delegation either persists (until revoked) or clears, depending on how the wallet sets it up.
+​
+The practical effect: your existing address keeps the same balance, the same history, the same ENS name, but now it can do things only smart contracts could do before. No migration, no new address to share with anyone.
+​
+# EIP-7702 vs ERC-4337
+ERC-4337 (account abstraction, live since March 2023) lets users operate a separate smart contract wallet through a parallel mempool of UserOperations and a bundler. It works, but it requires deploying a new contract account and moving assets to it. The bundler infrastructure is also separate from normal Ethereum transaction flow.
+​
+EIP-7702 takes a different path. It upgrades the EOA itself rather than asking users to switch to a new account type. There is no new contract to deploy per user. There is no parallel mempool. The same transaction format goes through the regular Ethereum network. ERC-4337 contracts can be reused as the delegate target, so a wallet vendor can write one verified implementation and have every user delegate to it.
+​
+The two specs are complementary. EIP-7702 is the on-ramp; ERC-4337 is the destination architecture for users who want a fully separate smart account. For stablecoin payments specifically, 7702 removes the migration step that kept smart wallet adoption in the single digits.
+​
+# Six stablecoin payment patterns EIP-7702 unlocks
+# 1. Batched USDC transfers
+A normal EOA can send one USDC transfer per transaction. To pay five contractors, you sign five times and pay five base fees. With 7702 delegation to a batch executor contract, your wallet signs once and the contract loops through five transfer calls atomically. If any one fails, the whole batch reverts, so you never half-pay a payroll run. Daimo and Ambire both ship this as a default in their 7702 wallets.
+​
+# 2. Gasless USDC payments via paymaster
+Without 7702, a user holding only USDC has to acquire ETH before they can move that USDC. With a 7702 delegation to a paymaster-aware contract, the wallet can attach a paymaster that pays gas in ETH on the user's behalf and either eats the cost (sponsorship) or charges the user a USDC fee inside the same transaction. The recipient sees a clean USDC transfer; the user never touches ETH.
+​
+# 3. Social recovery for stablecoin wallets
+Lose your seed phrase on an EOA and the balance is gone. With 7702, the EOA can delegate to a recovery module that lets a quorum of guardians (other addresses you trust, hardware keys, or a passkey on a second device) replace the signing key after a timelock. The funds never move. Anyone who already has your address pinned for invoicing keeps using it. This is the feature that makes a stablecoin wallet acceptable to a small business that cannot lose payroll to a lost laptop.
+​
+# 4. Auto-swap to stablecoin on receive
+A delegate contract can run logic on inbound transfers. If a customer sends ETH or another token to your address, the delegate can route it through a DEX and settle the position in USDC, all in the same transaction the inbound transfer triggered. The address looks like a stablecoin-only inbox to the rest of the world while accepting any asset.
+​
+# 5. Merchant pull payments
+EOAs cannot grant scoped permissions; once you approve a token spend, the spender can pull up to the limit at any time. A 7702 delegate can enforce session keys with caps, expirations, and per-merchant allowances. A coffee shop can pull up to $50 in USDC per day from your address for the next 30 days, after which the permission self-expires. No gas-spending approve transaction every visit.
+​
+# 6. Subscription stablecoin debits
+Same primitive, longer window. A SaaS vendor or streaming service receives a signed authorization to pull a fixed USDC amount on a fixed cadence. The user can revoke at any time by clearing the delegation or by re-delegating to a contract
+… (truncated)
+web_search
+
+Thought complete
+I'm pulling together the complete technical architecture now. The flow is clear: when a client hits the 402 payment required status, the server responds with payment terms including the amount and network details, then the client constructs and signs an EIP-3009 authorization for USDC transfer, encoding it in the request header. The real innovation is layering EIP-7702 delegation on top—it lets merchants enforce session keys with caps and expirations rather than unlimited token approvals, solving the core problem where spenders can drain accounts at will. The delegation phishing risk is real and documented, but the solution is to use verifiable credentials as mandates, giving users cryptographic proof of exactly what permissions they're granting and to whom. This converges with the agentic layer: x402 becomes the payment primitive for autonomous agents, especially with edge compute platforms like CloudFront handling the facilitator role at scale. The gap we're filling is that while x402 provides the payment rail and AP2 provides the mandate format, nothing actually enforces those mandates on-chain at the user's account level—agents can still sign transfers up to the full balance. OneLink Pay bridges this by using EIP-7702 to bind an AP2-style mandate directly to the Universal Account, so agents can pay autonomously but are physically constrained by the user's signed scope, and every transaction is provably compliant. Now I'm mapping out the concrete architecture: a MandateValidator contract that the user's EOA delegates to via 7702, which enforces per-transaction caps, daily limits, expiry windows, recipient allowlists, and authorized session keys—then exposes a function for the agent or facilitator to execute x402 transfers only if they stay within the mandate, otherwise reverting. The user can revoke by clearing the delegation or calling a revoke function directly. But I'm hitting a technical snag: EIP-3009's transferWithAuthorization validates signatures using raw ECDSA ecrecover against the `from` account's key, which means even with 7702 delegation, USDC won't consult the MandateValidator's code for signature validation—it just checks the original EOA's key. So the 7702 enforcement and EIP-3009 don't naturally compose the way I was imagining. I need to rethink this. Option A is to route x402 payments through the MandateValidator itself instead of using EIP-3009 directly—the account's code would have a function that validates the session key signature, checks caps and expiry, then executes the USDC transfer. This makes enforcement real and 7702-native, though it means implementing a custom x402 variant or wrapping the scheme. Since we're running the facilitator for the demo, we control the verification path. Option B is to have the MandateValidator hold an allowance or be the spender directly. Option A wins because the user's account, delegated to MandateValidator via 7702, becomes the programmable enforcer of its own spending rules. The agent's session key is registered in the mandate, and x402 payments execute through the account's mandate-gated function. For x402 compatibility, we can frame this as extending x402 with a 7702-enforced scheme or wrapping it with on-chain mandate enforcement—both are legitimate contributions. Essentially, we're building an x402 facilitator that enforces payments against an on-chain mandate on the buyer's 7702 account, where the agent signs with its session key and our facilitator verifies and enforces it on-chain. The mandate creation mirrors AP2 Intent/Cart/Payment flows: the human signs an EIP-712 Mandate that both configures the on-chain MandateValidator (via 7702 delegation and a setMandate call in a single UserOp) and issues an AP2-style Verifiable Credential the agent carries, bridging off-chain VC with on-chain enforcement. The demo itself is a real autonomous agent loop hitting x402-paywalled endpoints and paying within mandate limits, with every charge creating an on-chain event linked to the mandate execution. The user gets a live consent cockpit showing budget remaining, charges, agent activity, one-tap revoke, and blocked-overcharge events. For the demo script, the human logs in, gets a Universal Account on Base, Arbitrum, and Optimism, then onboards an AI agent with spending limits like $20 per day and $0.50 per request. The agent runs autonomously hitting paywalled data APIs and paying $0.10–$0.50 per call without human signatures, with the budget ticking down live. When the agent or a test "rogue agent" tries to exceed per-call caps, pay non-allowlisted addresses, or spend after budget exhaustion, the on-chain MandateValidator reverts the transaction visibly. A single revoke tap clears the mandate and 7702 delegation, instantly disabling the agent. Anyone can verify every charge against the mandate on a public proof page. This approach wins on UX by making the consent cockpit, legible mandate, live agent spend, visceral blocked-overcharge events, and one-tap revoke instantly understandable to non-crypto users as spending controls for an AI wallet. It also demonstrates deep, novel 7702 usage with account-level mandate enforcement, session keys, and reversibility. The real insight is fusing AP2 mandates (off-chain trust artifacts) with x402 (a rail lacking spend-limit enforcement) and 7702 (the drainer vector) into on-chain 7702-enforced mandates that make agentic x402 spending safe and provable—a bridge nobody else is building. The implementation sidesteps Particle's cross-chain settlement issues by keeping payments same-chain on Base, using UA only for login and unified balance view, while the MandateValidator contract stays fully under our control. But there's a technical constraint: 7702 delegation is per-chain and single-target, so if the EOA is already delegated to Particle's UA contract, it can't simultaneously delegate to our MandateValidator on the same chain. This forces an architectural choice—either use Particle's UA as the account and enforce via an allowance/spender model (less 7702-native but compatible), or use Magic with our own 7702 MandateValidator delegate (maximally 7702-native but the account becomes ours, not Particle's). The second path is stronger for the mandate story, though it means rethinking how the "unified balance" UX works. Actually, given that the hackathon is the "7702 Collective," the cleanest approach is to lean into 7702 as the core primitive: Magic handles identity and login to an EOA, that EOA 7702-delegates to our MandateValidator (using the proven sign7702Authorization + send7702Transaction flow), and enforcement happens on-chain in the MandateValidator itself. We can still show Particle UA's balance for the unified account display where it makes sense, but the programmable spending layer is entirely ours. I'm stepping back from over-engineering the architecture right now. The user wants the vision and research, not every technical decision solved. I should present the core concept cleanly — the killer insight about on-chain mandate enforcement via 7702 — then offer to dive deeper into architecture later. I'm also considering the positioning: something agent-centric that captures the idea of giving AI controlled, revocable spending power. "OneLink Pay" with a tagline like "programmable consent for the agentic economy" feels right, emphasizing that the mandate is enforced on-chain and cannot be broken. For the response itself, I need to structure it as: market insight backed by research (x402 adoption, AP2 standard, the 7702 phishing risk), the novel wedge, the product vision with the key on-chain enforcement angle, demo moments, why it wins, honest constraints, a phased build plan, and a recommendation. I'll keep it disciplined — punchy sections, inline attribution for sources, and I'll respond in Russian since that's the user's preference, though technical terms stay in English. I'm laying out the full structure for the pitch: starting with a tight thesis, then grounding it in the three research trends and the gap they reveal, moving into the product architecture with the key enforcement insight, showing the demo moments, explaining the competitive advantage, addressing how this builds on our existing work rather than pivoting away, and finishing with a phased rollout and recommendation.
+Я закопался в передний край, и картина сложилась в нечто гораздо большее, чем чекаут. Делюсь находками и идеей, которая, по-моему, реально на уровне победы.
+
+Что происходит в мире прямо сейчас (факты из ресёрча)
+Три тренда 2026-го сходятся в одну точку:
+
+x402 (Coinbase) — рельсы агентных платежей взорвались. Это протокол, где HTTP-ответ 402 несёт условия оплаты, клиент подписывает авторизацию перевода USDC (схема "exact" поверх EIP-3009 transferWithAuthorization), фасилитатор сеттлит ончейн — и ресурс отдаётся. В июне 2026 AWS встроил x402 прямо в CloudFront/WAF: сайты берут с AI-агентов плату за запрос в USDC (Coinbase x402 docs, The Defiant).
+AP2 (Google → FIDO Alliance) — стандарт «мандатов» согласия. Подписанные mandate (Intent/Cart/Payment) как W3C Verifiable Credentials: криптографическая «разрешительная записка» от человека агенту с чётко ограниченным scope (AP2 explainer, RisingWave).
+EIP-7702 — суперсила и одновременно дыра №1. Делегат-контракт может вводить session keys с лимитами, экспирацией и allowlist получателей. Но главный задокументированный риск 7702 — delegation phishing/дрейнеры: подписал делегацию злому контракту — слили всё. Это уже academic-paper уровня угроза (arXiv: EIP-7702 Phishing, eco.com 7702 use cases).
+(Источники перефразированы под лицензионные требования.)
+
+Незанятая ниша (наш вклад)
+Смотри, что НИКТО не закрыл:
+
+x402 даёт агенту рельс платить — но не ограничивает сумму: подписанная EIP-3009-авторизация может вынести весь баланс.
+AP2 даёт формат мандата — но это офчейн-документ доверия, его на блокчейне никто не enforce-ит.
+7702 даёт механизм enforcement на уровне аккаунта — но сегодня это вектор дрейна, а не защита.
+Дыра: нет ончейн-слоя, который превращает мандат AP2 в EIP-7702-enforced политику на Universal Account и пропускает через себя x402-платежи агента — так, чтобы агент физически НЕ МОГ выйти за рамки согласия человека, и каждый платёж был доказуемо в рамках мандата.
+
+Вот это и есть продукт.
+
+Идея: OneLink Pay → consent-слой агентной экономики
+Дай AI-агенту кошелёк с ремнём безопасности. Человек подписывает один мандат → агент платит автономно через x402, но ончейн-контракт на его 7702-аккаунте режет всё сверх лимита, вне allowlist, после экспирации. Каждый платёж — доказуемо в рамках согласия. Отзыв в один тап.
+
+Слоган: «Programmable consent for the agentic economy — a spending mandate your AI agent cannot break, enforced on-chain by EIP-7702, paid over x402.»
+
+Архитектура (с ключевым техническим инсайтом)
+Identity/Login: Magic (email) → Universal Account, баланс по чейнам (то, что уже есть).
+Программируемый аккаунт: EOA 7702-делегируется в НАШ MandateValidator (через тот самый sign7702Authorization chainId-0 + send7702Transaction, который мы УЖЕ доказали рабочим). Это сердце.
+MandateValidator (наш аудируемый делегат) enforce-ит на каждый спенд: cap за транзакцию / в день / всего, окно времени, allowlist получателей (x402-фасилитаторов/мерчантов), только USDC, и session key агента. Превышение → revert ончейн.
+Ключевой инсайт: обычный x402 use EIP-3009 на самом контракте USDC, а он проверяет сырую ECDSA-подпись EOA и обходит логику делегата. Поэтому мы маршрутизируем x402-платёж через mandate-gated функцию аккаунта (свой x402-фасилитатор + схема «exact-7702-mandate»): подпись session key агента → код аккаунта (MandateValidator) проверяет мандат → пропускает или ревертит. Так enforcement становится РЕАЛЬНЫМ, а не «на доверии». Это и есть наш новый вклад поверх x402/AP2.
+Мандат: EIP-712 объект (зеркалит AP2 Intent/Cart/Payment) + выдаём агенту AP2-style Verifiable Credential. Мы — мост «офчейн-VC ↔ ончейн-enforcement».
+Пруф: каждый charge эмитит событие, связывающее mandate → исполнение (эволюция нашего ReceiptEmitter/InvoicePaid). Публичная страница верификации «согласие = исполнение».
+Демо (моменты «вау»)
+Вход по email → UA, 7702 на Base/Arbitrum/Optimism (это у нас уже есть).
+Онбординг агента: «Мой ресёрч-агент тратит ≤ $20/день, ≤ $0.50 за вызов, только x402 data-API, USDC, 24ч.» Одна подпись → мандат живой.
+Агент работает сам: бьёт по x402-paywalled API (наш демо-эндпоинт), платит $0.10–0.50 за вызов без подписи человека каждый раз. Бюджет тикает вживую — вот она агентная магия.
+Тумблер «rogue agent»: пытается списать $5 (сверх лимита) / заплатить не в allowlist / после экспирации → BLOCKED ончейн, видно на экране. Ремень безопасности 7702 спасает на глазах у судей.
+Человек жмёт Revoke → мандат гаснет + 7702-делегация очищается → агент мгновенно бессилен. Обратимость как фича безопасности.
+Любой открывает proof-страницу → верифицирует, что каждый платёж был в рамках мандата.
+Почему это берёт рубрику
+UX 40%: «consent cockpit» (легибельное согласие vs слепая подпись), живой бюджет агента, висцеральный блок овердрафта, отзыв в один тап. Понятно даже не-крипто: «родительский контроль для кошелька твоего ИИ».
+UA + 7702 30%: глубокое, корректное, новое использование 7702 (enforcement на уровне аккаунта, session keys, обратимость-как-защита, решение проблемы дрейнера) на Universal Account. Это не «делегат + transfer».
+Adoption 20%: мы втыкаемся в реальную агентную экономику (x402+AWS+Coinbase, AP2+Google+FIDO). Каждому, кто даёт ИИ тратить деньги, нужен этот слой.
+Polish 10%: UI-база уже добротная, докручиваем.
+Честные плюсы под наши реалии
+Не зависит от сломанного кросчейна Particle — MandateValidator наш, сеттлим same-chain на Base. Всю боль миграции V2 обходим.
+Переиспользует всё, что сделали: Magic-UA login, доказанный 7702-флоу (chainId-0 auth!), ReceiptEmitter → MandateValidator, consent-UI → consent cockpit.
+Один дизайн-вопрос для решения: цель 7702-делегации (наш MandateValidator против контракта Particle UA — на чейне делегат один). Моё предложение: спенд-аккаунт делегируем в наш валидатор (это и есть новизна), а Particle UA используем как слой «единого баланса/логина». Обсудим.
+План по фазам (амбициозно, но реально — все кубики существуют)
+Фаза 1 (ядро): MandateValidator.sol + создание мандата (EIP-712) + 7702-делегация в него + same-chain USDC-спенд с лимитами + событие-пруф. Демо «создал мандат → списание → блок овердрафта → revoke».
+Фаза 2 (агент + x402): свой x402-фасилитатор + paywalled демо-API + автономный агент-луп, тратящий через мандат; live-бюджет.
+Фаза 3 (мост стандартов): AP2-style VC агенту + публичная proof-страница + «rogue agent» сценарий + полировка cockpit.
+Moonshot: session-key для стороннего агента (передаёшь ключ ИИ-ассистенту), мульти-чейн мандаты, «mandate marketplace».
+Это перестаёт быть «ещё одним чекаутом» и становится недостающим safety/consent-слоем агентной экономики — на стеке самого хакатона (UA + 7702), на языке двух самых горячих стандартов (x402 + AP2), решая задокументированную проблему №1 в 7702.
+
+Хочешь — я сразу стартую Фазу 1: спроектирую MandateValidator (модель мандата, enforcement, события) и накидаю каркас контракта + флоу подписи. Скажи «го», и поехали; параллельно могу запустить агентов на проработку x402-фасилитатора и consent-cockpit UX.
+
+Est. Credits Used: 9,5
+Elapsed time: 4m 23s
+
+
+Checkpoint
+Restore
+да, но ты все таки учти что у нас уже есть ядро и мы все таки придерживаемся приоритетов на которые указыает хакатон от партикл я скину на всякий случай еще ра ссылки и содержимое https://www.encodeclub.com/my-programmes/uxmaxx-hackathon?scheduleTab=282 Schedule
+Here is the schedule for the programme.
+
+Europe/London (Default)
+
+Week 1
+Kick-Off
+
+Week 2
+Building + Workshops
+
+Week 3
+Building + Workshops
+
+Week 4
+Building + Workshops
+
+Week 5
+Judging Week
+
+Week 6
+Finale + Prizegiving
+
+Jun 22, 2026 17:30
+
+(30 minutes)
+
+Universal Accounts & EIP-7702: From Zero to Cross-Chain
+Kick-off session for the UXmaxx Hackathon. Davide Zambiasi from Particle Network will walk builders through chain abstraction, EIP-7702, Universal Accounts SDK setup, and a live-coded path from zero to a working cross-chain flow.
+
+Speakers:
+Davide Zambiasi
+
+Partners:
+Particle Network
+
+Jun 23, 2026 16:00
+
+(1 hour)
+
+Social Login UX with Magic: Embedded Wallets That Feel Web2
+A practical workshop on using Magic’s embedded wallets and social login flows to make onboarding feel familiar, fast, and consumer-friendly. Ideal for teams that want to remove seed phrase friction and create a cleaner first-use experience without sacrificing onchain functionality.
+
+Jun 25, 2026 16:00
+
+(1 hour)
+
+Cross-Chain Payments with Circle Gateway + Universal Accounts
+A workshop focused on building fast, clean cross-chain payment flows using Circle Gateway alongside Universal Accounts. Ideal for teams exploring remittances, checkout, stablecoin transfers, and other consumer-facing payment experiences.
+
+Jun 29, 2026 23:59
+
+Milestone Deadline: Create Your Project, Add Your Team, Share Your Idea
+Submit your project outline!
+
+Time TBC
+
+Hackathon Workshops Begin
+Everything you need to know to get started in the UXmaxx Hackathon!
+
+On Track! 🎉
+All available lectures completed • 0/0 completed
+
+0%
+Avg. Score
+No current lecture available. You might have completed all lectures or the next one isn't unlocked yet.
+
+Upcoming Lectures (4)
+
+Building Consumer Apps on Arbitrum Without Exposing the Chain
+Explore how Arbitrum can support better user experiences for trading, payments, and consumer crypto apps. This session will focus on performance, scalability, and how to pair strong infra with chain abstraction patterns.
+Unlocks on 30 June 2026 at 16:00 BST
+
+Transaction Abstraction for Better dApp UX
+A builder-focused workshop on using transaction abstraction to make apps feel simpler and more intuitive. Covers sponsored transactions, smoother signing flows, and better execution patterns that remove friction from the user journey.
+Unlocks on 2 July 2026 at 16:00 BST
+
+Chain Abstraction with ZeroDev: Transaction Flows with Less Friction
+A workshop on using ZeroDev’s abstraction tooling to simplify signing, gas, and execution flows in user-facing apps. Best suited to teams building in the general track and looking to make onchain interactions feel lighter, smoother, and more intuitive.
+Unlocks on 7 July 2026 at 16:00 BST
+
+Openfort + x402: Embedded Wallets for Seamless App Payments
+A practical session on using Openfort wallets alongside x402-style payment flows to support cleaner onboarding and smoother in-app transactions. Good for teams exploring checkout, access, and embedded wallet experiences that feel closer to modern consumer apps than traditional crypto products.
+Unlocks on 8 July 2026 at 16:00 BST
+
+Events
+Check out the exciting events we have lined up for you.
+
+UpcomingFinished
+
+June 22, 2026
+
+Add to Calendar
+
+7:30 PM GMT+3• 30 minutes
+
+View Event Details
+
+June 23, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 1 hour
+
+View Event Details
+
+June 29, 2026
+
+Add to Calendar
+
+7:30 PM GMT+3• 45 minutes
+
+View Event Details
+
+June 30, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 1 hour
+
+View Event Details
+
+July 2, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 1 hour
+
+View Event Details
+
+July 7, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 1 hour
+
+View Event Details
+
+July 8, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 1 hour
+
+View Event Details
+
+July 30, 2026
+
+Add to Calendar
+
+6:00 PM GMT+3• 60 minutes
+
+View Event Details
+
+Challenges
+The best challenges are here, take a look.
+
+🏆 Universal Accounts Track
+Supported by Particle Network
+
+1st Place($2,500)
+
+2nd Place($2,000)
+
+3rd Prize($1,500)
+Build with Particle Network's Universal Accounts SDK in EIP-7702 mode. The user's EOA becomes a chain-abstracted account in place—one login, one balance, transactions on any chain with any asset. No new address, no migration, no smart-account deployment. Just upgrade the EOA and ship.
+
+Requirements:
+
+Must use Universal Accounts SDK in EIP-7702 mode.
+At least one cross-chain operation moving value via UA.
+Functional demo (deployed or runnable locally).
+Useful Links
+
+Particle Developer Docs: https://developers.particle.network/
+Universal Accounts Overview: https://developers.particle.network/universal-accounts/cha/overview
+Web Quickstart: https://developers.particle.network/universal-accounts/cha/web-quickstart
+Core concepts and chain-agnostic magic - Introduction to Universal Accounts
+Quickstart, integration guides, and 7702 mode details - Universal Accounts SDK & EIP-7702 Overview
+Projects selected as winners in this track may also be considered for incubation by Particle Network.
+🏆 General Track
+Supported by Particle Network
+
+1st Place($2,000)
+
+2nd Place($1,200)
+
+3rd Place($800)
+Build a Web3 application with exceptional user experience in any domain.
+The General Track is open to teams creating consumer-friendly apps across payments, DeFi, AI, gaming, social, and beyond - as long as the experience is seamless, intuitive, and genuinely improved by the infrastructure being used.
+Projects in the General Track may also be eligible for additional prizes through their chosen subtrack, as well as the Arbitrum and Magic Labs bonus challenges.
+All winning projects in this track may, at Particle Network’s discretion, be considered for incubation.
+Projects selected as winners in this track may also be considered for incubation by Particle Network.Teams entering this track must choose one of two subtracks:
+
+Tracks
+
+Subtrack 2 - ZeroDev$500
+
+Subtrack 1 - Openfort$100
+
+Arbitrum “Road to Open House London” Bounty
+Supported by Arbitrum
+
+Prize pool($2,000)
+Leading up to Arbitrum's flagship Founder House residency hosted by Encode House in London, Arbitrum will independently award the best dApp in this hackathon with a single $2,000 prize, as long as the application and its components are deployed on the Arbitrum network.
+Build a consumer app where Arbitrum powers the experience behind the scenes, but the user never has to think about wallets, gas fees, bridges, or what chain they’re using.
+Projects must run primarily on Arbitrum and should use chain-abstracted UX patterns like embedded wallets, social login, gas abstraction, invisible bridging, or account abstraction.
+
+Example ideas:
+
+AI apps with invisible onchain payments
+Social or gaming apps with walletless onboarding
+Consumer payment or loyalty apps
+Cross-chain apps where Arbitrum acts as the backend settlement layer
+Mobile-first apps with seamless UX
+Judges will look for:
+
+UX excellence (30%)
+Creativity (30%)
+Adoption potential (20%)
+Execution quality (20%).
+Judges may use the overall app quality as a tie-breaker
+The best projects will feel less like “crypto apps” and more like normal consumer products that just happen to run onchain.
+Arbitrum Developer Docs – Everything for deployment, bridging, and building on Arbitrum.
+Next step: Arbitrum Founder House London
+Strong submissions are encouraged to apply for Arbitrum's Founder House in London, an in-person founder program taking place from July 10 to 12 in London.
+The Founder House is designed for teams building serious onchain businesses on Arbitrum. Selected teams receive focused mentorship across product, technical direction, business strategy, and go-to-market, with the goal of accelerating participating founders.
+The Founder House is application-based, with strictly limited capacity.
+
+Apply to the London Founder House
+
+Magic Labs Bonus Challenge
+Supported by Magic Labs
+
+Prize($500)
+Integrate Magic’s embedded wallet within your application and qualify for a single $500 prize for the wallet’s best and most creative implementation.
+Build the best user onboarding and wallet experience using Magic’s embedded wallet infrastructure.
+This prize is open to projects from any main track and is focused on creating seamless, low-friction UX for real users. Think social login, invisible wallets, smooth authentication, and apps that feel more like modern consumer products than traditional crypto apps.
+
+Example ideas:
+
+Walletless onboarding flows
+AI or social apps with embedded accounts
+Consumer apps with email or Google login
+Mobile-first onboarding experiences
+Apps where users never need to install MetaMask
+Judges will look for:
+
+Smooth onboarding and authentication
+Creative use of Magic infrastructure
+UX polish and accessibility
+Consumer-ready product thinking
+Technical implementation quality
+Magic Embedded Wallets Documentation – Seamless onboarding, auth, and multi-chain support.
+Track Selection, Rules & Judging
+Supported by Particle Network
+
+Participants must submit their project to one main track:
+
+Universal Accounts Track: Build a dApp that prominently uses Particle Network’s Universal Accounts in EIP-7702 mode, in combination with a supported wallet provider, for a chain-agnostic UX. 
+Or General Track: Build a Web3 application with exceptional user experience in any domain.
+Projects on this track, regardless of their track-winning status, can also earn additional bonus prizes through the Arbitrum ($2000) and Magic Labs ($500) bounties. These bounties will be independently judged and awarded and, as such, will follow their own criteria and standards.
+Besides the two main tracks and the General track’s subtracks, there are two additional bounties that participants can choose to pursue, regardless of their track choice.
+All winning projects in this track may, at Particle Network's discretion, be selected for incubation. 
+
+Criteria 
+Judges will seek the most seamless user experience, with particular emphasis on chain-agnostic features powered by Universal Accounts + EIP-7702. They will focus on UX excellence (40%), Prominent/innovative use of Universal Accounts + EIP-7702 (30%), adoption potential (20%), and technical quality/polish (10%).
+
+Judging note:
+Main track winners will be selected by the hackathon jury, while subtracks and bonus challenges will be judged independently by the relevant partner teams. Teams may therefore be considered for multiple prizes depending
+
+Rules:
+
+All work original and created during the hackathon. Plagiarism = disqualification.
+Judges’ decisions are final.
+You keep full IP rights.Project Status: Not Started
+1
+2
+3
+Upcoming Stage: Create Your Project, Add Your Team, Share Your Idea
+Start: Mon, Jun 22, 2026, 6:00 PM (GMT+03:00)
+End: Mon, Jun 29, 2026, 1:59 AM (GMT+03:00)
+Create a Project or join an existing project to participate.
+Schedule
+Here is the schedule for the programme.
+Europe/London (Default)
+Week 1
+Kick-Off
+Week 2
+Building + Workshops
+Week 3
+Building + Workshops
+Week 4
+Building + Workshops
+Week 5
+Judging Week
+Week 6
+Finale + Prizegiving
+Jun 22, 2026 17:30
+(30 minutes)
+Universal Accounts & EIP-7702: From Zero to Cross-Chain
+Kick-off session for the UXmaxx Hackathon. Davide Zambiasi from Particle Network will walk builders through chain abstraction, EIP-7702, Universal Accounts SDK setup, and a live-coded path from zero to a working cross-chain flow.
+Speakers:
+Davide Zambiasi
+Partners:
+Particle Network
+Jun 23, 2026 16:00
+(1 hour)
+Social Login UX with Magic: Embedded Wallets That Feel Web2
+A practical workshop on using Magic’s embedded wallets and social login flows to make onboarding feel familiar, fast, and consumer-friendly. Ideal for teams that want to remove seed phrase friction and create a cleaner first-use experience without sacrificing onchain functionality.
+Jun 25, 2026 16:00
+(1 hour)
+Cross-Chain Payments with Circle Gateway + Universal Accounts
+A workshop focused on building fast, clean cross-chain payment flows using Circle Gateway alongside Universal Accounts. Ideal for teams exploring remittances, checkout, stablecoin transfers, and other consumer-facing payment experiences.
+Jun 29, 2026 23:59
+Milestone Deadline: Create Your Project, Add Your Team, Share Your Idea
+Submit your project outline!
+Time TBC
+Hackathon Workshops Begin
+Everything you need to know to get started in the UXmaxx Hackathon!
+On Track! 🎉
+All available lectures completed • 0/0 completed
+0%
+Avg. Score
+No current lecture available. You might have completed all lectures or the next one isn't unlocked yet.
+Upcoming Lectures (4)
+Building Consumer Apps on Arbitrum Without Exposing the Chain
+Explore how Arbitrum can support better user experiences for trading, payments, and consumer crypto apps. This session will focus on performance, scalability, and how to pair strong infra with chain abstraction patterns.
+Unlocks on 30 June 2026 at 16:00 BST
+Transaction Abstraction for Better dApp UX
+A builder-focused workshop on using transaction abstraction to make apps feel simpler and more intuitive. Covers sponsored transactions, smoother signing flows, and better execution patterns that remove friction from the user journey.
+Unlocks on 2 July 2026 at 16:00 BST
+Chain Abstraction with ZeroDev: Transaction Flows with Less Friction
+A workshop on using ZeroDev’s abstraction tooling to simplify signing, gas, and execution flows in user-facing apps. Best suited to teams building in the general track and looking to make onchain interactions feel lighter, smoother, and more intuitive.
+Unlocks on 7 July 2026 at 16:00 BST
+Openfort + x402: Embedded Wallets for Seamless App Payments
+A practical session on using Openfort wallets alongside x402-style payment flows to support cleaner onboarding and smoother in-app transactions. Good for teams exploring checkout, access, and embedded wallet experiences that feel closer to modern consumer apps than traditional crypto products.
+Unlocks on 8 July 2026 at 16:00 BST
+Events
+Check out the exciting events we have lined up for you.
+UpcomingFinished
+June 22, 2026
+Add to Calendar
+7:30 PM GMT+3• 30 minutes
+View Event Details
+June 23, 2026
+Add to Calendar
+6:00 PM GMT+3• 1 hour
+View Event Details
+June 29, 2026
+Add to Calendar
+7:30 PM GMT+3• 45 minutes
+View Event Details
+June 30, 2026
+Add to Calendar
+6:00 PM GMT+3• 1 hour
+View Event Details
+July 2, 2026
+Add to Calendar
+6:00 PM GMT+3• 1 hour
+View Event Details
+July 7, 2026
+Add to Calendar
+6:00 PM GMT+3• 1 hour
+View Event Details
+July 8, 2026
+Add to Calendar
+6:00 PM GMT+3• 1 hour
+View Event Details
+July 30, 2026
+Add to Calendar
+6:00 PM GMT+3• 60 minutes
+View Event Details
+Challenges
+The best challenges are here, take a look.
+🏆 Universal Accounts Track
+Supported by Particle Network
+1st Place($2,500)
+2nd Place($2,000)
+3rd Prize($1,500)
+Build with Particle Network's Universal Accounts SDK in EIP-7702 mode. The user's EOA becomes a chain-abstracted account in place—one login, one balance, transactions on any chain with any asset. No new address, no migration, no smart-account deployment. Just upgrade the EOA and ship.
+Requirements:
+Must use Universal Accounts SDK in EIP-7702 mode.
+At least one cross-chain operation moving value via UA.
+Functional demo (deployed or runnable locally).
+Useful Links
+Particle Developer Docs: https://developers.particle.network/
+Universal Accounts Overview: https://developers.particle.network/universal-accounts/cha/overview
+Web Quickstart: https://developers.particle.network/universal-accounts/cha/web-quickstart
+Core concepts and chain-agnostic magic - Introduction to Universal Accounts
+Quickstart, integration guides, and 7702 mode details - Universal Accounts SDK & EIP-7702 Overview
+Projects selected as winners in this track may also be considered for incubation by Particle Network.
+🏆 General Track
+Supported by Particle Network
+1st Place($2,000)
+2nd Place($1,200)
+3rd Place($800)
+Build a Web3 application with exceptional user experience in any domain.
+The General Track is open to teams creating consumer-friendly apps across payments, DeFi, AI, gaming, social, and beyond - as long as the experience is seamless, intuitive, and genuinely improved by the infrastructure being used.
+Projects in the General Track may also be eligible for additional prizes through their chosen subtrack, as well as the Arbitrum and Magic Labs bonus challenges.
+All winning projects in this track may, at Particle Network’s discretion, be considered for incubation.
+Projects selected as winners in this track may also be considered for incubation by Particle Network.Teams entering this track must choose one of two subtracks:
+Tracks
+Subtrack 2 - ZeroDev$500
+Subtrack 1 - Openfort$100
+Arbitrum “Road to Open House London” Bounty
+Supported by Arbitrum
+Prize pool($2,000)
+Leading up to Arbitrum's flagship Founder House residency hosted by Encode House in London, Arbitrum will independently award the best dApp in this hackathon with a single $2,000 prize, as long as the application and its components are deployed on the Arbitrum network.
+Build a consumer app where Arbitrum powers the experience behind the scenes, but the user never has to think about wallets, gas fees, bridges, or what chain they’re using.
+Projects must run primarily on Arbitrum and should use chain-abstracted UX patterns like embedded wallets, social login, gas abstraction, invisible bridging, or account abstraction.
+Example ideas:
+AI apps with invisible onchain payments
+Social or gaming apps with walletless onboarding
+Consumer payment or loyalty apps
+Cross-chain apps where Arbitrum acts as the backend settlement layer
+Mobile-first apps with seamless UX
+Judges will look for:
+UX excellence (30%)
+Creativity (30%)
+Adoption potential (20%)
+Execution quality (20%).
+Judges may use the overall app quality as a tie-breaker
+The best projects will feel less like “crypto apps” and more like normal consumer products that just happen to run onchain.
+Arbitrum Developer Docs – Everything for deployment, bridging, and building on Arbitrum.
+Next step: Arbitrum Founder House London
+Strong submissions are encouraged to apply for Arbitrum's Founder House in London, an in-person founder program taking place from July 10 to 12 in London.
+The Founder House is designed for teams building serious onchain businesses on Arbitrum. Selected teams receive focused mentorship across product, technical direction, business strategy, and go-to-market, with the goal of accelerating participating founders.
+The Founder House is application-based, with strictly limited capacity.
+Apply to the London Founder House
+Magic Labs Bonus Challenge
+Supported by Magic Labs
+Prize($500)
+Integrate Magic’s embedded wallet within your application and qualify for a single $500 prize for the wallet’s best and most creative implementation.
+Build the best user onboarding and wallet experience using Magic’s embedded wallet infrastructure.
+This prize is open to projects from any main track and is focused on creating seamless, low-friction UX for real users. Think social login, invisible wallets, smooth authentication, and apps that feel more like modern consumer products than traditional crypto apps.
+Example ideas:
+Walletless onboarding flows
+AI or social apps with embedded accounts
+Consumer apps with email or Google login
+Mobile-first onboarding experiences
+Apps where users never need to install MetaMask
+Judges will look for:
+Smooth onboarding and authentication
+Creative use of Magic infrastructure
+UX polish and accessibility
+Consumer-ready product thinking
+Technical implementation quality
+Magic Embedded Wallets Documentation – Seamless onboarding, auth, and multi-chain support.
+Track Selection, Rules & Judging
+Supported by Particle Network
+Participants must submit their project to one main track:
+Universal Accounts Track: Build a dApp that prominently uses Particle Network’s Universal Accounts in EIP-7702 mode, in combination with a supported wallet provider, for a chain-agnostic UX. 
+Or General Track: Build a Web3 application with exceptional user experience in any domain.
+Projects on this track, regardless of their track-winning status, can also earn additional bonus prizes through the Arbitrum ($2000) and Magic Labs ($500) bounties. These bounties will be independently judged and awarded and, as such, will follow their own criteria and standards.
+Besides the two main tracks and the General track’s subtracks, there are two additional bounties that participants can choose to pursue, regardless of their track choice.
+All winning projects in this track may, at Particle Network's discretion, be selected for incubation. 
+Criteria 
+Judges will seek the most seamless user experience, with particular emphasis on chain-agnostic features powered by Universal Accounts + EIP-7702. They will focus on UX excellence (40%), Prominent/innovative use of Universal Accounts + EIP-7702 (30%), adoption potential (20%), and technical quality/polish (10%).
+Judging note:
+Main track winners will be selected by the hackathon jury, while subtracks and bonus challenges will be judged independently by the relevant partner teams. Teams may therefore be considered for multiple prizes depending
+Rules:
+All work original and created during the hackathon. Plagiarism = disqualification.
+Judges’ decisions are final.
+You keep full IP rights.
+Join or Create a Project
+You need to be part of a project team for this programme.
+Create a New Project
+Project Name
+Description (Optional)
+Project Image (Optional)
+Click to select
+or drag and drop
+JPG, PNG, GIF
+Create Project
+Join an Existing Project
+Team Join Code
+Join Project
+Discord Integration
+Connected as Discord user: usbdick#0
+Programme role assigned!
+Programme Channels:
+#📢announcements
+Important updates and announcements for the UXmaxx Hackathon.
+**Last Message:**18 июн., 15:09
+🚀 Particle Hack Kickoff this Monday Excited to kick things off properly this Monday with the Particle Hack Kickoff ⚡ This will cover: - what the hack is all about - what kinds ...
+#💬general
+General discussion, chit-chat, and community building for the UXmaxx Hackathon.
+No pinned messages.
+#🤝team-formation
+Looking for a team or team members for the UXmaxx Hackathon? Post here!
+No pinned messages.
+#❓technical-questions
+Ask technical questions related to the UXmaxx Hackathon projects, workshops, or technologies.
+No pinned messages.
+#📚resources
+Organizers will share useful links, documentation, and resources for the UXmaxx Hackathon.
+#👋introductions
+Introduce yourself to the UXmaxx Hackathon community!
+No pinned messages.
+Frequently Asked Questions
+Who should join?
+I've been accepted into the UXmaxx Hackathon. What should I do first?
+What deadlines should I keep an eye on?
+Keep an eye on the platform deadlines for project creation and team setup, then plan around the major public milestones: the mid-hackathon checkpoint on 1 June, final submissions on 17 June, and the Finale & Prizegiving on 19 June.
+How do I find teammates or build a team?
+What is expected at the mid-hackathon checkpoint?
+What technologies do I need to use to qualify?
+Partner Resources
+7702 Collective
+Website
+Particle Network
+Website
+Arbitrum
+Website
+Magic Labs
+Website
+Openfort
+Website
+ZeroDev
+Website
+Kiro
+
+Thought complete
+I need to carefully review the hackathon requirements against what I'm actually building. The Universal Accounts track has a substantial prize pool, but it mandates using the Universal Accounts SDK specifically in EIP-7702 mode—and I've just learned that Particle's cross-chain settlement is currently blocked during their V2 migration, which fundamentally constrains what I can deliver. However, there's a critical workaround emerging: the Circle Gateway workshop on June 25 is explicitly positioning Circle Gateway + Universal Accounts as a cross-chain payment solution. This could be the alternative rail I need to satisfy the "cross-chain operation moving value via UA" requirement without depending on Particle's broken solver. I should also consider the General Track as a fallback—it doesn't require cross-chain functionality and offers a cleaner path if I focus on exceptional UX with either Openfort or ZeroDev, plus I could stack the Arbitrum bonus bounty for additional prize money. The timing is actually in my favor: the hackathon kicks off June 22, and Particle's "From Zero to Cross-Chain" workshop suggests their V2 migration will be live by then with working cross-chain flows. So I shouldn't abandon the Universal Accounts track entirely—I should assume cross-chain will be functional during the actual hackathon, even though it's broken right now in pre-kickoff testing. Circle Gateway emerges as a cleaner path: it's a blessed cross-chain rail for USDC that works with Universal Accounts, and I found references to x402 settlement and EIP-3009 signing on their docs. This could be the reliable cross-chain value movement mechanism that satisfies the track requirement, independent of Particle's solver. The agentic mandate idea can actually work here—if the underlying x402 payments are cross-chain via UA (pulling from a user's unified balance across chains), that satisfies the "at least one cross-chain operation moving value via UA" gate while delivering the UX innovation I'm after. The user wants me to respect the existing core (Magic UA login, 7702 delegation, payment+proof) and align tightly with the UA Track requirements, not pivot away from the cross-chain value movement requirement. So I'm reframing: keep the agentic-consent angle as the differentiator, but anchor it on the required primitives—the agent's payment sourced cross-chain from the user's unified UA balance becomes the hero technical moment, not something to route around. Now I'm thinking through the cross-chain execution: the agent pays a merchant on one chain while the user's USDC is sourced from other chains via UA's Universal Liquidity—that satisfies the "at least one cross-chain operation moving value via UA" requirement and makes it the core of the demo. The challenge is Particle's cross-chain is currently broken, so I'm weighing two bets: either it works by the hackathon (attending the Jun 22 kickoff to learn the exact path), or Circle Gateway becomes the reliable cross-chain rail that pairs with Particle UA for the blessed pattern—UA handles the 7702 account layer while Circle Gateway handles the cross-chain USDC movement, which sidesteps Particle's flaky solver while still satisfying the requirement. There's a judgment call here: does Circle Gateway count as "via UA" if UA initiates and holds the value while Gateway transports it? The safest approach is to use UA's native cross-chain if it works by then, with Circle Gateway as backup, so I should watch the kickoff to confirm the intended path. Given the user wants to win and we've invested heavily in UA and 7702, I'm leaning toward the UA Track (bigger prize, Particle incubation potential) with the agentic-mandate product, betting that the cross-chain requirement gets solved by V2 GA. I should frame this as evolving the existing core—the Magic UA login, 7702, payment, and proof layer stays intact—and we layer on the mandate/consent system plus cross-chain and agentic capabilities. The hackathon runs roughly six weeks from late June through early August, which is plenty of time for an ambitious build. I can also stack additional bounties like Magic (we're already using their embedded wallet) and Arbitrum (deploy there) to strengthen our submission. The cross-chain requirement actually becomes a strength if we nail it—it differentiates us and directly addresses the UA Track criteria. The agentic-mandate product's cross-chain story is compelling: a single AI agent with one unified balance across chains, paying APIs or merchants wherever they sit while staying within a signed mandate enforced by 7702, with instant revocation. That's exactly what the UA Track wants to see. The challenge is that Particle's cross-chain settlement is currently broken mid-migration, but their own kickoff on June 22 is "From Zero to Cross-Chain," so V2 should be GA during the hackathon. Our groundwork—gasless 7702 auth, multi-chain delegation, settlement polling—is ready to activate once their infrastructure stabilizes. Circle Gateway (launching June 25) is a reliable fallback for cross-chain settlement if needed. For the UA Track requirement, I can't replace Particle's delegate with my own MandateValidator—that would violate the "use UA SDK in 7702 mode" constraint. Instead, the mandate enforcement has to layer on top of Particle's UA contract: either the UA's transactions route through a MandateRegistry that checks spend limits, or we use an allowance/spender model, or leverage session-key features Particle might support. The mandate proof lives on-chain while the app gates what the agent can actually execute. The real solution is to have the UA approve a bounded allowance to our MandateRegistry contract (one transaction), and then the registry enforces the per-charge and daily caps—if an overcharge is attempted, the registry reverts. This gives us hard on-chain enforcement without replacing Particle's 7702 delegate. But there's a catch: during the migration, createUniversalTransaction is blocked, so the UA can't execute arbitrary contract calls like approve() right now. That said, by hackathon time the V2 GA should restore that functionality. Alternatively, I can sidestep this entirely using EIP-3009 permits—the UA owner signs an authorization off-chain (gasless) that lets the MandateRegistry pull USDC up to the mandate total, and the registry enforces all the caps on-chain. This works even if custom UA calls stay blocked, and it's the x402-native pattern anyway. So the full architecture: the UA is the account in 7702 mode with Particle as delegate, the user signs an off-chain EIP-712 mandate plus an EIP-3009 permit scoped to the registry, the agent requests charges and the registry enforces all the rules on-chain before pulling USDC, and cross-chain value flows through the UA's Universal Liquidity. Revocation is just clearing the allowance or mandate. The mandate enforcement technically lives in the MandateRegistry contract (via allowance) rather than in the 7702 delegate itself, which is softer than pure account-level enforcement, but it's still on-chain, provable, and keeps the UA 7702 central. I'm wondering if Particle's UA SDK already supports session keys or modular validators natively—if so, I could layer the mandate enforcement at the account level using their own primitives instead. I should address the user's specific concerns directly: frame this as an evolution of their existing core, confirm I understand the hard requirements (UA SDK in 7702 mode, cross-chain value delivery, alignment with the workshops), and acknowledge the stackable bounties and the 40/30/20/10 criteria they shared. On the cross-chain front, I can reassure them that we're in a mid-migration window but should be solid by the hackathon kickoff, with Circle Gateway as a backup rail. The agentic-mandate idea, when properly anchored to the core and the hackathon's scope, is actually the differentiator they're looking for. Completing the architecture: I need to use the UA SDK in 7702 mode with MandateRegistry and EIP-3009 for cross-chain, not replace Particle's delegate. Then I'm mapping everything back to the requirements and bounties to show we hit every criterion. The real de-risking move is attending the June 22 kickoff and June 25 Circle Gateway workshop to lock in the cross-chain path while building the MVP in parallel. I'm also seeing the prize stacking clearly now — UA Track first place ($2,500) plus Magic bonus ($500) — which makes the strategy even tighter if we nail the onboarding UX with Magic's embedded wallet. I'm refining the technical mandate enforcement model: the user's UA holds unified USDC across chains, signs a single EIP-712 mandate authorizing a session with spending caps, and each agent payment executes as a UA cross-chain transfer to the merchant endpoint. This keeps Particle UA and 7702 central while satisfying the cross-chain requirement that's mandatory for UA Track. For enforcement, I'm weighing two approaches—an AP2-style model with off-chain mandate verification plus on-chain proof anchoring (trust in the facilitator but cryptographically auditable and user-revocable), versus hard on-chain enforcement via a spender contract with EIP-3009 permits. The AP2 approach fits better because it preserves UA's cross-chain transfer as the value-movement primitive while layering consent and proof on top, which is what the cross-chain agentic flow needs. I can demonstrate both: the cross-chain UA payments satisfy the core requirement and adoption goal, and a same-chain hard-enforced cap serves as a guardrail demo showing the system has teeth. Now I'm ready to write the response—I'll keep it strategic and rules-aligned, map it to the requirements and bounty criteria, show how we reuse the core, and lay out the immediate plan without drowning them in contract details. I'll offer to dive into the architecture specifics during the kickoff workshop.
+Прочитал правила внимательно — это многое уточняет и, на самом деле, играет нам на руку. Давай я сведу идею с официальными требованиями и нашим ядром.
+
+Что в правилах решает всё (ключевые факты)
+Universal Accounts Track (главный приз $2,500/$2,000/$1,500) — жёсткие требования:
+
+Обязательно Universal Accounts SDK в режиме EIP-7702.
+Минимум одна кросс-чейн операция, двигающая ценность через UA. ← это гейт, мимо него никак.
+Рабочее демо.
+Критерии: UX 40% / UA+7702 30% / adoption 20% / polish 10%.
+И что важно — бонусы стэкаются поверх трека: Magic $500 (мы УЖЕ на Magic embedded wallet) + Arbitrum $2,000 (мы УЖЕ поддерживаем Arbitrum). То есть реальная цель — один продукт, который собирает UA Track + Magic + Arbitrum ≈ $5,000 + инкубация Particle.
+
+Воркшопы выдают «благословлённый» стек: Magic (логин) → Circle Gateway + UA для кросс-чейн платежей (25 июня) → Arbitrum (consumer UX) → Openfort + x402 (8 июля). То есть x402 и Circle Gateway — прямо в экосистеме хакатона, мой ресёрч в точку.
+
+Хорошая новость про кросс-чейн (пересматриваю прошлый вывод)
+Наши провалы были сейчас, до кикоффа, в середине миграции V2. Но:
+
+Кикофф Particle 22 июня называется буквально «From Zero to Cross-Chain» — Davide вживую кодит рабочий кросс-чейн. Они не будут демать сломанное. Значит к старту V2 почти наверняка GA, и наш задел (gasless chainId-0 auth, делегация на 3 чейна, settlement-поллинг) сразу заиграет.
+Circle Gateway (воркшоп 25 июня) — отдельный надёжный рельс кросс-чейн USDC, который пара́ится с UA. Это наша страховка для требования «cross-chain value via UA», если солвер Particle будет капризничать.
+Вывод: кросс-чейн НЕ выкидываем — он и есть обязательный герой. Мы просто фиксируем рабочий путь на кикоффе/воркшопе, а не бьёмся об миграцию вслепую.
+
+Рекомендация: не пивот, а эволюция ядра
+Оставляем ядро (Magic→UA логин, 7702-делегация, платёж+пруф) и надстраиваем дифференциатор так, чтобы он усиливал, а не заменял требования трека:
+
+OneLink Pay — consent-слой для агентных кросс-чейн платежей на Universal Account. Подпиши один мандат → твой AI-агент платит из единого UA-баланса через любые чейны (x402/мерчанты), но не может выйти за лимиты, а EIP-7702 делает это безопасным и обратимым.
+
+Тут кросс-чейн — не галочка, а суть демо: агент платит на чейне, где у тебя нет средств, а UA тянет ликвидность с других чейнов — это ровно «cross-chain operation moving value via UA».
+
+Как это закрывает КАЖДЫЙ пункт
+Требование «UA SDK в 7702 mode»: аккаунт — Particle UA в 7702 (как сейчас). Мандат не заменяет делегата Particle: согласие подписывается оффчейн (EIP-712 + EIP-3009/permit, газлесс), enforcement идёт через наш MandateRegistry + пруф-события. UA остаётся ядром.
+Требование «cross-chain value via UA»: агентный платёж = UA cross-chain transfer (или Circle Gateway) из единого баланса. Это и есть обязательная операция.
+UX 40%: «consent cockpit» — легибельный мандат против слепой подписи, живой бюджет агента, висцеральный блок овердрафта, отзыв в один тап. Понятно не-крипто-человеку.
+UA+7702 30%: единый кросс-чейн баланс (UA) + обратимость и sign-once как фича безопасности (7702), решаем задокументированную проблему №1 в 7702 — дрейн через делегацию.
+Adoption 20%: втыкаемся в реальную агентную экономику (x402+AWS, AP2 от Google/FIDO) — это нарратив 2026-го.
+Magic $500: email/social-логин, walletless онбординг — у нас уже есть, докрутим.
+Arbitrum $2,000: делаем Arbitrum первоклассным чейном (settle/source на Arbitrum), chain-abstracted UX — «работает на Arbitrum, юзер не думает о чейне».
+Что из ядра переиспользуем (не переписываем)
+Magic→UA логин ✓, доказанный 7702-флоу (chainId-0 auth!) ✓, делегация на Base/Arbitrum/Optimism ✓, ReceiptEmitter → эволюция в MandateRegistry/Proof ✓, consent-UI → consent cockpit ✓, settlement-верификация ✓. Это ускорение, а не старт с нуля.
+
+Что предлагаю сделать прямо сейчас (порядок снижает риск)
+Сначала гарантируем гейт: довести до блеска обязательный флоу — UA в 7702 + одна кросс-чейн операция ценности + красивый UX. Путь кросс-чейна фиксируем по кикоффу (22.06) и Circle Gateway-воркшопу (25.06). Это сам по себе валидный сабмишн.
+Потом дифференциатор: мандат (EIP-712 + AP2-style), MandateRegistry с лимитами/экспирацией/allowlist + пруф, «overcharge blocked» и «revoke».
+Затем агент + x402: автономный агент тратит в рамках мандата кросс-чейн; live-бюджет. Это adoption-вау.
+Стэкаем бонусы: Arbitrum-деплой + Magic-онбординг полишим под их критерии.
+Честный момент про риск: гейт «cross-chain via UA» зависит от того, что V2 заведётся к хакатону. Поэтому Circle Gateway держим как параллельный рельс с первого дня — чтобы кросс-чейн-ценность была гарантирована независимо от солвера Particle.
+
+Предлагаю так: я начинаю с Фазы 1 — проектирую обязательный UA+7702 кросс-чейн флоу заново «под гейт» + каркас MandateRegistry и модель мандата, и готовлю интеграцию Circle Gateway как бэкап-рельса. Скажи «го» — и я стартую с дизайна MandateRegistry + схемы мандата, либо, если хочешь, сперва с consent-cockpit UX. Что первым?
+
+Est. Credits Used: 5,84

@@ -15,6 +15,30 @@ This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + 
 - Arbitrum is configured only for exploratory probes.
 - Default example payment mode is `transfer_fallback`; the active Universal Accounts Track candidate is `universal_7702_transfer`.
 
+## Final Rules Snapshot
+
+Current intended track: Universal Accounts Track.
+
+Requirements captured from the UXmaxx rules:
+
+- Use Particle Universal Accounts SDK in EIP-7702 mode.
+- Include at least one cross-chain operation moving value via UA.
+- Provide a functional demo, deployed or runnable locally.
+
+Judging weights:
+
+- UX excellence: 40%.
+- Prominent / innovative Universal Accounts + EIP-7702 usage: 30%.
+- Adoption potential: 20%.
+- Technical quality / polish: 10%.
+
+Current honest gap:
+
+- Base EIP-7702 delegation is proven.
+- Same-chain Base transfer/proof is proven.
+- Final-rule-compliant cross-chain value movement is still pending.
+- Execution plan: `docs/cross-chain-proof-runbook.md`.
+
 ## Active Payment Path
 
 1. Merchant creates a payment link from the dashboard.
@@ -111,3 +135,40 @@ The strict custom-call path is recorded as externally blocked. Root cause (empir
 - `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` path available for future Particle retesting (currently blocked by the V2 migration).
 
 Do not spend more mainnet gas for strict-path testing unless explicitly requested.
+
+## Permission Firewall (SpendPolicy)
+
+The differentiator: on-chain enforcement of a payer-signed `PaymentMandate`. A merchant or relayer can pull USDC only within the scope the payer signed; everything else reverts. The payer can revoke anytime.
+
+- Contract: `contracts/contracts/SpendPolicy.sol` (EIP-712 mandates via OpenZeppelin EIP712 + ECDSA, SafeERC20, ReentrancyGuard; Solidity 0.8.28 / cancun).
+- Enforced limits: `maxPerCharge`, rolling `maxPerDay` (24h reset), lifetime `totalCap`, `expiry`, single `merchant` recipient, `revoke`.
+- Entry points: `charge` (existing allowance), `chargeWithPermit` (gasless EIP-2612 allowance + charge), `revoke`, plus `hashMandate` / `getMandateState` / `remaining` views.
+- Events: `MandateCharged`, `MandateRevoked`.
+- Tests: 22 passing (`contracts/test/SpendPolicy.test.ts`) — valid charge, per-charge cap, daily cap + reset, total cap, expiry, revoke + non-payer rejection, forged signature, wrong chain, gasless permit.
+- The EIP-712 `PaymentMandate` type is byte-identical between the contract and the frontend (`src/lib/mandates`), so the payer's signature validates on-chain.
+
+Frontend surface:
+
+- Checkout `Permission Firewall` (legible scoped consent + presets): `src/components/permission-firewall.tsx`.
+- Live arm / charge / revoke demo: `/firewall` (`src/app/firewall/page.tsx`); relayer charge route `POST /api/mandates/charge` (simulates first, so an over-cap attempt costs zero gas).
+- Proof Receipt (verified -> matched -> recorded) + public `/receipt/[id]`.
+
+Live Base mainnet deployment + proof, 2026-06-20:
+
+- SpendPolicy: `0x73C862a8312c12C764487a9a484f1d1ad44E3957`
+- Deploy tx: `0x63de9403bce99cbb0665f12af5ad0a968eedc3f6ce1e9de2db1e059dfab508a3`
+- Within-cap `MandateCharged` (0.10 USDC, payer -0.10 / merchant +0.10): `0x4e64eaddd25b3eb65b0d531d3e3237122775c1ca0fcae0497e3b073346334b00`
+- Over-cap attempt blocked on-chain with `PerChargeExceeded` (no funds moved, zero gas).
+- Env: `NEXT_PUBLIC_SPEND_POLICY_ADDRESS=0x73C862a8312c12C764487a9a484f1d1ad44E3957`.
+
+Demo script: `docs/demo-runbook.md`.
+
+## Arbitrum-first (bonus track)
+
+Same SpendPolicy + ReceiptEmitter deployed on Arbitrum One; per-chain SpendPolicy resolution wired (`getSpendPolicyAddress(chainId)`); the `/firewall` demo and the default invoice settlement now run on Arbitrum. Base deployment remains functional.
+
+- SpendPolicy (Arbitrum): `0x9782e3724859469fbBAC5085EA8bf8E70724164E`
+- ReceiptEmitter (Arbitrum): `0xe4C6656B6c248B20Bd2C5ddf9168A4531AAbD2A1`
+- Proven live: `MandateCharged` (0.10 USDC, payer -0.10 / merchant +0.10) tx `0x33a4e69e2d4f0a2a9269bf9fb758b3043cbae4c5e146e3e16cf9c75d439b9ced`; over-cap blocked with `PerChargeExceeded`.
+- Env: `NEXT_PUBLIC_SPEND_POLICY_ADDRESS_ARBITRUM`, `NEXT_PUBLIC_ARBITRUM_RECEIPT_EMITTER_ADDRESS`.
+- Proof anchoring stays on Base for now (proven path); the Arbitrum ReceiptEmitter is deployed and ready if/when proof moves to Arbitrum.

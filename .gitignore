@@ -10,3 +10,14 @@ contracts/cache/
 contracts/typechain-types/
 *.tsbuildinfo
 next-env.d.ts
+
+# Google service-account / generation credentials — NEVER commit
+ffsgen-*.json
+*service_account*.json
+*service-account*.json
+*-credentials.json
+gcp-*.json
+
+# Local screen recordings / demo captures — never commit (large binaries)
+*.mov
+*.mp4

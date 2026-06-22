@@ -1,6 +1,6 @@
 # Final Rules Checklist
 
-Use this when the final UXmaxx / Encode rules are published. Do not change the product path until this checklist is complete.
+Use this to keep the final UXmaxx / Encode rules aligned with implementation decisions. Do not change the product path until the relevant checklist item is complete.
 
 ## Current Prototype Baseline
 
@@ -9,13 +9,48 @@ Use this when the final UXmaxx / Encode rules are published. Do not change the p
 - Active chain: Base mainnet.
 - Exploratory chain: Arbitrum One.
 - AuthKit checkout: inactive.
-- Default payment mode: `transfer_fallback`.
+- Stable fallback mode: `transfer_fallback`.
+- Active Universal Accounts Track candidate: `universal_7702_transfer`.
 - Strict payment mode: `universal_invoice`, gated and currently blocked by Particle `-32801`.
 - Working proof path: Particle transfer -> server verifies Base USDC `Transfer` -> ReceiptEmitter proof -> dashboard `PAID`.
 
+## Captured UXmaxx Rules
+
+Current main-track choice:
+
+- Universal Accounts Track: build a dApp that prominently uses Particle Universal Accounts in EIP-7702 mode with a supported wallet provider for a chain-agnostic UX.
+- General Track: build a Web3 application with exceptional UX in any domain.
+
+Universal Accounts Track requirements:
+
+- Must use Universal Accounts SDK in EIP-7702 mode.
+- Must include at least one cross-chain operation moving value via UA.
+- Must have a functional demo, deployed or runnable locally.
+
+Universal Accounts Track judging:
+
+- UX excellence: 40%.
+- Prominent / innovative Universal Accounts + EIP-7702 usage: 30%.
+- Adoption potential: 20%.
+- Technical quality / polish: 10%.
+
+Bonus opportunities:
+
+- Magic Labs bonus: embedded-wallet onboarding and wallet UX. This aligns with the current Magic path.
+- Arbitrum bounty: app and components must run primarily on Arbitrum. This is not active by default; treat as a separate decision.
+- ZeroDev subtrack: meaningful ZeroDev infrastructure integration. This is not active; do not present Spend Caps Concept Mode as ZeroDev.
+- Openfort subtrack: backend wallets + x402. Inactive unless the final strategy pivots.
+
+Known gap:
+
+- Base EIP-7702 delegation is proven.
+- Same-chain Base payment/proof is proven.
+- A live final-rule-compliant cross-chain UA value movement is still pending.
+- Use `docs/cross-chain-proof-runbook.md` for the safe execution path.
+
 ## Rule Source Capture
 
-Record these in `docs/status.md` before implementation:
+Record or confirm these in `docs/status.md` before final submission work:
 
 - Final competition URL.
 - Final deadline and timezone.
@@ -42,7 +77,7 @@ Check exact wording:
 
 Decision:
 
-- If SEND/TRANSFER is accepted, keep `transfer_fallback`.
+- If EIP-7702 SEND/TRANSFER with cross-chain sourcing is accepted, use `universal_7702_transfer`.
 - If custom UA calls are required and probes work, switch to `universal_invoice`.
 - If custom UA calls are required and still blocked by `-32801`, document blocker immediately and ask Particle/Encode for guidance.
 

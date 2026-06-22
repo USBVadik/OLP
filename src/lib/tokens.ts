@@ -56,6 +56,29 @@ export const CHAIN_TOKENS: Record<SupportedChainKey, Record<PaymentTokenConfig["
       isNative: true,
     },
   },
+  optimism: {
+    USDC: {
+      symbol: "USDC",
+      address: PAYMENT_CHAINS.optimism.usdcAddress,
+      decimals: 6,
+      particleType: "usdc",
+      isNative: false,
+    },
+    USDT: {
+      symbol: "USDT",
+      address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+      decimals: 6,
+      particleType: "usdt",
+      isNative: false,
+    },
+    ETH: {
+      symbol: "ETH",
+      address: "0x0000000000000000000000000000000000000000",
+      decimals: 18,
+      particleType: "eth",
+      isNative: true,
+    },
+  },
 };
 
 export const BASE_MAINNET_TOKENS = CHAIN_TOKENS.base;

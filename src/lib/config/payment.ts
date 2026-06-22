@@ -1,6 +1,6 @@
 import { type Address } from "viem";
 
-export type SupportedChainKey = "base" | "arbitrum";
+export type SupportedChainKey = "base" | "arbitrum" | "optimism";
 export type PaymentMode = "transfer_fallback" | "universal_invoice" | "universal_7702_transfer";
 
 export interface ChainPaymentConfig {
@@ -37,12 +37,44 @@ export const ARBITRUM_CHAIN: ChainPaymentConfig = {
   active: false,
 };
 
+// Optimism is kept as an experimental zero-balance settlement probe. It forces the UA
+// rail to attempt cross-chain sourcing, but live settlement is not yet proven while
+// Particle's Universal Accounts V2 migration is affecting cross-chain rails.
+export const OPTIMISM_CHAIN: ChainPaymentConfig = {
+  key: "optimism",
+  name: "Optimism",
+  chainId: Number(process.env.NEXT_PUBLIC_OPTIMISM_CHAIN_ID ?? 10),
+  usdcAddress:
+    (process.env.NEXT_PUBLIC_OPTIMISM_USDC_ADDRESS as Address | undefined) ??
+    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+  explorerTxBaseUrl: "https://optimistic.etherscan.io/tx",
+  receiptEmitterAddress: null,
+  active: false,
+};
+
 export const PAYMENT_CHAINS = {
   base: BASE_CHAIN,
   arbitrum: ARBITRUM_CHAIN,
+  optimism: OPTIMISM_CHAIN,
 } as const;
 
 export function getActivePaymentChain(): ChainPaymentConfig {
+  return BASE_CHAIN;
+}
+
+/** Look up a supported settlement chain by numeric chainId. Throws if unknown. */
+export function getPaymentChainById(chainId: number): ChainPaymentConfig {
+  const chain = Object.values(PAYMENT_CHAINS).find((candidate) => candidate.chainId === chainId);
+  if (!chain) throw new Error(`Unsupported payment chain: ${chainId}`);
+  return chain;
+}
+
+/**
+ * The proof-anchor chain. The ReceiptEmitter contract and the owner gas wallet live here,
+ * so InvoicePaid proofs are always recorded on this chain — independent of which chain the
+ * USDC actually settles on (a cross-chain payment can settle elsewhere and still anchor here).
+ */
+export function getProofChain(): ChainPaymentConfig {
   return BASE_CHAIN;
 }
 
@@ -60,6 +92,9 @@ export function getExplorerTxUrl(chain: ChainPaymentConfig, txHash: string): str
 export function getPublicRpcUrl(chain: ChainPaymentConfig): string {
   if (chain.key === "arbitrum") {
     return process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL || "https://arb1.arbitrum.io/rpc";
+  }
+  if (chain.key === "optimism") {
+    return process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL || "https://mainnet.optimism.io";
   }
   return process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://mainnet.base.org";
 }

@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/client";
 import {
   RECEIPT_EMITTER_ABI,
 } from "@/lib/contracts/receipt-emitter";
-import { getActivePaymentChain } from "@/lib/config/payment";
+import { getPaymentChainById, getProofChain, type ChainPaymentConfig } from "@/lib/config/payment";
 import {
   assertCanMarkPaid,
   normalizeAddress,
@@ -11,7 +11,7 @@ import {
 } from "@/lib/payments/mark-paid-verification";
 import { createPublicClient, createWalletClient, http, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { base } from "viem/chains";
+import { arbitrum, base, optimism } from "viem/chains";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -20,26 +20,42 @@ const MarkPaidSchema = z.object({
   payerAddress: z.string().startsWith("0x"),
   txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
 });
-const ACTIVE_CHAIN = getActivePaymentChain();
+function getSettlementRpcUrl(chain: ChainPaymentConfig): string {
+  if (chain.chainId === arbitrum.id) {
+    const rpcUrl = process.env.ARBITRUM_MAINNET_RPC_URL;
+    if (!rpcUrl) throw new Error("ARBITRUM_MAINNET_RPC_URL is not configured");
+    return rpcUrl;
+  }
+  if (chain.chainId === optimism.id) {
+    return process.env.OPTIMISM_MAINNET_RPC_URL || "https://mainnet.optimism.io";
+  }
+  const rpcUrl = process.env.BASE_MAINNET_RPC_URL;
+  if (!rpcUrl) throw new Error("BASE_MAINNET_RPC_URL is not configured");
+  return rpcUrl;
+}
 
-function getPublicClient() {
+// Public client on the chain where the USDC actually settled (Base, Arbitrum, or Optimism).
+function getSettlementPublicClient(chain: ChainPaymentConfig) {
+  const viemChain =
+    chain.chainId === arbitrum.id ? arbitrum : chain.chainId === optimism.id ? optimism : base;
+  return createPublicClient({ chain: viemChain, transport: http(getSettlementRpcUrl(chain)) });
+}
+
+// Proof client + wallet always live on Base (ReceiptEmitter + owner gas), independent of settlement chain.
+function getProofPublicClient() {
   const rpcUrl = process.env.BASE_MAINNET_RPC_URL;
   if (!rpcUrl) throw new Error("BASE_MAINNET_RPC_URL is not configured");
   return createPublicClient({ chain: base, transport: http(rpcUrl) });
 }
 
-function getServerWalletClient() {
+function getProofWalletClient() {
   const rpcUrl = process.env.BASE_MAINNET_RPC_URL;
   const privateKey = process.env.RECEIPT_EMITTER_OWNER_PRIVATE_KEY;
   if (!rpcUrl) throw new Error("BASE_MAINNET_RPC_URL is not configured");
   if (!privateKey) throw new Error("RECEIPT_EMITTER_OWNER_PRIVATE_KEY is not configured");
 
   const account = privateKeyToAccount(privateKey as `0x${string}`);
-  return createWalletClient({
-    account,
-    chain: base,
-    transport: http(rpcUrl),
-  });
+  return createWalletClient({ account, chain: base, transport: http(rpcUrl) });
 }
 
 export async function POST(
@@ -84,13 +100,17 @@ export async function POST(
       );
     }
 
-    const receiptEmitterAddress = ACTIVE_CHAIN.receiptEmitterAddress;
-    if (!receiptEmitterAddress) throw new Error(`${ACTIVE_CHAIN.name} ReceiptEmitter address is not configured`);
-    const publicClient = getPublicClient();
-    const receipt = await publicClient.waitForTransactionReceipt({
+    // Settlement chain = where the USDC tx landed (from the invoice). Proof chain = Base.
+    const settlementChain = getPaymentChainById(link.destination_chain_id);
+    const proofChain = getProofChain();
+    const receiptEmitterAddress = proofChain.receiptEmitterAddress;
+    if (!receiptEmitterAddress) throw new Error(`${proofChain.name} ReceiptEmitter address is not configured`);
+    const settlementClient = getSettlementPublicClient(settlementChain);
+    const proofClient = getProofPublicClient();
+    const receipt = await settlementClient.waitForTransactionReceipt({
       hash: parsed.txHash as Hex,
       confirmations: 1,
-      timeout: 60_000,
+      timeout: 90_000,
     });
 
     const duplicatePaymentTx = await supabaseAdmin
@@ -106,20 +126,26 @@ export async function POST(
 
     const matchingTransfer = verifyUsdcTransferForPayment({
       receipt,
-      chain: ACTIVE_CHAIN,
+      chain: settlementChain,
       link,
       txHash: parsed.txHash as Hex,
     });
 
-    const walletClient = getServerWalletClient();
+    // The payer recorded in the proof is the ACTUAL on-chain sender of the matched USDC transfer,
+    // never the client-supplied value. The request's payerAddress is treated as advisory only —
+    // binding to matchingTransfer.from keeps the "provable payer" guarantee unspoofable while still
+    // working for smart-account / UA settlements where the on-chain sender may differ from the EOA.
+    const payer = matchingTransfer.from;
+
+    const walletClient = getProofWalletClient();
     const proofTxHash = await walletClient.writeContract({
       address: receiptEmitterAddress,
       abi: RECEIPT_EMITTER_ABI,
       functionName: "recordVerifiedPayment",
-      args: [link.contract_invoice_id as Hex, parsed.payerAddress as Address, parsed.txHash as Hex],
+      args: [link.contract_invoice_id as Hex, payer, parsed.txHash as Hex],
     });
 
-    const proofReceipt = await publicClient.waitForTransactionReceipt({
+    const proofReceipt = await proofClient.waitForTransactionReceipt({
       hash: proofTxHash,
       confirmations: 1,
       timeout: 60_000,
@@ -147,14 +173,14 @@ export async function POST(
     if (normalizeAddress(args.merchant) !== normalizeAddress(link.merchant_address)) {
       throw new Error("InvoicePaid merchant does not match payment link");
     }
-    if (normalizeAddress(args.token) !== normalizeAddress(ACTIVE_CHAIN.usdcAddress)) {
-      throw new Error(`InvoicePaid token is not ${ACTIVE_CHAIN.name} USDC`);
+    if (normalizeAddress(args.token) !== normalizeAddress(settlementChain.usdcAddress)) {
+      throw new Error(`InvoicePaid token is not ${settlementChain.name} USDC`);
     }
     if (args.amount !== BigInt(link.amount)) {
       throw new Error("InvoicePaid amount does not match payment link");
     }
-    if (args.chainId !== BigInt(ACTIVE_CHAIN.chainId)) {
-      throw new Error(`InvoicePaid chainId is not ${ACTIVE_CHAIN.name}`);
+    if (args.chainId !== BigInt(proofChain.chainId)) {
+      throw new Error(`InvoicePaid chainId is not the ${proofChain.name} proof chain`);
     }
 
     const completedAt = new Date().toISOString();
@@ -170,8 +196,8 @@ export async function POST(
 
     const paymentPayload = {
       payment_link_id: params.id,
-      payer_address: parsed.payerAddress,
-      source_chain_id: ACTIVE_CHAIN.chainId,
+      payer_address: payer,
+      source_chain_id: settlementChain.chainId,
       destination_chain_id: link.destination_chain_id,
       token: link.token,
       amount: link.amount,
