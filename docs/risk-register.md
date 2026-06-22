@@ -18,21 +18,26 @@
 ### R1 — Particle UA cross-chain stays broken through submission
 
 - **likelihood:** high (V2 migration ongoing, our probes still fail at settlement)
-- **impact:** high (UA Track eligibility gate)
+- **impact:** med — **downgraded after the official rules (2026-06-21).** The UA Track does NOT
+  require cross-chain value movement; it requires prominently using Universal Accounts in EIP-7702
+  mode, with a supported wallet provider, for a chain-agnostic UX — which we already meet (Magic EOA
+  → Particle UA in 7702 mode across Base/Arbitrum/Optimism, unified cross-chain balance read,
+  account-level mandate enforcement). Cross-chain value movement is an innovation booster for the
+  30% UA+7702 axis, NOT an eligibility gate.
 - **mitigation:**
-  1. Direct DevRel attempt at Jun 22 kickoff (spec `cross-chain-ua-particle`).
-  2. Circle Gateway backup rail (spec `cross-chain-circle-gateway`).
-  3. Written rule clarification from organizers (spec `organizer-rule-clarification`).
-  4. Fallback if cross-chain doesn't land. **Correction (2026-06-21):** the General Track is NOT a
-     no-rework fallback — its subtracks are **ZeroDev** and **Openfort** (sponsor SDKs we deliberately
-     did not integrate, per the §6 cut list). The durable fallback is the Arbitrum bounty + Magic
-     bonus, both proven live and (to confirm with organizers) independent of the main track. Do NOT
-     check a General subtrack we don't actually use — that's a false eligibility claim / DQ risk.
-     Open questions for organizers: (a) is live cross-chain value movement via UA a hard DQ gate for
-     the UA Track? (b) do the Arbitrum/Magic bonuses stand if the UA Track entry is at risk?
-- **mitigation_status:** in_progress (fallback assumption corrected — General = ZeroDev/Openfort, not free)
+  1. No DQ risk: enter the UA Track now; frame cross-chain honestly as roadmap / in-progress, never
+     as live.
+  2. Pursue cross-chain via UA at the Particle workshop as upside (spec `cross-chain-ua-particle`);
+     Circle Gateway is the backup rail (spec `cross-chain-circle-gateway`). Not a blocker.
+  3. The Arbitrum ($2000) + Magic ($500) bounties are judged INDEPENDENTLY of the main track
+     (confirmed in the official rules) — safe regardless of the UA-Track outcome.
+  4. Correction to the earlier note: General Track base = "exceptional UX, any domain" (no SDK
+     required; ZeroDev/Openfort are optional subtracks we don't use), so it WOULD be a no-rework
+     fallback — but UA Track is the pick and is safe.
+- **mitigation_status:** accepted — UA Track entry is safe per the rules; cross-chain is roadmap
+  upside, not a gate.
 - **owner:** builder
-- **review:** daily after Jun 22
+- **review:** revisit only if the rules are clarified otherwise
 
 ### R2 — Judges don't grok the firewall in <30 seconds
 
