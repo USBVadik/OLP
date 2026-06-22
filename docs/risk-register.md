@@ -23,8 +23,14 @@
   1. Direct DevRel attempt at Jun 22 kickoff (spec `cross-chain-ua-particle`).
   2. Circle Gateway backup rail (spec `cross-chain-circle-gateway`).
   3. Written rule clarification from organizers (spec `organizer-rule-clarification`).
-  4. Fallback to General Track without rework (same submission, different category claim).
-- **mitigation_status:** in_progress
+  4. Fallback if cross-chain doesn't land. **Correction (2026-06-21):** the General Track is NOT a
+     no-rework fallback — its subtracks are **ZeroDev** and **Openfort** (sponsor SDKs we deliberately
+     did not integrate, per the §6 cut list). The durable fallback is the Arbitrum bounty + Magic
+     bonus, both proven live and (to confirm with organizers) independent of the main track. Do NOT
+     check a General subtrack we don't actually use — that's a false eligibility claim / DQ risk.
+     Open questions for organizers: (a) is live cross-chain value movement via UA a hard DQ gate for
+     the UA Track? (b) do the Arbitrum/Magic bonuses stand if the UA Track entry is at risk?
+- **mitigation_status:** in_progress (fallback assumption corrected — General = ZeroDev/Openfort, not free)
 - **owner:** builder
 - **review:** daily after Jun 22
 
