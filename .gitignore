@@ -21,3 +21,4 @@ gcp-*.json
 # Local screen recordings / demo captures — never commit (large binaries)
 *.mov
 *.mp4
+.vercel

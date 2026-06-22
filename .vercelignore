@@ -1,0 +1,16 @@
+# Secrets & local env — must NEVER be uploaded to Vercel's build context.
+.secrets/
+.env.local
+.env*.local
+
+# Reinstalled / rebuilt by Vercel — no need to upload.
+node_modules/
+.next/
+.git/
+
+# Large / irrelevant to the web build.
+*.mov
+*.mp4
+*.pdf
+ffsgen-*.json
+.DS_Store

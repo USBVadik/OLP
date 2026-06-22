@@ -94,7 +94,23 @@ Run the **live dry-run checklist** in `docs/demo-runbook.md` against the deploye
 - `/dashboard`: explorer links resolve to the correct chain (arbiscan / basescan).
 - Confirm `/debug/*` shows the disabled state (gate working).
 
+## 5.1 OAuth allowlists — required for login on a new domain (we hit BOTH)
+Magic and Google each keep their own allowlist of the redirect domain, localhost-only by
+default. After deploying to a new domain, **email + Google login fail until both are updated**:
+
+1. **Magic** (dashboard.magic.link) → your app → **Settings → Allowed Origins & Redirects** →
+   add the production origin `https://<domain>` to the **Domain** allowlist (keep `http://localhost`).
+   The **Redirect** toggle can stay OFF — the Domain allowlist already covers the `/auth/callback`
+   redirect. Symptom if missing: Magic modal *"OAuth Login Failed — Invalid redirect URL"*.
+2. **Google Cloud Console** → APIs & Services → Credentials → your OAuth 2.0 **Web** client →
+   **Authorized redirect URIs** → add `https://<domain>/auth/callback` (exact, no trailing slash;
+   keep the localhost one). Symptom if missing: Google *"Error 400: redirect_uri_mismatch"*.
+
+Both are dashboard-only (no redeploy needed); Google changes can take 1–2 min to apply. Always
+sign in via the clean alias `https://<domain>` so `window.location.origin` matches the allowlist.
+
 ## 6. Notes
+- Live deployment (this project): https://onelink-pay.vercel.app (Vercel scope `wona-s-projects`).
 - Every push to the production branch auto-redeploys.
 - Rollback: Vercel → Deployments → promote a previous build (instant).
 - Custom domain (optional): add it in Vercel → Domains, then update `NEXT_PUBLIC_APP_URL` + redeploy.
