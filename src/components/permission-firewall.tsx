@@ -93,7 +93,7 @@ export function PermissionFirewall({
       </p>
 
       {/* Preset selector */}
-      <div className="mt-4 grid grid-cols-3 gap-2 px-5">
+      <div className="mt-4 grid grid-cols-1 gap-2 px-5 sm:grid-cols-3">
         {PRESETS.map((p) => {
           const active = p.id === preset;
           return (
