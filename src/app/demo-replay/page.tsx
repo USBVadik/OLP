@@ -6,7 +6,6 @@ import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import {
   Wordmark,
   Chip,
-  ConceptTag,
   Field,
   TxReference,
   IconCheck,
@@ -58,7 +57,7 @@ export default function DemoReplayPage() {
         <section className="mt-8 grid gap-3 sm:grid-cols-3">
           <Moment icon={<IconShield className="h-4 w-4" />} step="Before" title="Trust Preview" />
           <Moment icon={<IconReceipt className="h-4 w-4" />} step="After" title="Proof Receipt" />
-          <Moment icon={<IconLock className="h-4 w-4" />} step="Next" title="Permission Firewall" tag />
+          <Moment icon={<IconLock className="h-4 w-4" />} step="Live" title="Permission Firewall" href="/firewall" />
         </section>
 
         {/* Verified summary */}
@@ -101,8 +100,9 @@ export default function DemoReplayPage() {
         </section>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          Honest scope: no live cross-chain routing, no real session keys, and no gas sponsorship are
-          claimed. Spend caps and the Permission Firewall are concept previews.
+          Honest scope: this replay shows a real, same-chain payment and its on-chain proof — no
+          cross-chain routing or gas sponsorship is claimed here. The Permission Firewall above is
+          live and enforced on-chain.
         </p>
       </div>
     </main>
@@ -113,15 +113,15 @@ function Moment({
   icon,
   step,
   title,
-  tag = false,
+  href,
 }: {
   icon: React.ReactNode;
   step: string;
   title: string;
-  tag?: boolean;
+  href?: string;
 }) {
-  return (
-    <div className="op-card-quiet flex items-center gap-3 p-4">
+  const inner = (
+    <>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-soft text-gold">
         {icon}
       </span>
@@ -129,9 +129,22 @@ function Moment({
         <p className="op-eyebrow">{step}</p>
         <p className="flex items-center gap-1.5 truncate font-semibold text-ink">
           {title}
-          {tag ? <ConceptTag /> : null}
+          {href ? <IconArrowUpRight className="h-3.5 w-3.5 text-faint group-hover:text-gold" /> : null}
         </p>
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="op-card-quiet group flex items-center gap-3 p-4 transition-colors hover:border-gold/40 hover:bg-gold-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className="op-card-quiet flex items-center gap-3 p-4">{inner}</div>;
 }
