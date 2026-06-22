@@ -141,7 +141,8 @@ Accounts:
 
 - [ ] Open `/pay/<id>` (a fresh Arbitrum-settled link), Continue with Google, pay the invoice. **Record the payment tx hash** (settles on Arbitrum).
 - [ ] Open `/receipt/<id>`: shows verified → matched → recorded; "How is this verified?" disclosure reads correctly; payment-tx link → **arbiscan.io** (resolves), proof-tx (InvoicePaid) link → **basescan.org** (resolves). **Record the proof tx hash.**
-- [ ] **R15 check:** on basescan, open the InvoicePaid proof tx → Logs → confirm the `payer` argument equals the `Transfer.from` of the payment tx on arbiscan (the demo EOA). Payer is now always derived from the chain, so an honest run matches — and a tampered `payerAddress` in the mark-paid POST can no longer change it.
+- [ ] **R15 check (recorded value):** open `/api/payments?merchantId=<merchant>` and confirm `payer_address` equals the on-chain `Transfer.from` of the payment tx (arbiscan). Note: the explorer can't show the fix on a happy path — `payer` is an `indexed` field (raw hex in Topics, and ReceiptEmitter isn't verified on basescan), and an honest payment records the correct payer either way. The fix only matters against a tampered `payerAddress`; to actually demonstrate it, run the optional adversarial check below.
+- [ ] **R15 proof (optional, adversarial):** for a fresh invoice, POST mark-paid with a real matching `txHash` but a bogus `payerAddress` → confirm the stored `payer_address` is still the real sender. This is the only check that proves the fix rather than just showing the value.
 
 ### 2. Dashboard — chain-correctness (verifies **R17**)
 

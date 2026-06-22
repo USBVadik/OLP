@@ -229,7 +229,8 @@
      (`matchingTransfer.from`), never the client `payerAddress`. ✅ shipped
   2. Binds to whoever the chain says sent the funds, so smart-account / UA settlement still works
      (no brittle equality reject). ✅
-- **mitigation_status:** closed 2026-06-21 (build + tests green; live `/pay` re-run pending)
+- **mitigation_status:** closed 2026-06-21 (build + tests green; **operator-confirmed live
+  2026-06-21** — `payer_address` matched the on-chain sender via the payments API)
 - **owner:** builder
 - **review:** next live `/pay` completion
 
@@ -262,7 +263,8 @@
   2. Header chip relabeled from a false global "chain Base" to the true constant "proof anchor
      Base". ✅
 - **mitigation_status:** closed 2026-06-21 (build + tests green; `mark-paid` + receipt already
-  resolved chains correctly — the bug was dashboard-display-only)
+  resolved chains correctly — the bug was dashboard-display-only; **operator-confirmed live
+  2026-06-21** — dashboard payment-tx link → arbiscan, proof-tx link → basescan, both resolve)
 - **owner:** builder
 - **review:** demo dress rehearsal (Block E)
 
@@ -290,8 +292,8 @@
 | R3 | "You reinvented spend permissions" | 2026-06-21 | Sourced prior-art comparison shipped on the landing + README with neutral framing (C19, `landing-narrative-prior-art` superseding `prior-art-readme`); the x402 wedge (C17) is the concrete originality answer; R14 (dismissiveness) also closed. |
 | R7 | Magic Google OAuth fails in target browser | 2026-06-21 | Spec `magic-social-login` shipped; user-confirmed live OAuth round-trip + auto-detect on reload (claim C13). |
 | R8 | Receipt page looks centralized | 2026-06-21 | "How is this verified?" disclosure on `/receipt/[id]` + `/success/[id]`: trustless settlement vs attested InvoicePaid proof ("not an oracle"), concrete matched-leg detail, open-source verifier referenced. Build-verified (`/receipt/[id]` completed-branch live visual pending a completed invoice). |
-| R15 | Proof payer was client-supplied (mark-paid) | 2026-06-21 | Record the on-chain transfer sender (`matchingTransfer.from`) as payer instead of the client value; build + tests green (live re-run pending). |
-| R17 | Dashboard chain mismatch (labels/explorer links hardcoded to Base) | 2026-06-21 | Resolve each link/payment chain by id for labels + payment-tx links; proof-tx uses the proof chain; header chip relabeled to "proof anchor". |
+| R15 | Proof payer was client-supplied (mark-paid) | 2026-06-21 | Record the on-chain transfer sender (`matchingTransfer.from`) as payer instead of the client value; build + tests green; operator-confirmed live (payer_address == on-chain sender). |
+| R17 | Dashboard chain mismatch (labels/explorer links hardcoded to Base) | 2026-06-21 | Resolve each link/payment chain by id for labels + payment-tx links; proof-tx uses the proof chain; header chip relabeled "proof anchor"; operator-confirmed live (links resolve to correct chains). |
 
 ## Pre-mortem schedule
 
