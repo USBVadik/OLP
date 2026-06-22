@@ -1,88 +1,11 @@
-declare module "@particle-network/universal-account-sdk" {
-  export interface ISmartAccountOptions {
-    name: string;
-    version: string;
-    ownerAddress: string;
-    smartAccountAddress?: string;
-    useEIP7702?: boolean;
-    options?: any;
-  }
-
-  export interface IUniversalAccountConfig {
-    projectId: string;
-    projectClientKey: string;
-    projectAppUuid: string;
-    smartAccountOptions?: ISmartAccountOptions;
-    tradeConfig?: any;
-    rpcUrl?: string;
-    ownerAddress?: string;
-  }
-
-  export interface IBasicToken {
-    chainId: number;
-    address: string;
-  }
-
-  export interface IExpectToken {
-    type: SUPPORTED_TOKEN_TYPE;
-    amount: string;
-  }
-
-  export interface EVMTransaction {
-    to: string;
-    data: string;
-    value?: string;
-  }
-
-  export interface IUniversalTransaction {
-    chainId: number;
-    expectTokens: IExpectToken[];
-    transactions: EVMTransaction[];
-  }
-
-  export interface ITransaction {
-    [key: string]: any;
-  }
-
-  export interface IAssetsResponse {
-    [key: string]: any;
-  }
-
-  export const UNIVERSAL_ACCOUNT_VERSION: string;
-
-  export interface EIP7702Authorization {
-    userOpHash: string;
-    signature: string;
-  }
-
-  export class UniversalAccount {
-    constructor(config: IUniversalAccountConfig);
-    getPrimaryAssets(): Promise<IAssetsResponse>;
-    createUniversalTransaction(payload: IUniversalTransaction, tradeConfig?: any): Promise<ITransaction>;
-    createTransferTransaction(payload: { token: IBasicToken; amount: string; receiver: string }): Promise<ITransaction>;
-    sendTransaction(transaction: ITransaction, signature: string, authorizations?: any[]): Promise<any>;
-    getSmartAccountOptions(): Promise<ISmartAccountOptions>;
-    getTransaction(transactionId: string): Promise<any>;
-    getEIP7702Deployments(): Promise<any>;
-    getEIP7702Auth(chainIds: number[]): Promise<any>;
-  }
-
-  export enum CHAIN_ID {
-    SOLANA_MAINNET = 101,
-    ETHEREUM_MAINNET = 1,
-    BSC_MAINNET = 56,
-    BASE_MAINNET = 8453,
-    ARBITRUM_MAINNET_ONE = 42161,
-    OPTIMISM_MAINNET = 10,
-    POLYGON_MAINNET = 137,
-  }
-
-  export enum SUPPORTED_TOKEN_TYPE {
-    ETH = "eth",
-    USDT = "usdt",
-    USDC = "usdc",
-    BTC = "btc",
-    BNB = "bnb",
-    SOL = "sol",
-  }
-}
+// Workaround for @particle-network/universal-account-sdk@2.0.0-beta.3.
+//
+// The package ships real types at dist/index.d.ts, but its package.json "exports"
+// map doesn't expose them under the import condition, so TypeScript can't resolve
+// them (TS7016) under this project's moduleResolution. Every use of the SDK in this
+// app is a dynamic `await import("@particle-network/universal-account-sdk")` assigned
+// to an any-typed value, so a bare ambient module declaration is sufficient to compile.
+//
+// Remove this file once the SDK fixes its "exports"/"types" packaging, to pick up the
+// real v2 typings.
+declare module "@particle-network/universal-account-sdk";

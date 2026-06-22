@@ -21,8 +21,8 @@ importers:
         specifier: ^1.8.0
         version: 1.8.3
       '@particle-network/universal-account-sdk':
-        specifier: ^1.0.7
-        version: 1.1.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
+        specifier: 2.0.0-beta.3
+        version: 2.0.0-beta.3(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
       '@supabase/supabase-js':
         specifier: ^2.45.0
         version: 2.105.3(bufferutil@4.1.0)(utf-8-validate@6.0.6)
@@ -846,8 +846,8 @@ packages:
   '@particle-network/thresh-sig@0.7.8':
     resolution: {integrity: sha512-Xe9yxt9s1ZnUpdwNPEHK9jMDg3Mjl9WePbmUMC4w7rZ+nxTE7gk0F+Q5mrEgwjmFAtDod0bCpzHygOOObF5QgQ==}
 
-  '@particle-network/universal-account-sdk@1.1.1':
-    resolution: {integrity: sha512-7V0H+9nkVdMqVl/YLv14r2dCt+5BQv87CpOWvY29o+G6S8bK7n4rJxhOpyxDnIpuZEGTmBI5/FzBRGBTEanAyQ==}
+  '@particle-network/universal-account-sdk@2.0.0-beta.3':
+    resolution: {integrity: sha512-Avb4gg936QpOWMwMGXoTtWhNyQQIpYmaLqJAKgCUNujMhmcISJEKBw74Z/jZnAlXyRj3Wu4JWQYePpJOUkZSTQ==}
 
   '@particle-network/wallet@1.4.6':
     resolution: {integrity: sha512-ZpaKGuaA+xWL2jIgZikv9xyf/PGoKwlvPAj+XQR5QZn+KRfX318zbsn/RB0Wgu/vZ+tyY47zU/fqBS1NyJK/og==}
@@ -5085,7 +5085,7 @@ snapshots:
       buffer: 6.0.3
       elliptic: 6.6.1
 
-  '@particle-network/universal-account-sdk@1.1.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)':
+  '@particle-network/universal-account-sdk@2.0.0-beta.3(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)':
     dependencies:
       '@coral-xyz/anchor': 0.30.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
       '@noble/hashes': 1.8.0

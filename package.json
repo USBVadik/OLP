@@ -15,7 +15,7 @@
     "@magic-ext/oauth2": "15.8.0",
     "@particle-network/authkit": "^2.1.1",
     "@particle-network/chains": "^1.8.0",
-    "@particle-network/universal-account-sdk": "^1.0.7",
+    "@particle-network/universal-account-sdk": "2.0.0-beta.3",
     "@supabase/supabase-js": "^2.45.0",
     "ethers": "^6.17.0",
     "lenis": "1.1.18",

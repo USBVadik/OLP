@@ -20,8 +20,10 @@ function particleCredentials() {
  * owner EOA). Kept for the transfer_fallback / universal_invoice paths. This is the
  * account class Particle is migrating away from in the Universal Accounts V2 upgrade.
  */
-let uaInstance: UniversalAccount | null = null;
-export function getUniversalAccount(ownerAddress: string): UniversalAccount {
+// NOTE: the SDK is treated as `any` app-wide (see src/types/particle.d.ts — v2-beta.3's
+// "exports" map doesn't expose its types). So instance annotations here use `any`.
+let uaInstance: any = null;
+export function getUniversalAccount(ownerAddress: string): any {
   if (!uaInstance) {
     uaInstance = new UniversalAccount({
       ...particleCredentials(),
@@ -39,7 +41,7 @@ export function getUniversalAccount(ownerAddress: string): UniversalAccount {
  * `version` must come from the SDK's exported UNIVERSAL_ACCOUNT_VERSION constant —
  * do not hardcode it (a wrong literal like "2.0" yields "Unsupported smart account").
  */
-export function createUniversal7702Account(ownerAddress: string): UniversalAccount {
+export function createUniversal7702Account(ownerAddress: string): any {
   return new UniversalAccount({
     ...particleCredentials(),
     smartAccountOptions: {
