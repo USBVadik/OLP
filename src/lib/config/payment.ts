@@ -89,6 +89,18 @@ export function getExplorerTxUrl(chain: ChainPaymentConfig, txHash: string): str
   return `${chain.explorerTxBaseUrl}/${txHash}`;
 }
 
+/**
+ * UniversalX activity URL for a Particle Universal Account transaction. The UA transactionId
+ * (returned by `ua.sendTransaction`) is NOT a single-chain tx hash — it identifies the whole
+ * cross-chain orchestration (deposit/lending/settlement legs). UniversalX is the canonical
+ * explorer for that activity, so it is the correct link for UA/7702 payments. Returns null when
+ * no transactionId is available (e.g. the non-UA fallback path).
+ */
+export function getUniversalXActivityUrl(transactionId: string | null | undefined): string | null {
+  if (!transactionId) return null;
+  return `https://universalx.app/activity/details?id=${transactionId}`;
+}
+
 export function getPublicRpcUrl(chain: ChainPaymentConfig): string {
   if (chain.key === "arbitrum") {
     return process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL || "https://arb1.arbitrum.io/rpc";

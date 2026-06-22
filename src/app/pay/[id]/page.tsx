@@ -17,6 +17,7 @@ import {
   getPaymentChainById,
   getProofChain,
   getPublicRpcUrl,
+  getUniversalXActivityUrl,
 } from "@/lib/config/payment";
 import {
   Wordmark,
@@ -817,6 +818,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         const markPaidData = await markPaidRes.json();
         if (!markPaidRes.ok) throw new Error(markPaidData.error || "InvoicePaid verification failed");
         log("markPaid", "ok", markPaidData);
+        const uaTransactionId = transaction.transactionId ?? result?.transactionId ?? null;
         setTxResult({
           particle: result,
           txHash,
@@ -825,6 +827,8 @@ export default function PayPage({ params }: { params: { id: string } }) {
           proofExplorer: markPaidData.proofTxHash
             ? getExplorerTxUrl(proofChain, markPaidData.proofTxHash)
             : null,
+          uaTransactionId,
+          uaActivityUrl: getUniversalXActivityUrl(uaTransactionId),
           verification: markPaidData,
         });
       }
@@ -1078,6 +1082,10 @@ function SuccessState({
         isCrossChain={isCrossChain}
         payment={{ hash: txResult.txHash, href: txResult.paymentExplorer }}
         proof={{ hash: txResult.proofTxHash ?? null, href: txResult.proofExplorer ?? null }}
+        universalActivity={{
+          id: txResult.uaTransactionId ?? null,
+          href: txResult.uaActivityUrl ?? null,
+        }}
       />
       <div className="mt-4 flex justify-center">
         <a

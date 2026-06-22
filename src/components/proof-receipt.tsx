@@ -22,6 +22,12 @@ export interface ProofReceiptCardProps {
   payment: { hash: string | null; href: string | null };
   /** InvoicePaid proof transaction — the "recorded" leg. */
   proof: { hash: string | null; href: string | null };
+  /**
+   * Universal Account cross-chain activity on UniversalX. Only present on the UA/7702 path,
+   * where `ua.sendTransaction` returns a transactionId that spans the whole cross-chain
+   * orchestration. Rendered alongside the settlement leg when an id is available.
+   */
+  universalActivity?: { id: string | null; href: string | null };
   /** Override the "matched" leg detail line. */
   matchedDetail?: string;
 }
@@ -74,6 +80,7 @@ export function ProofReceiptCard({
   isCrossChain = false,
   payment,
   proof,
+  universalActivity,
   matchedDetail,
 }: ProofReceiptCardProps) {
   const recorded = Boolean(proof.hash);
@@ -109,7 +116,16 @@ export function ProofReceiptCard({
             title="Verified"
             detail={`USDC settled to the merchant on ${settlementChainName}.`}
           >
-            <TxReference label={`Payment · ${settlementChainName}`} hash={payment.hash} href={payment.href} />
+            <div className="space-y-2">
+              <TxReference label={`Payment · ${settlementChainName}`} hash={payment.hash} href={payment.href} />
+              {universalActivity?.id ? (
+                <TxReference
+                  label="Universal Account · UniversalX"
+                  hash={universalActivity.id}
+                  href={universalActivity.href}
+                />
+              ) : null}
+            </div>
           </Leg>
           <Leg
             index={2}
