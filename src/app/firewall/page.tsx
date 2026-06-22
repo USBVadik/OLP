@@ -345,7 +345,7 @@ export default function FirewallPage() {
           )}
 
           {error ? (
-            <div className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+            <div role="alert" className="mt-4 rounded-2xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
               {error}
             </div>
           ) : null}

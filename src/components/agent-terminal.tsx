@@ -50,6 +50,10 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
       </div>
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="AI agent activity and on-chain firewall verdicts"
         className="h-72 overflow-y-auto px-4 py-3 font-mono text-[12.5px] leading-relaxed"
       >
         {entries.length === 0 ? (
