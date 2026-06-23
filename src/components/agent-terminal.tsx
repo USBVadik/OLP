@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { formatClockTime, type LogEntry } from "@/lib/agent/log-formatter";
+import { IconShield } from "@/components/ui";
 
 type Props = {
   entries: LogEntry[];
@@ -65,28 +66,36 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
             tries to break out.
           </p>
         ) : (
-          entries.map((e, i) => (
-            <div
-              key={`${e.ts}-${i}`}
-              className={`mb-1.5 rounded ${
-                e.tone === "blocked" ? "animate-block-pulse bg-[#E86A4C]/10 px-1.5 py-0.5" : ""
-              }`}
-            >
-              <span className="text-[#7A7165]">{formatClockTime(e.ts)} </span>
-              <span className={SOURCE_COLOR[e.source]}>[{e.source}]</span>{" "}
-              <span className={TONE_COLOR[e.tone]}>{e.message}</span>
-              {e.txUrl ? (
-                <a
-                  href={e.txUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-1 underline decoration-dotted underline-offset-2 text-[#8A8174] hover:text-[#C9C0B2]"
-                >
-                  view tx ↗
-                </a>
-              ) : null}
-            </div>
-          ))
+          entries.map((e, i) => {
+            const isBlocked = e.tone === "blocked";
+            return (
+              <div
+                key={`${e.ts}-${i}`}
+                className={`mb-1.5 rounded ${
+                  isBlocked
+                    ? "animate-block-pulse border-l-2 border-[#E86A4C] bg-[#E86A4C]/12 px-2 py-1"
+                    : "px-1.5"
+                }`}
+              >
+                <span className="text-[#7A7165]">{formatClockTime(e.ts)} </span>
+                {isBlocked ? (
+                  <IconShield className="mb-0.5 mr-0.5 inline h-3.5 w-3.5 text-[#E86A4C]" aria-hidden="true" />
+                ) : null}
+                <span className={SOURCE_COLOR[e.source]}>[{e.source}]</span>{" "}
+                <span className={`${TONE_COLOR[e.tone]} ${isBlocked ? "font-semibold" : ""}`}>{e.message}</span>
+                {e.txUrl ? (
+                  <a
+                    href={e.txUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-1 underline decoration-dotted underline-offset-2 text-[#8A8174] hover:text-[#C9C0B2]"
+                  >
+                    view tx ↗
+                  </a>
+                ) : null}
+              </div>
+            );
+          })
         )}
         <div ref={endRef} />
       </div>

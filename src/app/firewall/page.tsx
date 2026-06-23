@@ -86,6 +86,7 @@ export default function FirewallPage() {
   const [chosen, setChosen] = useState<{ mandate: PaymentMandate; preset: MandatePreset } | null>(null);
   const [armed, setArmed] = useState<{ mandate: PaymentMandate; signature: string } | null>(null);
   const [revoked, setRevoked] = useState(false);
+  const [blockPulse, setBlockPulse] = useState(0);
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,6 +213,7 @@ export default function FirewallPage() {
         } else if (data.blocked) {
           const line = firewallResultLine({ kind: "blocked", reason: data.reason });
           append("FIREWALL", line.message, line.tone);
+          setBlockPulse((n) => n + 1);
         } else {
           const line = firewallResultLine({ kind: "error", message: data.error ?? "Charge failed" });
           append("FIREWALL", line.message, line.tone);
@@ -345,6 +347,7 @@ export default function FirewallPage() {
               agentLog={agentLog}
               onRunScenario={runScenario}
               onRevoke={revoke}
+              protectedPulse={blockPulse}
             />
           )}
 
@@ -368,6 +371,7 @@ function ArmedPanel({
   agentLog,
   onRunScenario,
   onRevoke,
+  protectedPulse,
 }: {
   mandate: PaymentMandate;
   chainId: number;
@@ -377,6 +381,7 @@ function ArmedPanel({
   agentLog: LogEntry[];
   onRunScenario: (scenario: AgentScenario) => void;
   onRevoke: () => void;
+  protectedPulse: number;
 }) {
   const scenarios = buildAgentScenarios(mandate.maxPerCharge);
   const mandateId = computeMandateId(mandate);
@@ -398,7 +403,7 @@ function ArmedPanel({
           <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
         </div>
 
-        <BudgetHud chainId={chainId} mandate={mandate} />
+        <BudgetHud chainId={chainId} mandate={mandate} protectedPulse={protectedPulse} />
 
         <button onClick={onRevoke} disabled={!!busy || running || revoked} className="op-btn-ghost w-full justify-center">
           <IconLock className="h-4 w-4" /> {revoked ? "Revoked" : "Revoke permission"}

@@ -7,13 +7,19 @@ import {
 } from "@/lib/mandates/format";
 import { useMandateState } from "@/hooks/use-mandate-state";
 import { type PaymentMandate } from "@/lib/mandates/types";
-import { Chip, IconBolt, IconCheck, IconLock } from "@/components/ui";
+import { Chip, IconBolt, IconCheck, IconLock, IconShield } from "@/components/ui";
 
 type Props = {
   /** Chain the SpendPolicy is deployed on (Arbitrum or Base). */
   chainId: number;
   /** The armed mandate. Pass `null` to render an empty placeholder. */
   mandate: PaymentMandate | null;
+  /**
+   * Bump this counter whenever the firewall BLOCKS a charge. The HUD then flashes a brief
+   * "firewall held · budget untouched" beat — the bars deliberately do NOT move, which is the
+   * whole point: the over-cap attempt moved zero funds.
+   */
+  protectedPulse?: number;
 };
 
 /**
@@ -21,10 +27,19 @@ type Props = {
  * (and stops once the mandate becomes inert) so the UI stays in sync with charges
  * and revocations without manual refresh.
  */
-export function BudgetHud({ chainId, mandate }: Props) {
+export function BudgetHud({ chainId, mandate, protectedPulse }: Props) {
   const { state, isLoading, error } = useMandateState(chainId, mandate);
   const expirySec = mandate ? Number(mandate.expiry) : 0;
   const countdown = useCountdown(expirySec);
+  const [held, setHeld] = useState(false);
+
+  // When a block lands, flash the "budget protected" beat for ~1.7s (one-shot).
+  useEffect(() => {
+    if (!protectedPulse) return;
+    setHeld(true);
+    const id = setTimeout(() => setHeld(false), 1700);
+    return () => clearTimeout(id);
+  }, [protectedPulse]);
 
   if (!mandate) {
     return null;
@@ -45,12 +60,19 @@ export function BudgetHud({ chainId, mandate }: Props) {
 
   return (
     <div
-      className={`relative rounded-2xl border p-4 ${
+      className={`relative rounded-2xl border p-4 transition-shadow duration-300 ${
         inert
           ? "border-line bg-paper2 text-ink2"
           : "border-verify/30 bg-verify-soft/40 text-ink"
-      }`}
+      } ${held ? "ring-2 ring-verify/60" : ""}`}
     >
+      {held ? (
+        <div className="pointer-events-none absolute inset-x-3 -top-3 z-10 flex justify-center">
+          <span className="animate-seal inline-flex items-center gap-1.5 rounded-full border border-verify/40 bg-paper px-2.5 py-1 text-[11px] font-semibold text-verify shadow-card">
+            <IconShield className="h-3 w-3" /> Firewall held &middot; budget untouched
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <IconBolt className="h-4 w-4 text-gold" />

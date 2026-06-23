@@ -87,6 +87,7 @@ export default function AgentPage() {
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
+  const [blockPulse, setBlockPulse] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [balanceSummary, setBalanceSummary] = useState<UniversalBalanceSummary | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
@@ -278,6 +279,7 @@ export default function AgentPage() {
             const line = firewallResultLine({ kind: "blocked", reason: charge.reason });
             append("FIREWALL", line.message, line.tone);
             append("AGENT", `Access denied by the firewall — ${resource.title} not delivered.`, "error");
+            setBlockPulse((n) => n + 1);
           } else {
             const line = firewallResultLine({ kind: "error", message: charge.error ?? "charge failed" });
             append("FIREWALL", line.message, line.tone);
@@ -426,7 +428,7 @@ export default function AgentPage() {
                   error={balanceError}
                   onRetry={reloadBalance}
                 />
-                <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} />
+                <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} />
                 <div className="space-y-2">
                   <p className="op-eyebrow">Paid APIs (x402)</p>
                   {resources.map((r) => {
