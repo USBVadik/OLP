@@ -39,15 +39,51 @@ function chainFor(chainId: number) {
   return { chain: base, rpc: process.env.BASE_MAINNET_RPC_URL || "https://mainnet.base.org" };
 }
 
-/** Extract a SpendPolicy custom-error name from a viem revert, if present. */
-function revertReason(err: unknown): string | null {
-  if (err instanceof BaseError) {
-    const revert = err.walk((e) => e instanceof ContractFunctionRevertedError);
-    if (revert instanceof ContractFunctionRevertedError) {
-      return revert.data?.errorName ?? revert.shortMessage ?? "reverted";
-    }
+// SpendPolicy's own enforcement errors. ONLY these mean "the firewall blocked it" — the demo
+// punchline. Anything else (e.g. the ERC20 reverting because the payer holds no USDC on this
+// chain, or the allowance is too low) is a real failure and must NOT be dressed up as a block.
+const POLICY_ERRORS: Record<string, string> = {
+  PerChargeExceeded: "over the per-charge cap",
+  DailyCapExceeded: "over the daily cap",
+  TotalCapExceeded: "over the total budget",
+  MandateExpired: "mandate expired",
+  MandateIsRevoked: "mandate revoked",
+  BadSignature: "bad mandate signature",
+  WrongChain: "wrong chain",
+  InvalidAmount: "invalid amount",
+  NotPayer: "caller is not the payer",
+};
+
+type RevertInfo = { policy: true; reason: string } | { policy: false; detail: string };
+
+/** Classify a viem revert: a SpendPolicy policy block vs. any other on-chain failure. */
+function classifyRevert(err: unknown): RevertInfo | null {
+  if (!(err instanceof BaseError)) return null;
+  const revert = err.walk((e) => e instanceof ContractFunctionRevertedError);
+  if (!(revert instanceof ContractFunctionRevertedError)) return null;
+
+  const name = revert.data?.errorName;
+  if (name && name in POLICY_ERRORS) {
+    return { policy: true, reason: POLICY_ERRORS[name] };
   }
-  return null;
+  // Standard Error(string) (e.g. "ERC20: transfer amount exceeds balance"), Panic, or any
+  // non-policy custom error. Pull the most specific human-readable text available.
+  const stringArg =
+    typeof revert.data?.args?.[0] === "string" ? (revert.data!.args![0] as string) : undefined;
+  const detail = stringArg ?? revert.reason ?? name ?? revert.shortMessage ?? "execution reverted";
+  return { policy: false, detail };
+}
+
+/** Turn a non-policy revert into an actionable message for the agent terminal. */
+function humanizeChargeFailure(detail: string): string {
+  const d = detail.toLowerCase();
+  if (d.includes("balance")) {
+    return "payer has no USDC on the settlement chain (Arbitrum) to settle this charge — fund the payer address and retry.";
+  }
+  if (d.includes("allowance")) {
+    return "SpendPolicy allowance is too low — re-arm the mandate (approve) and retry.";
+  }
+  return detail;
 }
 
 /**
@@ -121,9 +157,15 @@ export async function POST(request: Request) {
         account,
       });
     } catch (simErr) {
-      const reason = revertReason(simErr);
-      if (reason) {
-        return NextResponse.json({ ok: false, blocked: true, reason });
+      const info = classifyRevert(simErr);
+      if (info?.policy) {
+        // Genuine firewall enforcement — the only case allowed to claim "blocked".
+        return NextResponse.json({ ok: false, blocked: true, reason: info.reason });
+      }
+      if (info) {
+        // A real on-chain failure that is NOT a policy block (e.g. insufficient USDC/allowance).
+        // Surface it honestly instead of mislabeling it as an over-budget block.
+        return NextResponse.json({ ok: false, blocked: false, error: humanizeChargeFailure(info.detail) });
       }
       throw simErr;
     }

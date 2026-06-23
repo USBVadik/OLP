@@ -277,7 +277,7 @@ export default function AgentPage() {
           if (charge.blocked) {
             const line = firewallResultLine({ kind: "blocked", reason: charge.reason });
             append("FIREWALL", line.message, line.tone);
-            append("AGENT", `Access denied — over budget. ${resource.title} not delivered.`, "error");
+            append("AGENT", `Access denied by the firewall — ${resource.title} not delivered.`, "error");
           } else {
             const line = firewallResultLine({ kind: "error", message: charge.error ?? "charge failed" });
             append("FIREWALL", line.message, line.tone);
