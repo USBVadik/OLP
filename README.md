@@ -7,7 +7,10 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 ## What's live
 
 - **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` at zero gas. 22 Hardhat tests pass.
-- **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public receipt page at `/receipt/[id]`. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
+- **Cross-chain settlement via Particle Universal Account (EIP-7702)** — a Magic-signed UA pays a merchant on Arbitrum with USDC sourced cross-chain from Base in one operation — no manual bridge. Proven live (Arbitrum settle `0x85d8…4911`, Base source `0x8b85…4a2e`, UniversalX `0x0654e81cfea86a`) and wired into `/pay` (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`, live in prod). Same-chain checkout runs on the same path.
+- **Agent on a leash (x402-pattern)** — `/agent` runs the real x402 HTTP handshake (`GET → 402 → pay → retry-with-proof → 200`) settled through the on-chain mandate, so an agent's per-call spend is bounded by the caps. Within-cap buys succeed; over-cap calls are refused before any funds move. Proven live on Arbitrum. Settlement scheme is `onelink-mandate` (the x402 *pattern*, not the Coinbase facilitator).
+- **Legible consent** — a plain-English mandate card before signing (EIP-712 hash behind a disclosure) and a live budget HUD that drains from on-chain `SpendPolicy` state.
+- **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public, shareable receipt at `/receipt/[id]` (copy-link + QR) with a "Cross-chain: Base → Arbitrum" badge and a UniversalX activity link. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
 - **Walletless onboarding** — Magic embedded wallet, email + Google OAuth (live, with auto-detect on reload).
 - **EIP-7702 delegation** — Magic EOA delegated in-place via Particle UA (`useEIP7702: true`), proven on Base (tx `0x4ca6…cef0`).
 
@@ -15,12 +18,15 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 - ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
 - ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
-- 🚧 Cross-chain value movement via the Universal Account is in progress. The strict `createUniversalTransaction` custom-call path returns `-32801 System maintenance` during Particle's V2 migration; the active rail is `createTransferTransaction` + server-verified proof. Circle Gateway is the documented backup rail.
+- ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.0-beta.3`: a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
 - ❌ No gas sponsorship is claimed. Particle AuthKit is installed but not on the live path.
 
-The strict `createUniversalTransaction(approve + payInvoice)` path remains in code behind `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`, but the default is `transfer_fallback` while Particle returns `-32801` for custom universal calls.
+**Honesty caveats:**
 
-`@particle-network/authkit` is installed, but it is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
+- The cross-chain proof was made with the identical prod code and independently verified on-chain; a fresh payment through the prod `/pay` UI has not been re-run since, and a first-time payer needs a little native gas on each touched chain for the one-time 7702 delegation.
+- Prod runs a **beta** Particle SDK (`2.0.0-beta.3`, pinned exact) — the build Particle confirmed real EIP-7702 + cross-chain requires; the beta API surface can shift between releases.
+- `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" is an agent-initiated harness over the same firewall, not a fully autonomous LLM loop.
+- `@particle-network/authkit` is installed but is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
 
 ## How OneLink compares (prior art)
 
@@ -62,7 +68,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_DESTINATION_CHAIN_ID=8453
-NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback
+NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer
 NEXT_PUBLIC_RECEIPT_EMITTER_ADDRESS=
 BASE_MAINNET_RPC_URL=
 NEXT_PUBLIC_ARBITRUM_CHAIN_ID=42161
@@ -108,9 +114,9 @@ This is the same hex address as the previous Base mainnet v1 deployment, but it 
 
 ## SDK Versions
 
-Pinned to what's installed (verified against the lockfile). The crypto SDKs that carry the demo are on their latest releases.
+Pinned to what's installed (verified against the lockfile). The Universal Account SDK is intentionally on a pinned **beta** (`2.0.0-beta.3`) — the build Particle confirmed real EIP-7702 + cross-chain requires; the other crypto SDKs are on their latest releases.
 
-- `@particle-network/universal-account-sdk`: `1.1.1` (latest)
+- `@particle-network/universal-account-sdk`: `2.0.0-beta.3` (pinned exact; beta — real EIP-7702 + cross-chain)
 - `@particle-network/chains`: `1.8.3` (latest)
 - `magic-sdk`: `33.7.1` (latest)
 - `@magic-ext/evm`: `1.5.1` (latest)
@@ -123,4 +129,4 @@ Pinned to what's installed (verified against the lockfile). The crypto SDKs that
 
 Intentionally held back (major upgrades require code changes; out of scope mid-hackathon): `next` 14 → 16, `zod` 3 → 4, `hardhat` 2 → 3.
 
-Known risk: Particle `createUniversalTransaction()` currently returns maintenance errors for custom calls in this project. The active fallback uses the working Particle transfer rail plus strict server-side verification and on-chain proof.
+Known risk: prod runs a pinned **beta** Particle SDK (`2.0.0-beta.3`) for real EIP-7702 + cross-chain. The earlier `-32801`/`-32613` maintenance errors on custom universal calls are resolved on this build (cross-chain payment proven live); the residual risk is beta API drift — the version is pinned exact, so prod cannot float to a newer beta unreviewed.
