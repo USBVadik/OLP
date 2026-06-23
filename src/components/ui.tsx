@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
+import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
 /* Icons — minimal, inline, currentColor                               */
@@ -76,8 +77,8 @@ export function IconBolt(props: SVGProps<SVGSVGElement>) {
 /* Brand                                                               */
 /* ------------------------------------------------------------------ */
 
-export function Wordmark({ className = "" }: { className?: string }) {
-  return (
+export function Wordmark({ className = "", href }: { className?: string; href?: string }) {
+  const inner = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink text-cream shadow-sm">
         <span className="font-display text-[15px] font-semibold leading-none">O</span>
@@ -87,6 +88,18 @@ export function Wordmark({ className = "" }: { className?: string }) {
       </span>
     </span>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-label="OneLink Pay — home"
+        className="inline-flex rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
 }
 
 /* ------------------------------------------------------------------ */

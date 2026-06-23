@@ -13,7 +13,7 @@ import {
 } from "@/lib/mandates/mandate";
 import { type MandatePreset, type PaymentMandate } from "@/lib/mandates/types";
 import { PermissionFirewall } from "@/components/permission-firewall";
-import { LoginWithGoogleButton, MagicLoginReassurance } from "@/components/login-with-google";
+import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 import { MandateCard } from "@/components/mandate-card";
 import { BudgetHud } from "@/components/budget-hud";
 import { AgentTerminal } from "@/components/agent-terminal";
@@ -256,10 +256,13 @@ export default function FirewallPage() {
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
         <header className="mb-5 flex items-center justify-between">
-          <Wordmark />
-          <span className="op-chip">
-            <IconShield className="h-3.5 w-3.5" /> Permission Firewall
-          </span>
+          <Wordmark href="/" />
+          <div className="flex items-center gap-2">
+            <span className="op-chip">
+              <IconShield className="h-3.5 w-3.5" /> Permission Firewall
+            </span>
+            {address ? <SignOutButton magic={magic} /> : null}
+          </div>
         </header>
 
         <div className="op-card op-animate-rise p-6 sm:p-7">

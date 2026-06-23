@@ -12,7 +12,7 @@ import {
 } from "@/lib/mandates/mandate";
 import { type PaymentMandate } from "@/lib/mandates/types";
 import { listResources, type X402Resource } from "@/lib/x402/catalog";
-import { LoginWithGoogleButton } from "@/components/login-with-google";
+import { LoginWithGoogleButton, SignOutButton } from "@/components/login-with-google";
 import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
 import { MandateCard } from "@/components/mandate-card";
@@ -334,10 +334,13 @@ export default function AgentPage() {
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-5 flex items-center justify-between">
-          <Wordmark />
-          <span className="op-chip">
-            <IconBolt className="h-3.5 w-3.5" /> x402 gateway
-          </span>
+          <Wordmark href="/" />
+          <div className="flex items-center gap-2">
+            <span className="op-chip">
+              <IconBolt className="h-3.5 w-3.5" /> x402 gateway
+            </span>
+            {address ? <SignOutButton magic={magic} /> : null}
+          </div>
         </header>
 
         <div className="op-card op-animate-rise p-6 sm:p-7">

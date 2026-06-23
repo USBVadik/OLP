@@ -40,7 +40,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-6xl px-5">
         {/* Top bar */}
         <header className="flex items-center justify-between py-6">
-          <Wordmark />
+          <Wordmark href="/" />
           <nav className="flex items-center gap-1 text-sm">
             <Link href="/firewall" className="op-btn-ghost px-3 py-2">
               Firewall
@@ -252,7 +252,7 @@ export default function HomePage() {
 
         {/* Honest scope footer */}
         <footer className="mt-16 flex flex-col gap-3 border-t border-line pt-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-          <Wordmark />
+          <Wordmark href="/" />
           <p className="max-w-xl sm:text-right">
             Honest scope: the on-chain firewall (SpendPolicy) is live on Base + Arbitrum and
             tested (22 contract tests). Same-chain checkout is proven end-to-end. Cross-chain

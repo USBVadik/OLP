@@ -100,6 +100,39 @@ export function MagicLoginReassurance({ className = "" }: { className?: string }
   );
 }
 
+/**
+ * Sign out of the current Magic session, then hard-reload so all in-memory wallet / Universal
+ * Account state is dropped and the login screen renders fresh — lets a user switch accounts.
+ * Renders nothing until Magic is ready.
+ */
+export function SignOutButton({ magic, className = "" }: { magic: any | null; className?: string }) {
+  const [busy, setBusy] = useState(false);
+  if (!magic) return null;
+  const handleClick = async () => {
+    setBusy(true);
+    try {
+      await magic.user.logout();
+    } catch {
+      // Even if the logout call fails, the reload drops in-memory session/wallet state.
+    }
+    window.location.reload();
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      aria-label="Sign out"
+      className={[
+        "inline-flex items-center rounded-full border border-line bg-paper2 px-3 py-1.5 text-xs font-medium text-ink2 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      ].join(" ")}
+    >
+      {busy ? "Signing out…" : "Sign out"}
+    </button>
+  );
+}
+
 function GoogleG(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>

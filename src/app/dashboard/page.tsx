@@ -123,7 +123,7 @@ function DashboardContent() {
     <main className="op-shell px-5 py-8 sm:py-10">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-6 flex items-center justify-between">
-          <Wordmark />
+          <Wordmark href="/" />
           <span className="op-chip">Merchant dashboard</span>
         </header>
 

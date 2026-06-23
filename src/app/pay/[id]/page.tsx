@@ -33,7 +33,7 @@ import {
 } from "@/components/ui";
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
-import { LoginWithGoogleButton, MagicLoginReassurance } from "@/components/login-with-google";
+import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
 let Magic: any = null;
@@ -911,10 +911,13 @@ export default function PayPage({ params }: { params: { id: string } }) {
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
         <header className="mb-5 flex items-center justify-between">
-          <Wordmark />
-          <span className="op-chip">
-            <IconLock className="h-3.5 w-3.5" /> Secure checkout
-          </span>
+          <Wordmark href="/" />
+          <div className="flex items-center gap-2">
+            <span className="op-chip">
+              <IconLock className="h-3.5 w-3.5" /> Secure checkout
+            </span>
+            {address ? <SignOutButton magic={magic} /> : null}
+          </div>
         </header>
 
         <div className="op-card op-animate-rise p-6 sm:p-7">

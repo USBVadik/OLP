@@ -26,7 +26,7 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-5 flex items-center justify-between">
-          <Wordmark />
+          <Wordmark href="/" />
           <span className="op-chip-verify">
             <IconCheck className="h-3.5 w-3.5" /> Verified
           </span>

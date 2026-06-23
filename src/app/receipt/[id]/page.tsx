@@ -96,7 +96,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-xl">
         <header className="mb-5 flex items-center justify-between">
-          <Wordmark />
+          <Wordmark href="/" />
           <span className={isCompleted ? "op-chip-verify" : "op-chip"}>
             {isCompleted ? <IconCheck className="h-3.5 w-3.5" /> : <IconShield className="h-3.5 w-3.5" />}
             {isCompleted ? "Verified" : "Unverified"}

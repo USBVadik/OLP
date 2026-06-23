@@ -33,7 +33,7 @@ export default function DemoReplayPage() {
     <main className="op-shell px-5 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
         <header className="mb-6 flex items-center justify-between">
-          <Wordmark />
+          <Wordmark href="/" />
           <Link href="/" className="op-btn-ghost px-3 py-2">
             Home
           </Link>
