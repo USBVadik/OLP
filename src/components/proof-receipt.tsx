@@ -28,6 +28,12 @@ export interface ProofReceiptCardProps {
    * orchestration. Rendered alongside the settlement leg when an id is available.
    */
   universalActivity?: { id: string | null; href: string | null };
+  /**
+   * Cross-chain funding summary. When the payment was SOURCED from chain(s) other than the
+   * settlement chain, this surfaces the "no manual bridge" story (Particle UA chain abstraction).
+   * Omit/null for a same-chain payment.
+   */
+  crossChain?: { fromNames: string[]; toName: string } | null;
   /** Override the "matched" leg detail line. */
   matchedDetail?: string;
 }
@@ -81,6 +87,7 @@ export function ProofReceiptCard({
   payment,
   proof,
   universalActivity,
+  crossChain,
   matchedDetail,
 }: ProofReceiptCardProps) {
   const recorded = Boolean(proof.hash);
@@ -101,8 +108,17 @@ export function ProofReceiptCard({
           <Chip tone="verify">
             <IconCheck className="h-3.5 w-3.5" /> Settled on {settlementChainName}
           </Chip>
+          {crossChain && crossChain.fromNames.length ? (
+            <Chip tone="gold">Cross-chain: {crossChain.fromNames.join(" + ")} &rarr; {crossChain.toName}</Chip>
+          ) : null}
           {isCrossChain ? <Chip tone="gold">Proof anchored on {proofChainName}</Chip> : null}
         </div>
+        {crossChain && crossChain.fromNames.length ? (
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            Funded from {crossChain.fromNames.join(" + ")} and delivered on {crossChain.toName} — no
+            manual bridge; the Universal Account sourced the USDC across chains.
+          </p>
+        ) : null}
       </div>
 
       {/* Verification trail */}

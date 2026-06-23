@@ -867,6 +867,9 @@ export default function PayPage({ params }: { params: { id: string } }) {
             payerAddress: address,
             txHash,
             uaTransactionId,
+            sourceChainIds: Array.isArray(result?.tokenChanges?.fromChains)
+              ? result.tokenChanges.fromChains
+              : [],
           }),
         });
         const markPaidData = await markPaidRes.json();
@@ -1123,6 +1126,25 @@ function SuccessState({
   const proofChain = getProofChain();
   const isCrossChain = settlementChain.chainId !== proofChain.chainId;
 
+  // Cross-chain funding story: the chains the UA SOURCED USDC from (tokenChanges.fromChains),
+  // minus the settlement chain itself. If any remain, the payment was funded cross-chain.
+  const fundingFromIds: number[] = Array.isArray(txResult.particle?.tokenChanges?.fromChains)
+    ? txResult.particle.tokenChanges.fromChains
+    : [];
+  const crossFromIds = fundingFromIds.filter((c: number) => c !== settlementChain.chainId);
+  const crossChain = crossFromIds.length
+    ? {
+        fromNames: crossFromIds.map((id: number) => {
+          try {
+            return getPaymentChainById(id).name;
+          } catch {
+            return `Chain ${id}`;
+          }
+        }),
+        toName: settlementChain.name,
+      }
+    : null;
+
   return (
     <div className="py-1">
       <ProofReceiptCard
@@ -1139,6 +1161,7 @@ function SuccessState({
           id: txResult.uaTransactionId ?? null,
           href: txResult.uaActivityUrl ?? null,
         }}
+        crossChain={crossChain}
       />
       <div className="mt-4 flex justify-center">
         <a

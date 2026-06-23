@@ -23,6 +23,9 @@ const MarkPaidSchema = z.object({
   // build the UniversalX activity link on the shareable receipt — intentionally lenient so a
   // malformed/absent id never blocks a verified payment from being recorded.
   uaTransactionId: z.string().max(200).nullish(),
+  // Chains the UA sourced funds from (tokenChanges.fromChains). Records the true funding source so
+  // the shareable receipt can show the cross-chain "no manual bridge" story. Lenient — never blocks.
+  sourceChainIds: z.array(z.number()).max(10).nullish(),
 });
 function getSettlementRpcUrl(chain: ChainPaymentConfig): string {
   if (chain.chainId === arbitrum.id) {
@@ -198,10 +201,17 @@ export async function POST(
 
     if (existingPaymentError) throw existingPaymentError;
 
+    // The true cross-chain funding source: a chain the UA pulled from that is NOT the settlement
+    // chain. Falls back to the settlement chain for a same-chain payment. Lets the shareable
+    // receipt show "funded from <chain>" honestly.
+    const fundingSourceChainId =
+      (parsed.sourceChainIds ?? []).find((c) => c !== settlementChain.chainId) ??
+      settlementChain.chainId;
+
     const paymentPayload = {
       payment_link_id: params.id,
       payer_address: payer,
-      source_chain_id: settlementChain.chainId,
+      source_chain_id: fundingSourceChainId,
       destination_chain_id: link.destination_chain_id,
       token: link.token,
       amount: link.amount,

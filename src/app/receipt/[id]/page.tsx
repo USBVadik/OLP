@@ -53,10 +53,11 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
   let paymentHash: string | null = null;
   let proofHash: string | null = null;
   let uaTransactionId: string | null = null;
+  let sourceChainId: number | null = null;
   if (isCompleted) {
     const { data: payment } = await supabaseAdmin
       .from("payments")
-      .select("tx_hash,receipt_tx_hash,ua_transaction_id,completed_at")
+      .select("tx_hash,receipt_tx_hash,ua_transaction_id,source_chain_id,completed_at")
       .eq("payment_link_id", link.id)
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
@@ -65,7 +66,15 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
     paymentHash = link.paid_tx_hash ?? payment?.tx_hash ?? null;
     proofHash = payment?.receipt_tx_hash ?? null;
     uaTransactionId = payment?.ua_transaction_id ?? null;
+    sourceChainId = payment?.source_chain_id ?? null;
   }
+
+  // Cross-chain funding: if the recorded source chain differs from the settlement chain, the
+  // payment was funded cross-chain — surface the "no manual bridge" story on the shareable receipt.
+  const crossChain =
+    sourceChainId != null && sourceChainId !== settlementChain.chainId
+      ? { fromNames: [chainFor(sourceChainId).name], toName: settlementChain.name }
+      : null;
 
   // Shareable public receipt URL + a best-effort QR (server-rendered SVG, no client JS).
   const shareUrl = receiptShareUrl(process.env.NEXT_PUBLIC_APP_URL ?? "", link.id);
@@ -107,6 +116,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               payment={{ hash: paymentHash, href: paymentHash ? getExplorerTxUrl(settlementChain, paymentHash) : null }}
               proof={{ hash: proofHash, href: proofHash ? getExplorerTxUrl(proofChain, proofHash) : null }}
               universalActivity={{ id: uaTransactionId, href: getUniversalXActivityUrl(uaTransactionId) }}
+              crossChain={crossChain}
               matchedDetail={`Recipient and amount (${amountLabel}) were re-checked against this invoice from the on-chain ${settlementChain.name} USDC transfer.`}
             />
             <div className="op-card mt-4 p-5">
