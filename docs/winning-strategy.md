@@ -122,11 +122,11 @@ agent or merchant *a limited, revocable on-chain permission card, not their wall
 **Files:** `docs/status.md`, `docs/cross-chain-proof-runbook.md` (mark "CLOSED — see C21"), and a
 header on `docs/deep-research-onelink-pay-uxmaxx.md` (v1) pointing to v2.
 **Acceptance:**
-- [ ] `status.md` "Current honest gap" updated: cross-chain via UA is **proven (C21)**, not pending.
-- [ ] `status.md` "Known Risk" reframed: `-32801` resolved on `createUniversalTransaction` + v2-beta.3; active mode is `universal_7702_transfer`.
-- [ ] `cross-chain-proof-runbook.md` marked **CLOSED** with the C21 tx hashes (keep steps for re-runs).
-- [ ] Grep shows no doc claims "cross-chain pending" / "transfer_fallback is the active track candidate".
-- [ ] No new claim introduced; ledger unchanged except a changelog line.
+- [x] `status.md` "Current honest gap" updated: cross-chain via UA is **proven (C21)**, not pending.
+- [x] `status.md` "Known Risk" reframed: `-32801` resolved on `createUniversalTransaction` + v2-beta.3; active mode is `universal_7702_transfer`.
+- [x] `cross-chain-proof-runbook.md` marked **CLOSED** with the C21 tx hashes (keep steps for re-runs).
+- [x] Grep shows no doc claims "cross-chain pending" / "transfer_fallback is the active track candidate".
+- [x] No new claim introduced; ledger unchanged except a changelog line.
 
 #### P0.2 — Proof Pack (one page a judge can verify) `[Effort S] [Adoption 20 / integrity]`
 **Goal:** A single page/section with the exact C21 evidence + the one sentence we're allowed to say.

@@ -4,13 +4,20 @@ Use this to close the Universal Accounts Track requirement:
 
 > At least one cross-chain operation moving value via Particle Universal Accounts in EIP-7702 mode.
 
+> **STATUS: CLOSED (2026-06-21, ledger C21).** Cross-chain value movement via the Universal
+> Account is proven live and deployed. Arbitrum settlement
+> `0x85d8c4c24b75ef404889b44a63e97b9b2ac23d9a341a991f86cd0a4dbf6a4911`, Base source
+> `0x8b85d45f013f7ef86436b723e00cabebd41cba8f96c5d9ec85ad4e5d757d4a2e`, UniversalX
+> `https://universalx.app/activity/details?id=0x0654e81cfea86a`; also proven end-to-end through
+> the product `/pay` (invoice `7be9118e`). The steps below are retained for re-runs / demo rehearsal.
+
 ## Current State
 
 - Base EIP-7702 delegation is proven for owner EOA `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`.
 - Delegation tx: `0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`.
 - `createTransferTransaction()` builds after delegation with `eip7702Delegated: true`.
 - Base-to-Base USDC transfer/proof works.
-- Cross-chain value movement is not yet proven in the live run.
+- **Cross-chain value movement is proven live (C21)** — see the CLOSED banner above.
 - Read-only asset check earlier on 2026-06-20 showed funds only on Base:
   - Base ETH: `0.000099540215445268`
   - Base USDC: `0.760619`
@@ -20,7 +27,7 @@ Use this to close the Universal Accounts Track requirement:
   - Base USDC: `0.760619`
   - Arbitrum USDC: `2`
 
-Do not claim cross-chain proof until the acceptance checks below are complete.
+Cross-chain proof is complete (C21). Re-runs should still satisfy the acceptance checks below.
 
 ## Target Demo
 

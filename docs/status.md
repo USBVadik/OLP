@@ -1,19 +1,18 @@
 # Status
 
-Last updated: 2026-06-20
+Last updated: 2026-06-21
 
 ## Active Stack
 
 This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + Particle Universal Accounts.
 
 - Magic is the embedded wallet/auth layer.
-- Particle Universal Account SDK is the chain abstraction layer.
+- Particle Universal Account SDK (`2.0.0-beta.3`, pinned exact) is the chain abstraction layer.
 - Legacy/fallback modes use `new UniversalAccount({ ownerAddress })` (separate smart-account address, `UNIVERSAL` version `1.0.3`).
 - An explicit EIP-7702 mode (`universal_7702_transfer`) is now implemented: `smartAccountOptions { useEIP7702: true, version: UNIVERSAL_ACCOUNT_VERSION }`, with the EOA delegated in-place via Magic's `sign7702Authorization` / `send7702Transaction`.
 - Particle AuthKit is installed but not used in the active flow.
-- Base mainnet USDC is the only supported MVP token.
-- Arbitrum is configured only for exploratory probes.
-- Default example payment mode is `transfer_fallback`; the active Universal Accounts Track candidate is `universal_7702_transfer`.
+- Base + Arbitrum One mainnet USDC are supported. Arbitrum is the active settlement chain; the `InvoicePaid` proof is anchored on Base.
+- The active payment mode is `universal_7702_transfer`: cross-chain settlement via Particle UA in EIP-7702 mode — **proven live and deployed (ledger C21)**. `transfer_fallback` remains only as a legacy same-chain fallback.
 
 ## Final Rules Snapshot
 
@@ -32,32 +31,32 @@ Judging weights:
 - Adoption potential: 20%.
 - Technical quality / polish: 10%.
 
-Current honest gap:
+Current status (see `docs/honest-claim-ledger.md` for evidence):
 
-- Base EIP-7702 delegation is proven.
-- Same-chain Base transfer/proof is proven.
-- Final-rule-compliant cross-chain value movement is still pending.
-- Execution plan: `docs/cross-chain-proof-runbook.md`.
+- Base EIP-7702 delegation is proven (C7).
+- Same-chain USDC checkout + proof is proven (C8).
+- **Cross-chain value movement via the Universal Account is proven live and deployed (C21):** a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation, no manual bridge. The final-rule cross-chain requirement is **met**.
+- Proof + procedure (requirement now CLOSED): ledger C21 + `docs/cross-chain-proof-runbook.md`.
 
-## Active Payment Path
+## Active Payment Path (`universal_7702_transfer`, cross-chain via UA — C21)
 
 1. Merchant creates a payment link from the dashboard.
 2. `POST /api/payment-links` requires `x-admin-create-token`.
 3. Backend inserts the Supabase invoice row.
 4. Backend computes `contract_invoice_id = keccak256(utf8(payment_link.id))`.
-5. Backend calls `ReceiptEmitter.registerInvoice()` on Base mainnet.
-6. Customer signs in with Magic.
-7. App initializes Particle UA with Magic EOA as `ownerAddress`.
-8. App calls `getPrimaryAssets()`.
-9. App calls `createTransferTransaction()` for Base USDC to the merchant.
-10. App logs `inspectUserOps`.
-11. App signs `transaction.rootHash` via Magic `personal_sign`.
-12. App sends through `ua.sendTransaction(transaction, signature)`.
-13. App calls `POST /api/payments/[id]/mark-paid`.
-14. Backend verifies the Base mainnet receipt contains matching Base USDC `Transfer`.
-15. Backend calls `ReceiptEmitter.recordVerifiedPayment()`.
-16. Backend verifies the proof receipt emitted matching `InvoicePaid`.
-17. Supabase `payment_links.status` and `payments.status` become completed.
+5. Backend calls `ReceiptEmitter.registerInvoice()` (proof anchored on Base).
+6. Customer signs in with Magic (email / Google).
+7. App initializes Particle UA with the Magic EOA as `ownerAddress` in EIP-7702 mode.
+8. App reads the unified balance via `getPrimaryAssets()`.
+9. App builds `createUniversalTransaction` (USDC transfer to the merchant on the settlement chain) with `usePrimaryTokens:[USDC]`, pre-delegates EVERY routed userOp chain (`delegateChain7702`), then rebuilds fresh (avoids stale-delegate AA24).
+10. App logs `inspectUserOps` (chainId, userOpHash, `eip7702Delegated`).
+11. App signs `transaction.rootHash` via Magic and sends through `ua.sendTransaction(...)` (single-shot build/sign/send avoids `-32608`).
+12. USDC is sourced cross-chain (e.g. from Base) and settled to the merchant on the settlement chain (e.g. Arbitrum) — no manual bridge.
+13. App calls `POST /api/payments/[id]/mark-paid` with the settlement chain id(s).
+14. Backend verifies the on-chain USDC `Transfer` to the merchant on the settlement chain.
+15. Backend calls `ReceiptEmitter.recordVerifiedPayment()` and verifies the matching `InvoicePaid` proof (on Base).
+16. Backend persists `source_chain_id` (true funding source) and `ua_transaction_id`.
+17. Supabase `payment_links.status` and `payments.status` become completed; the public `/receipt/[id]` shows the cross-chain route + UniversalX link.
 
 ## EIP-7702 Authorization Handling
 
@@ -118,21 +117,31 @@ The historical Sepolia v0 and previous Base mainnet v1 share the same hex addres
 
 The historical transfer-only P0 is no longer the target path. It remains proof that Magic + Particle UA can move real USDC on Base.
 
-## Known Risk
+## Known Risk (resolved -> residual)
 
-Particle `createUniversalTransaction()` has previously returned:
+Earlier (SDK `1.1.1` / `UNIVERSAL` version `1.0.3`, before 2026-06-21), Particle
+`createUniversalTransaction()` returned:
 
 ```text
 System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
 ```
 
-The strict custom-call path is recorded as externally blocked. Root cause (empirically confirmed 2026-06-19 via a live build-only probe with the real project credentials): `createUniversalTransaction` returns `-32801` on both Base and Arbitrum, in both legacy and EIP-7702 modes, while `createTransferTransaction` builds fine everywhere. This matches Particle's Universal Accounts V2 migration (legacy accounts in a withdraw-only window; public SDK `1.1.1` still pins version `1.0.3`). It is an external/timeline block, not a payload bug — correct EIP-7702 init does not unblock custom calls, and Arbitrum is not a workaround. The active fallback uses Particle `createTransferTransaction()` plus server-side USDC `Transfer` verification and `recordVerifiedPayment()` proof. Refined Particle questions + probe results: `docs/particle-create-universal-repro.md`.
+i.e. `-32801` on both Base and Arbitrum, in both legacy and EIP-7702 modes, during Particle's
+Universal Accounts V2 migration; the interim rail was `createTransferTransaction` + server-side
+`Transfer` verification.
+
+**This is resolved.** On `@particle-network/universal-account-sdk@2.0.0-beta.3` the cross-chain
+payment is proven live and deployed (ledger C21) using `createUniversalTransaction` +
+`usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 delegate
+(`0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`) + single-shot build/sign/send. The residual risk is
+**beta API drift** — the SDK is pinned **exact**, so prod cannot float to a newer beta unreviewed
+(R19). Historical probe notes: `docs/particle-create-universal-repro.md`.
 
 ## Payment Mode Flag
 
-- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: stable legacy smart-account mode + transfer/proof.
-- `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`: EIP-7702 mode — EOA delegated in-place, then `createTransferTransaction` settles USDC to the merchant. This is the active Universal Accounts Track candidate. Fund the EOA (USDC + a little Base ETH for the one-time delegation). Verify via `/debug/particle-probe`.
-- `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` path available for future Particle retesting (currently blocked by the V2 migration).
+- `NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback`: legacy same-chain smart-account mode + transfer/proof. Fallback only.
+- `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`: **active mode (prod).** EIP-7702 — the EOA is delegated in-place, then `createUniversalTransaction` (+ `usePrimaryTokens:[USDC]` + per-chain pre-delegation) settles USDC to the merchant, sourcing cross-chain when needed (C21). Fund the EOA (USDC + a little native gas per chain for the one-time delegation). Verify via `/debug/particle-probe`.
+- `NEXT_PUBLIC_PAYMENT_MODE=universal_invoice`: keeps the strict `createUniversalTransaction(approve + payInvoice)` invoice-contract path available for future Particle retesting; not the active path (the active path settles via a direct USDC transfer, C21).
 
 Do not spend more mainnet gas for strict-path testing unless explicitly requested.
 
