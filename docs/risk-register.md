@@ -34,6 +34,10 @@
   4. Correction to the earlier note: General Track base = "exceptional UX, any domain" (no SDK
      required; ZeroDev/Openfort are optional subtracks we don't use), so it WOULD be a no-rework
      fallback — but UA Track is the pick and is safe.
+  5. **2026-06-21:** upgraded 1.1.1 → `@particle-network/universal-account-sdk@2.0.0-beta.3` (the
+     build Particle confirmed is required for real EIP-7702) and deployed it to prod
+     (https://onelink-pay.vercel.app). Cross-chain settlement on v2 is still NOT proven end-to-end
+     — re-test is the pending upside, not a gate.
 - **mitigation_status:** accepted — UA Track entry is safe per the rules; cross-chain is roadmap
   upside, not a gate.
 - **owner:** builder
@@ -221,6 +225,26 @@
 - **mitigation_status:** closed 2026-06-21 (shipped with neutral framing + sourced README)
 - **owner:** builder
 - **review:** demo dress rehearsal (Block E)
+
+### R19 — Prod runs a beta Particle SDK; live 7702/UA claims not re-verified on v2
+
+- **likelihood:** med (beta SDK; the API surface can shift between betas)
+- **impact:** med (a live 7702/UA beat on prod could differ from 1.1.1; the med-risk claims C7/C8
+  were proven on the old SDK)
+- **context:** 2026-06-21 prod was upgraded 1.1.1 → `@particle-network/universal-account-sdk@2.0.0-beta.3`
+  (the build Particle confirmed real EIP-7702 requires) and deployed to
+  https://onelink-pay.vercel.app. Vercel build + 12/12 static + route smoke (200s) green; the
+  Supabase `ua_transaction_id` migration is applied + verified live.
+- **mitigation:**
+  1. Re-run one live 7702 payment on prod (Magic login + small Base/Arbitrum USDC) before reusing
+     C7 (live delegation) or C8 (live settle + proof) publicly; then bump their `last_verified`.
+  2. Keep the pre-recorded backup (R4) as the demo fallback regardless of SDK version.
+  3. The version is pinned exact (`-E`) in `package.json`, so prod cannot drift to a newer beta
+     unreviewed.
+- **mitigation_status:** open (v2 deployed + build/smoke verified; live 7702 re-verification on
+  prod pending)
+- **owner:** builder
+- **review:** next live `/pay` 7702 completion
 
 ## Security findings (external audit, 2026-06-21)
 
