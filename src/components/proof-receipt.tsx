@@ -9,6 +9,7 @@ import {
   IconShield,
   IconReceipt,
 } from "@/components/ui";
+import { CrossChainRoute } from "@/components/cross-chain-route";
 
 export interface ProofReceiptCardProps {
   amountLabel: string;
@@ -113,13 +114,19 @@ export function ProofReceiptCard({
           ) : null}
           {isCrossChain ? <Chip tone="gold">Proof anchored on {proofChainName}</Chip> : null}
         </div>
-        {crossChain && crossChain.fromNames.length ? (
-          <p className="mt-3 text-xs leading-relaxed text-muted">
-            Funded from {crossChain.fromNames.join(" + ")} and delivered on {crossChain.toName} — no
-            manual bridge; the Universal Account sourced the USDC across chains.
-          </p>
-        ) : null}
       </div>
+
+      {crossChain && crossChain.fromNames.length ? (
+        <div className="px-6 pt-6 sm:px-8">
+          <CrossChainRoute
+            status="settled"
+            fromNames={crossChain.fromNames}
+            toName={crossChain.toName}
+            amountLabel={amountLabel}
+            activityHref={universalActivity?.href ?? null}
+          />
+        </div>
+      ) : null}
 
       {/* Verification trail */}
       <div className="px-6 pb-2 pt-7 sm:px-8">

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui";
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
+import { CrossChainRoute } from "@/components/cross-chain-route";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
@@ -952,7 +953,22 @@ export default function PayPage({ params }: { params: { id: string } }) {
 
           {/* STEP: Paying */}
           {step === "paying" && (
-            <LoadingState title="Processing payment" detail={payPhase ?? "Waiting for Particle transaction and server-side proof verification."} />
+            IS_7702 && paymentLink ? (
+              <div className="space-y-4">
+                <CrossChainRoute
+                  status="routing"
+                  toName={getSettlementChainForLink(paymentLink).name}
+                  amountLabel={getPaymentAmountLabel(paymentLink)}
+                  phaseLabel={payPhase}
+                />
+                <LoadingState
+                  title="Processing payment"
+                  detail={payPhase ?? "Signing and settling through your Universal Account."}
+                />
+              </div>
+            ) : (
+              <LoadingState title="Processing payment" detail={payPhase ?? "Waiting for Particle transaction and server-side proof verification."} />
+            )
           )}
 
           {/* STEP: Success */}
