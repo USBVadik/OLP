@@ -33,7 +33,7 @@ import {
 } from "@/components/ui";
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
-import { LoginWithGoogleButton } from "@/components/login-with-google";
+import { LoginWithGoogleButton, MagicLoginReassurance } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
 let Magic: any = null;
@@ -1221,9 +1221,9 @@ function LoginForm({ paymentLink, onLogin, magic, returnTo }: { paymentLink: Pay
         >
           {loading ? "Signing in…" : "Sign in with Magic"}
         </button>
+        <MagicLoginReassurance />
         <p className="text-xs leading-relaxed text-muted">
-          A Particle Universal Account is initialized for your wallet and a payment preview is built
-          before anything is sent.
+          You&rsquo;ll see the exact payment to approve before anything is sent.
         </p>
       </div>
     </div>

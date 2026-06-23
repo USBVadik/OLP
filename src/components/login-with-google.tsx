@@ -2,6 +2,7 @@
 
 import { useState, type SVGProps } from "react";
 import { buildOauthCallbackUrl, storeReturnPath } from "@/lib/magic/redirect";
+import { IconShield } from "@/components/ui";
 
 type Props = {
   /** Magic instance with OAuthExtension already attached. May be null while still loading. */
@@ -74,6 +75,27 @@ export function LoginWithGoogleButton({ magic, returnTo, className = "" }: Props
           {err}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Consumer-friendly "Web2-feel" reassurance shown alongside the Magic sign-in options — no seed
+ * phrase, no extension. The heart of Magic's embedded-wallet onboarding; reused on /pay + /firewall.
+ */
+export function MagicLoginReassurance({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={[
+        "flex items-start gap-2 rounded-xl border border-line bg-paper2 px-3.5 py-3",
+        className,
+      ].join(" ")}
+    >
+      <IconShield className="mt-0.5 h-4 w-4 shrink-0 text-verify" aria-hidden="true" />
+      <p className="text-xs leading-relaxed text-muted">
+        <span className="font-medium text-ink2">No seed phrase, no extension.</span> Sign in like any
+        app — Magic creates and secures a wallet for you, and you stay in control.
+      </p>
     </div>
   );
 }

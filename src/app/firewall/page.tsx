@@ -13,7 +13,7 @@ import {
 } from "@/lib/mandates/mandate";
 import { type MandatePreset, type PaymentMandate } from "@/lib/mandates/types";
 import { PermissionFirewall } from "@/components/permission-firewall";
-import { LoginWithGoogleButton } from "@/components/login-with-google";
+import { LoginWithGoogleButton, MagicLoginReassurance } from "@/components/login-with-google";
 import { MandateCard } from "@/components/mandate-card";
 import { BudgetHud } from "@/components/budget-hud";
 import { AgentTerminal } from "@/components/agent-terminal";
@@ -305,8 +305,9 @@ export default function FirewallPage() {
                 className="op-input"
               />
               <button onClick={connect} disabled={!email || !!busy} className="op-btn-primary w-full">
-                {busy ?? "Connect with Magic"}
+                {busy ?? "Sign in with Magic"}
               </button>
+              <MagicLoginReassurance />
             </div>
           ) : !armed ? (
             <div className="space-y-4">
