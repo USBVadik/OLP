@@ -36,10 +36,20 @@
      fallback — but UA Track is the pick and is safe.
   5. **2026-06-21:** upgraded 1.1.1 → `@particle-network/universal-account-sdk@2.0.0-beta.3` (the
      build Particle confirmed is required for real EIP-7702) and deployed it to prod
-     (https://onelink-pay.vercel.app). Cross-chain settlement on v2 is still NOT proven end-to-end
-     — re-test is the pending upside, not a gate.
-- **mitigation_status:** accepted — UA Track entry is safe per the rules; cross-chain is roadmap
-  upside, not a gate.
+     (https://onelink-pay.vercel.app).
+  6. **2026-06-21 — CROSS-CHAIN PROVEN LIVE on v2-beta.3 (C21).** A real cross-chain USDC payment to
+     the merchant settled on Arbitrum funded partly from Base: 1.0 USDC delivered to the merchant
+     (`0x8C54…Fb7`), ~0.12 sourced cross-chain from Base. Settlement tx Arbitrum `0x85d8c4c2…4911`
+     (USDC Transfer UA→merchant = 1.0, status 0x1 — independently verified via Arbitrum RPC), source
+     tx Base `0x8b85d45f…4a2e` (status 0x1), UniversalX `0x0654e81cfea86a`. Recipe that cracked it:
+     `createUniversalTransaction` + `usePrimaryTokens:[USDC]` (forces the USDC route + cross-chain
+     sourcing, no ETH sale) + per-chain pre-delegation of the EOA to the V2 delegate
+     `0x13E00E08…89A5A` (fixes AA24 from the stale V1 delegate `0x6640c1…831C`) + single-shot
+     build/sign/send (fixes -32608 stale quote). Proven in the cross-chain proof lab
+     (`/debug/cross-chain-proof`), NOT yet in the product `/pay` flow.
+- **mitigation_status:** accepted — UA Track entry is safe; the V1 `REFUND_FAILED`/`-32613`/`-32801`
+  cross-chain failures are RESOLVED on v2-beta.3 (cross-chain payment proven live, C21). Remaining
+  work is productization (wire `createUniversalTransaction` into `/pay`), not capability.
 - **owner:** builder
 - **review:** revisit only if the rules are clarified otherwise
 
