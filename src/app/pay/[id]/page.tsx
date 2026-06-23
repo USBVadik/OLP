@@ -159,6 +159,47 @@ interface PaymentLink {
   } | null;
 }
 
+// Minimal ERC20 transfer ABI for encoding the merchant payment call.
+const ERC20_TRANSFER_ABI = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+// Cross-chain-capable product payment build (EIP-7702 mode), proven live in
+// /debug/cross-chain-proof (ledger C21). createUniversalTransaction runs USDC.transfer(merchant,
+// amount) on the SETTLEMENT chain, funded from the Universal Account's unified balance — Particle
+// sources the shortfall cross-chain when the payer lacks USDC on that chain. usePrimaryTokens:[USDC]
+// forces the USDC route (never sells ETH) and forces the cross-chain leg when local USDC is short.
+async function build7702Transaction(
+  ua: any,
+  paymentLink: PaymentLink,
+  token: ReturnType<typeof resolvePaymentToken>
+): Promise<any> {
+  const settlementChain = getPaymentChainById(paymentLink.destination_chain_id);
+  const usdcAddress = (paymentLink.destination_token_address as Address | null) ?? token.address;
+  const data = encodeFunctionData({
+    abi: ERC20_TRANSFER_ABI,
+    functionName: "transfer",
+    args: [paymentLink.merchant_address as Address, BigInt(paymentLink.amount)],
+  });
+  return ua.createUniversalTransaction(
+    {
+      chainId: settlementChain.chainId,
+      expectTokens: [{ type: SUPPORTED_TOKEN_TYPE.USDC, amount: formatAtomicTokenAmount(paymentLink.amount, token) }],
+      transactions: [{ to: usdcAddress, data, value: "0x0" }],
+    },
+    { usePrimaryTokens: [SUPPORTED_TOKEN_TYPE.USDC], slippageBps: 100 }
+  );
+}
+
 type Step = "loading" | "login" | "balances" | "preview" | "paying" | "success" | "error";
 
 interface DiagnosticLog {
@@ -547,17 +588,6 @@ export default function PayPage({ params }: { params: { id: string } }) {
         token: token.address,
       });
 
-      // EIP-7702: pre-delegate ONLY the gas-funded source chain (Base). Per Particle's
-      // official Magic 7702 demo, delegating one chain is sufficient — the SDK requests
-      // inline 7702 authorizations for any OTHER chains during the transaction (handled in
-      // sendVia7702), which are signed off-chain and need no native gas on those chains.
-      // This is what makes a cross-chain settlement to a zero-balance chain (Optimism)
-      // possible without the payer holding gas there. Pre-delegating the settlement chain
-      // on-chain (the old behavior) would require native gas on that chain and is unnecessary.
-      if (IS_7702) {
-        await delegateChain7702(magic, ua, address, ACTIVE_CHAIN.chainId, log);
-      }
-
       let tx: any;
       if (PAYMENT_MODE === "universal_invoice") {
         const rawAmount = BigInt(paymentLink.amount);
@@ -592,6 +622,28 @@ export default function PayPage({ params }: { params: { id: string } }) {
         log("createUniversalTransaction", "attempting", txPayload);
         tx = await ua.createUniversalTransaction(txPayload);
         log("createUniversalTransaction", "ok", tx);
+      } else if (IS_7702) {
+        // Cross-chain-capable product path (ledger C21 recipe). Builds the merchant USDC.transfer
+        // via createUniversalTransaction so Particle sources the shortfall cross-chain when the
+        // payer lacks USDC on the settlement chain; usePrimaryTokens:[USDC] forces the USDC route.
+        // Then pre-delegate EVERY chain the routed userOps touch (source + settlement) to the V2
+        // delegate — the stale V1 delegate triggers AA24 otherwise — and rebuild fresh so the
+        // userOps come back already-delegated (no inline auth, no AA24).
+        log("createUniversalTransaction(7702)", "attempting", {
+          settlementChainId: settlementChain.chainId,
+          merchant: paymentLink.merchant_address,
+          amount: particleAmount,
+        });
+        tx = await build7702Transaction(ua, paymentLink, token);
+        const touchedChains = Array.from(
+          new Set((tx.userOps ?? []).map((op: any) => op.chainId).filter((c: any) => typeof c === "number"))
+        ) as number[];
+        log("createUniversalTransaction(7702)", "routed", { transactionId: tx.transactionId, touchedChains });
+        for (const chainId of touchedChains) {
+          await delegateChain7702(magic, ua, address, chainId, log);
+        }
+        tx = await build7702Transaction(ua, paymentLink, token);
+        log("createUniversalTransaction(7702)", "ok", { transactionId: tx.transactionId });
       } else {
         const txPayload = {
           token: {
