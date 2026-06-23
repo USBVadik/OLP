@@ -139,6 +139,7 @@ export function ProofReceiptCard({
                   label="Universal Account · UniversalX"
                   hash={universalActivity.id}
                   href={universalActivity.href}
+                  destinationLabel="UniversalX activity"
                 />
               ) : null}
             </div>

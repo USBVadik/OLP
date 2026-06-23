@@ -201,10 +201,13 @@ export function TxReference({
   label,
   hash,
   href,
+  destinationLabel = "block explorer",
 }: {
   label: string;
   hash: string | null | undefined;
   href: string | null | undefined;
+  /** Where the link opens, for the screen-reader hint (e.g. "block explorer", "UniversalX activity"). */
+  destinationLabel?: string;
 }) {
   if (!hash) return null;
   const inner = (
@@ -232,7 +235,7 @@ export function TxReference({
       className="group flex items-center justify-between gap-3 rounded-xl border border-line bg-paper2 px-3.5 py-2.5 text-sm transition-colors hover:border-gold/40 hover:bg-gold-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
     >
       {inner}
-      <span className="sr-only">{label}: {hash} (opens block explorer in a new tab)</span>
+      <span className="sr-only">{label}: {hash} (opens {destinationLabel} in a new tab)</span>
     </a>
   );
 }
