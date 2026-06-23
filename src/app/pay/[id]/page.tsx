@@ -807,18 +807,19 @@ export default function PayPage({ params }: { params: { id: string } }) {
           );
         }
 
+        const uaTransactionId = transaction.transactionId ?? result?.transactionId ?? null;
         const markPaidRes = await fetch(`/api/payments/${paymentLink.id}/mark-paid`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             payerAddress: address,
             txHash,
+            uaTransactionId,
           }),
         });
         const markPaidData = await markPaidRes.json();
         if (!markPaidRes.ok) throw new Error(markPaidData.error || "InvoicePaid verification failed");
         log("markPaid", "ok", markPaidData);
-        const uaTransactionId = transaction.transactionId ?? result?.transactionId ?? null;
         setTxResult({
           particle: result,
           txHash,

@@ -41,6 +41,7 @@ create table if not exists payments (
   amount text not null,
   tx_hash text,
   receipt_tx_hash text,
+  ua_transaction_id text,
   preview_json jsonb,
   error_message text,
   status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'failed')),
@@ -68,6 +69,7 @@ alter table if exists payment_links
 
 alter table if exists payments add column if not exists preview_json jsonb;
 alter table if exists payments add column if not exists error_message text;
+alter table if exists payments add column if not exists ua_transaction_id text;
 alter table if exists payments drop constraint if exists payments_status_check;
 alter table if exists payments
   add constraint payments_status_check

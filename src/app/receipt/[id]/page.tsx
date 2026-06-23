@@ -8,6 +8,7 @@ import {
   getExplorerTxUrl,
   getPaymentChainById,
   getProofChain,
+  getUniversalXActivityUrl,
   type ChainPaymentConfig,
 } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
@@ -51,10 +52,11 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
 
   let paymentHash: string | null = null;
   let proofHash: string | null = null;
+  let uaTransactionId: string | null = null;
   if (isCompleted) {
     const { data: payment } = await supabaseAdmin
       .from("payments")
-      .select("tx_hash,receipt_tx_hash,completed_at")
+      .select("tx_hash,receipt_tx_hash,ua_transaction_id,completed_at")
       .eq("payment_link_id", link.id)
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
@@ -62,6 +64,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
       .maybeSingle();
     paymentHash = link.paid_tx_hash ?? payment?.tx_hash ?? null;
     proofHash = payment?.receipt_tx_hash ?? null;
+    uaTransactionId = payment?.ua_transaction_id ?? null;
   }
 
   // Shareable public receipt URL + a best-effort QR (server-rendered SVG, no client JS).
@@ -103,6 +106,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               isCrossChain={settlementChain.chainId !== proofChain.chainId}
               payment={{ hash: paymentHash, href: paymentHash ? getExplorerTxUrl(settlementChain, paymentHash) : null }}
               proof={{ hash: proofHash, href: proofHash ? getExplorerTxUrl(proofChain, proofHash) : null }}
+              universalActivity={{ id: uaTransactionId, href: getUniversalXActivityUrl(uaTransactionId) }}
               matchedDetail={`Recipient and amount (${amountLabel}) were re-checked against this invoice from the on-chain ${settlementChain.name} USDC transfer.`}
             />
             <div className="op-card mt-4 p-5">

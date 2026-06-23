@@ -19,6 +19,10 @@ export const dynamic = "force-dynamic";
 const MarkPaidSchema = z.object({
   payerAddress: z.string().startsWith("0x"),
   txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
+  // Particle Universal Account transactionId (UA/7702 path only). Advisory metadata used to
+  // build the UniversalX activity link on the shareable receipt — intentionally lenient so a
+  // malformed/absent id never blocks a verified payment from being recorded.
+  uaTransactionId: z.string().max(200).nullish(),
 });
 function getSettlementRpcUrl(chain: ChainPaymentConfig): string {
   if (chain.chainId === arbitrum.id) {
@@ -203,6 +207,7 @@ export async function POST(
       amount: link.amount,
       tx_hash: parsed.txHash,
       receipt_tx_hash: proofTxHash,
+      ua_transaction_id: parsed.uaTransactionId || null,
       preview_json: null,
       error_message: null,
       status: "completed",

@@ -53,6 +53,7 @@ export type Database = {
           amount: string;
           tx_hash: string | null;
           receipt_tx_hash: string | null;
+          ua_transaction_id: string | null;
           status: "pending" | "processing" | "completed" | "failed";
           preview_json: unknown | null;
           error_message: string | null;
@@ -61,8 +62,8 @@ export type Database = {
         };
         Insert: Omit<
           Database["public"]["Tables"]["payments"]["Row"],
-          "id" | "created_at"
-        >;
+          "id" | "created_at" | "ua_transaction_id"
+        > & { ua_transaction_id?: string | null };
         Update: Partial<Database["public"]["Tables"]["payments"]["Insert"]>;
       };
       merchants: {

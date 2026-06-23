@@ -98,7 +98,7 @@ export function getExplorerTxUrl(chain: ChainPaymentConfig, txHash: string): str
  */
 export function getUniversalXActivityUrl(transactionId: string | null | undefined): string | null {
   if (!transactionId) return null;
-  return `https://universalx.app/activity/details?id=${transactionId}`;
+  return `https://universalx.app/activity/details?id=${encodeURIComponent(transactionId)}`;
 }
 
 export function getPublicRpcUrl(chain: ChainPaymentConfig): string {
