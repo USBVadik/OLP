@@ -14,6 +14,7 @@ let MagicCtor: any = null;
 let EVMExtensionCtor: any = null;
 let UniversalAccountCtor: any = null;
 let UNIVERSAL_ACCOUNT_VERSION: string | null = null;
+let SUPPORTED_TOKEN_TYPE_REF: any = null;
 
 interface LogEntry {
   at: string;
@@ -42,10 +43,11 @@ async function loadSDKs() {
     const evmMod = await import("@magic-ext/evm");
     EVMExtensionCtor = evmMod.EVMExtension;
   }
-  if (!UniversalAccountCtor || !UNIVERSAL_ACCOUNT_VERSION) {
+  if (!UniversalAccountCtor || !UNIVERSAL_ACCOUNT_VERSION || !SUPPORTED_TOKEN_TYPE_REF) {
     const particleMod = await import("@particle-network/universal-account-sdk");
     UniversalAccountCtor = particleMod.UniversalAccount;
     UNIVERSAL_ACCOUNT_VERSION = particleMod.UNIVERSAL_ACCOUNT_VERSION;
+    SUPPORTED_TOKEN_TYPE_REF = particleMod.SUPPORTED_TOKEN_TYPE;
   }
 }
 
@@ -258,6 +260,89 @@ export default function CrossChainProofPage() {
     }
   }, [addLog, amount, ua]);
 
+  const handleBuildConvertPreview = useCallback(async () => {
+    if (!ua) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await loadSDKs();
+      // createConvertTransaction aggregates the UNIFIED balance into `amount` USDC on the target
+      // chain — Particle's canonical chain-abstraction method (the ua-7702-magic-demo uses it).
+      // With amount > the Arbitrum USDC balance, the remainder must be sourced from Base, so a
+      // working v2 rail builds MULTI-CHAIN userOps (the real cross-chain proof). On v1.1.1 this
+      // method returned -32801; the preview is free, so it is a safe probe of the v2 rail.
+      const transaction = await ua.createConvertTransaction(
+        {
+          expectToken: { type: SUPPORTED_TOKEN_TYPE_REF.USDC, amount },
+          chainId: ARBITRUM_CHAIN.chainId,
+        },
+        { usePrimaryTokens: [SUPPORTED_TOKEN_TYPE_REF.USDC], slippageBps: 100 }
+      );
+      const summary = summarizeCrossChainPreview(transaction);
+      setPreview({ transaction, summary });
+      setSendResult(null);
+      setSettlementTxHash(null);
+      addLog("buildConvertPreview", "ok", {
+        transactionId: transaction.transactionId,
+        summary,
+        tokenChanges: transaction.tokenChanges,
+      });
+    } catch (err: any) {
+      setError(err?.message ?? String(err));
+      addLog("buildConvertPreview", "error", {
+        message: err?.message,
+        code: err?.code,
+        response: err?.response?.data,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }, [addLog, amount, ua]);
+
+  const handleBuildUniversalPreview = useCallback(async () => {
+    if (!ua) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await loadSDKs();
+      const { Interface, parseUnits } = await import("ethers");
+      // createUniversalTransaction executes USDC.transfer(merchant, amount) ON Arbitrum, funded
+      // from the unified balance (sourced cross-chain from Base). This is the real product path —
+      // a cross-chain PAYMENT to the merchant (not a self-convert). expectTokens makes Particle
+      // ensure `amount` USDC exists on Arbitrum before the transfer call executes.
+      const erc20 = new Interface(["function transfer(address to, uint256 amount) returns (bool)"]);
+      const data = erc20.encodeFunctionData("transfer", [MERCHANT, parseUnits(amount, 6)]);
+      const transaction = await ua.createUniversalTransaction(
+        {
+          chainId: ARBITRUM_CHAIN.chainId,
+          expectTokens: [{ type: SUPPORTED_TOKEN_TYPE_REF.USDC, amount }],
+          transactions: [{ to: ARBITRUM_CHAIN.usdcAddress, data, value: "0x0" }],
+        },
+        // Restrict routing to USDC so it (a) never sells ETH and (b) must bridge USDC from Base
+        // when the target chain's local USDC is insufficient — forcing the cross-chain leg.
+        { usePrimaryTokens: [SUPPORTED_TOKEN_TYPE_REF.USDC], slippageBps: 100 }
+      );
+      const summary = summarizeCrossChainPreview(transaction);
+      setPreview({ transaction, summary });
+      setSendResult(null);
+      setSettlementTxHash(null);
+      addLog("buildUniversalPreview", "ok", {
+        transactionId: transaction.transactionId,
+        summary,
+        tokenChanges: transaction.tokenChanges,
+      });
+    } catch (err: any) {
+      setError(err?.message ?? String(err));
+      addLog("buildUniversalPreview", "error", {
+        message: err?.message,
+        code: err?.code,
+        response: err?.response?.data,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }, [addLog, amount, ua]);
+
   const handleSend = useCallback(async () => {
     if (!ua || !magic || !preview?.transaction) return;
     if (sendConfirmation !== SEND_CONFIRMATION) {
@@ -324,6 +409,145 @@ export default function CrossChainProofPage() {
       setBusy(false);
     }
   }, [addLog, magic, preview, sendConfirmation, ua]);
+
+  // Pre-delegate the EOA to the V2 delegate contract on each chain via a self-sent Type-4 tx,
+  // BEFORE any UA transaction. The wallet shows isDelegated:false (it points at the old V1
+  // delegate), so inline auths alone fail bundler validation with AA24. This activates the correct
+  // delegate on-chain (mirrors ua-7702-magic-demo ensureDelegated). Each tx is EOA-paid native gas
+  // on its chain. Per-chain try/catch so one chain's gas shortage doesn't block the other.
+  const handlePreDelegate = useCallback(async () => {
+    if (!ua || !magic || !ownerAddress) return;
+    setBusy(true);
+    setError(null);
+    try {
+      for (const chainId of [ARBITRUM_CHAIN.chainId, BASE_CHAIN.chainId]) {
+        try {
+          const deployments = await ua.getEIP7702Deployments();
+          const dep = (deployments ?? []).find((d: any) => d.chainId === chainId);
+          if (dep?.isDelegated) {
+            addLog("preDelegate", `chain ${chainId}: already delegated`, {});
+            continue;
+          }
+          if (magic.evm && typeof magic.evm.switchChain === "function") {
+            await magic.evm.switchChain(chainId);
+          }
+          const [auth] = await ua.getEIP7702Auth([chainId]);
+          // Self-sent Type-4 tx: the authorization nonce must be EOA nonce + 1 (the tx itself
+          // consumes the current nonce). Matches the demo's ensureDelegated.
+          const authorization = await magic.wallet.sign7702Authorization({
+            contractAddress: auth.address,
+            chainId,
+            nonce: auth.nonce + 1,
+          });
+          const txHash = await magic.wallet.send7702Transaction({
+            to: ownerAddress,
+            data: "0x",
+            authorizationList: [authorization],
+          });
+          addLog("preDelegate", `chain ${chainId}: delegated`, { txHash, delegate: auth.address });
+        } catch (chainErr: any) {
+          addLog("preDelegate", `chain ${chainId}: FAILED`, {
+            message: chainErr?.message,
+            code: chainErr?.code,
+          });
+        }
+      }
+      const updated = await ua.getEIP7702Deployments();
+      setDeployments(updated);
+      addLog("preDelegate", "deployments refreshed", updated);
+    } catch (err: any) {
+      setError(err?.message ?? String(err));
+      addLog("preDelegate", "error", { message: err?.message, code: err?.code });
+    } finally {
+      setBusy(false);
+    }
+  }, [addLog, magic, ownerAddress, ua]);
+
+  // Single-shot: build a FRESH cross-chain PAYMENT quote, then sign + send immediately with no
+  // human gap. A split build->send (two clicks) lets Particle's quote record expire -> -32608
+  // "No records found". Mirrors the ua-7702-magic-demo (build then signAndSend in one function).
+  const handleBuildAndSendPayment = useCallback(async () => {
+    if (!ua || !magic) return;
+    if (sendConfirmation !== SEND_CONFIRMATION) {
+      setError(`Type ${SEND_CONFIRMATION} to unlock the live send.`);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await loadSDKs();
+      const { Interface, parseUnits, BrowserProvider, getBytes, Signature } = await import("ethers");
+      const erc20 = new Interface(["function transfer(address to, uint256 amount) returns (bool)"]);
+      const data = erc20.encodeFunctionData("transfer", [MERCHANT, parseUnits(amount, 6)]);
+      const transaction = await ua.createUniversalTransaction(
+        {
+          chainId: ARBITRUM_CHAIN.chainId,
+          expectTokens: [{ type: SUPPORTED_TOKEN_TYPE_REF.USDC, amount }],
+          transactions: [{ to: ARBITRUM_CHAIN.usdcAddress, data, value: "0x0" }],
+        },
+        { usePrimaryTokens: [SUPPORTED_TOKEN_TYPE_REF.USDC], slippageBps: 100 }
+      );
+      const summary = summarizeCrossChainPreview(transaction);
+      setPreview({ transaction, summary });
+      setSendResult(null);
+      setSettlementTxHash(null);
+      addLog("buildAndSend:build", summary.crossChainCandidate ? "ok cross-chain" : "ok single-chain", {
+        transactionId: transaction.transactionId,
+        userOpChainIds: summary.userOpChainIds,
+      });
+
+      const authorizations: Array<{ userOpHash: string; signature: string }> = [];
+      const signedByNonce = new Map<string, string>();
+      for (const op of transaction.userOps ?? []) {
+        if (op.eip7702Auth && op.eip7702Delegated === false) {
+          const nonceKey = `${op.chainId}:${op.eip7702Auth.nonce}`;
+          let serialized = signedByNonce.get(nonceKey);
+          if (!serialized) {
+            const auth = await magic.wallet.sign7702Authorization({
+              contractAddress: op.eip7702Auth.address,
+              chainId: op.eip7702Auth.chainId || op.chainId,
+              nonce: op.eip7702Auth.nonce,
+            });
+            serialized = Signature.from({ r: auth.r, s: auth.s, v: auth.v }).serialized;
+            signedByNonce.set(nonceKey, serialized);
+          }
+          authorizations.push({ userOpHash: op.userOpHash, signature: serialized });
+        }
+      }
+      addLog("buildAndSend:auths", "ok", { count: authorizations.length });
+
+      const provider = new BrowserProvider(magic.rpcProvider);
+      const signer = await provider.getSigner();
+      const signature = await signer.signMessage(getBytes(transaction.rootHash));
+      addLog("buildAndSend:rootHash", "ok", { rootHash: transaction.rootHash });
+
+      const result = await ua.sendTransaction(
+        transaction,
+        signature,
+        authorizations.length ? authorizations : undefined
+      );
+      setSendResult(result);
+      addLog("buildAndSend:send", "ok", result);
+
+      let txHash = extractEvmTxHash(result);
+      for (let attempt = 0; attempt < 15 && !txHash; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const status = await ua.getTransaction(transaction.transactionId);
+        txHash = extractEvmTxHash(status);
+        addLog("buildAndSend:poll", txHash ? `hash found ${attempt}` : `pending ${attempt}`, status);
+      }
+      setSettlementTxHash(txHash);
+    } catch (err: any) {
+      setError(err?.message ?? String(err));
+      addLog("buildAndSend:error", "error", {
+        message: err?.message,
+        code: err?.code,
+        response: err?.response?.data,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }, [addLog, amount, magic, sendConfirmation, ua]);
 
   if (!enabled) {
     return (
@@ -405,13 +629,25 @@ export default function CrossChainProofPage() {
                   <dd>{arbiUsdcBalance || "unknown"}</dd>
                 </div>
               </dl>
+              <button
+                className="mt-4 w-full rounded-full bg-[#5B3E7A] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !ua || !magic}
+                onClick={handlePreDelegate}
+              >
+                Pre-delegate EOA (Base + Arbitrum)
+              </button>
+              <p className="mt-2 text-xs text-[#746D64]">
+                Run once before the live send. Fixes AA24 (the EOA points at the old V1 delegate).
+                Needs a little native ETH on each chain for the Type-4 tx.
+              </p>
             </div>
 
             <div className="rounded-2xl border border-[#E4D8C7] bg-[#FFFDF7] p-6 shadow-sm">
               <h2 className="text-xl font-semibold">2. Build preview</h2>
               <p className="mt-2 text-sm text-[#746D64]">
-                Default `2.05 USDC` intentionally exceeds the current Arbitrum balance so Particle may build multi-chain
-                userOps. Preview only; no send.
+                TRANSFER = single-chain (target chain&rsquo;s own balance only). CONVERT = cross-chain into your OWN
+                Arbitrum USDC. PAYMENT = `createUniversalTransaction` running USDC.transfer to the merchant on Arbitrum,
+                funded cross-chain from Base — the real product path. Preview only; no send.
               </p>
               <label className="mt-5 block text-sm font-medium text-[#746D64]">Target amount on Arbitrum</label>
               <input
@@ -424,7 +660,21 @@ export default function CrossChainProofPage() {
                 disabled={busy || !ua}
                 onClick={handleBuildPreview}
               >
-                Build cross-chain preview
+                Build TRANSFER preview (single-chain)
+              </button>
+              <button
+                className="mt-3 w-full rounded-full bg-[#2F8068] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !ua}
+                onClick={handleBuildConvertPreview}
+              >
+                Build CONVERT preview (cross-chain &rarr; Arbitrum)
+              </button>
+              <button
+                className="mt-3 w-full rounded-full bg-[#2563EB] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !ua}
+                onClick={handleBuildUniversalPreview}
+              >
+                Build PAYMENT preview (cross-chain &rarr; merchant)
               </button>
             </div>
 
@@ -448,6 +698,13 @@ export default function CrossChainProofPage() {
                 onClick={handleSend}
               >
                 Send live cross-chain transaction
+              </button>
+              <button
+                className="mt-3 w-full rounded-full bg-[#1F6FEB] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={busy || !ua || !magic || sendConfirmation !== SEND_CONFIRMATION}
+                onClick={handleBuildAndSendPayment}
+              >
+                Build &amp; Send PAYMENT (fresh quote &mdash; fixes -32608)
               </button>
             </div>
           </div>
@@ -525,6 +782,18 @@ export default function CrossChainProofPage() {
                     Particle accepted the transaction; settlement hash has not surfaced yet.
                   </p>
                 )}
+                {sendResult?.transactionId ? (
+                  <div className="mt-3">
+                    <a
+                      className="inline-flex rounded-full border border-[#2F8068] px-4 py-2 text-sm font-semibold text-[#2F8068]"
+                      href={`https://universalx.app/activity/details?id=${sendResult.transactionId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open UniversalX activity
+                    </a>
+                  </div>
+                ) : null}
               </section>
             )}
 
