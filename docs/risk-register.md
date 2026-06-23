@@ -49,7 +49,9 @@
      2026-06-21, end-to-end through the product `/pay` checkout (commit `92b7fe5`, local feature
      branch): invoice `7be9118e` settled 1.0 USDC cross-chain (100% from Base → merchant on Arbitrum
      `0x41217d8b…c3dd12e1`), InvoicePaid on Base `0x9d66901d…4068359e`, UniversalX `0x0654e9323a0bf7`
-     — RPC-verified, UniversalX link on the live + shareable receipt. NOT yet deployed to prod.
+     — RPC-verified, UniversalX link on the live + shareable receipt. DEPLOYED to prod 2026-06-21
+     (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`); the cross-chain receipt is live-verifiable
+     at onelink-pay.vercel.app/receipt/7be9118e.
 - **mitigation_status:** accepted — UA Track entry is safe; the V1 `REFUND_FAILED`/`-32613`/`-32801`
   cross-chain failures are RESOLVED on v2-beta.3 (cross-chain payment proven live, C21). Remaining
   work is productization (wire `createUniversalTransaction` into `/pay`), not capability.
