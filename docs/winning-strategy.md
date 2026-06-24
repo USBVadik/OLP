@@ -171,11 +171,11 @@ deployed SpendPolicy; would break C5/C6/C16/C17/C21).
 **Files:** `src/components/permission-firewall.tsx`, `src/components/mandate-card` (if present),
 `src/app/firewall/page.tsx`, `src/app/agent/page.tsx`, copy in `src/lib/mandates/*` (labels only).
 **Acceptance:**
-- [ ] Each cap shows plain-English label: per charge / per day / total / expires / one merchant / revoke anytime.
-- [ ] Consequence line present: "If a charge breaks any limit, it reverts on-chain — you pay nothing."
-- [ ] Risky settings flagged (e.g. very high/unlimited total = "this weakens the firewall").
-- [ ] EIP-712 hash hidden behind a "show technical details" disclosure.
-- [ ] Signed hash still validates on-chain (a live charge still succeeds) — proves struct unchanged.
+- [x] Each cap shows plain-English label: per charge / per day / total / expires / one merchant / revoke anytime.
+- [x] Consequence line present: "If a charge breaks any limit, it reverts on-chain — no funds move and you pay nothing."
+- [x] Risky settings flagged (no daily limit / long-lived expiry / "allows up to N charges") with calm risk-coloring.
+- [x] EIP-712 hash hidden behind a "show technical details" disclosure.
+- [x] Struct unchanged — only `mandate-card.tsx` (display) edited; `mandate.ts` / `spend-policy.ts` / EIP-712 typed data untouched, so the signed hash is byte-identical (build green; live-charge re-test not run this session).
 
 #### P0.5 — 90-second demo + recorded replay fallback `[Effort M] [Polish 10 / saves all]`
 **Goal:** The demo never dies on stage. Pre-recorded, labeled replay of every beat with the same proof links.

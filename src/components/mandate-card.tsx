@@ -27,6 +27,7 @@ export function MandateCard({ mandate, initiallyExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [copied, setCopied] = useState(false);
   const mandateId = computeMandateId(mandate);
+  const notes = mandateNotes(mandate);
 
   const onCopyMerchant = async () => {
     try {
@@ -47,6 +48,7 @@ export function MandateCard({ mandate, initiallyExpanded = false }: Props) {
         <IconShield className="h-4 w-4 text-gold" />
         <p className="op-eyebrow">Permission to be granted</p>
       </div>
+      <p className="mt-1 text-xs text-muted">A scoped spending limit — like setting a limit on a card.</p>
 
       <dl className="mt-3 space-y-2 text-sm">
         <Row label="Merchant">
@@ -68,10 +70,35 @@ export function MandateCard({ mandate, initiallyExpanded = false }: Props) {
         <Row label="Expires">{formatExpiry(Number(mandate.expiry))}</Row>
       </dl>
 
-      <div className="mt-3 flex items-center gap-2 rounded-xl border border-verify/20 bg-verify-soft/50 px-3 py-2 text-xs font-medium text-verify">
-        <IconCheck className="h-3.5 w-3.5" />
-        <span>Revocable anytime · enforced on-chain</span>
+      <div className="mt-3 rounded-xl border border-verify/20 bg-verify-soft/50 px-3 py-2.5 text-xs text-verify">
+        <p className="flex items-center gap-1.5 font-semibold">
+          <IconCheck className="h-3.5 w-3.5" /> Enforced on-chain · revocable anytime
+        </p>
+        <p className="mt-1 leading-relaxed text-verify/90">
+          If a charge breaks any limit, it reverts on-chain — no funds move and you pay nothing.
+        </p>
       </div>
+
+      {notes.length ? (
+        <ul className="mt-2 space-y-1.5">
+          {notes.map((n, i) => (
+            <li
+              key={i}
+              className={`flex items-start gap-1.5 text-[11px] leading-snug ${
+                n.tone === "warn" ? "text-gold" : "text-muted"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                  n.tone === "warn" ? "bg-gold" : "bg-faint"
+                }`}
+              />
+              <span>{n.text}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <button
         type="button"
@@ -126,4 +153,34 @@ function Row({
       <dd className="text-right">{children}</dd>
     </div>
   );
+}
+
+/**
+ * Calm, honest "good to know" notes about a mandate's shape, so the card reads like a
+ * thoughtful card-limit form. Pure display logic — reflects the mandate's real values only.
+ */
+function mandateNotes(m: PaymentMandate): { tone: "info" | "warn"; text: string }[] {
+  const notes: { tone: "info" | "warn"; text: string }[] = [];
+
+  if (m.maxPerDay === 0n) {
+    notes.push({ tone: "info", text: "No daily limit — only the per-charge and total caps apply." });
+  }
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const days = Math.round((Number(m.expiry) - nowSec) / 86400);
+  if (Number.isFinite(days) && days >= 90) {
+    notes.push({
+      tone: "warn",
+      text: `Long-lived: expires in ~${days} days. A shorter expiry limits exposure.`,
+    });
+  }
+
+  if (m.maxPerCharge > 0n) {
+    const charges = m.totalCap / m.maxPerCharge;
+    if (charges >= 50n) {
+      notes.push({ tone: "info", text: `Allows up to ${charges.toString()} charges before the total cap.` });
+    }
+  }
+
+  return notes;
 }
