@@ -137,17 +137,19 @@ header on `docs/deep-research-onelink-pay-uxmaxx.md` (v1) pointing to v2.
 - Cross-chain proof-lab run: Arbitrum settle `0x85d8c4c24b75ef404889b44a63e97b9b2ac23d9a341a991f86cd0a4dbf6a4911`;
   Base source `0x8b85d45f013f7ef86436b723e00cabebd41cba8f96c5d9ec85ad4e5d757d4a2e`;
   UniversalX `https://universalx.app/activity/details?id=0x0654e81cfea86a`.
-- End-to-end via product `/pay` (invoice `7be9118e`): Arbitrum settle `0x41217d8b…c3dd12e1`;
-  Base InvoicePaid proof `0x9d66901d…4068359e`; UniversalX `0x0654e9323a0bf7`; public receipt at
-  `https://onelink-pay.vercel.app/receipt/7be9118e-4f74-4f6a-b21d-55ee430764e1`.
+- End-to-end via product `/pay` (invoice `40027dcf`, post source-fix): Arbitrum settle
+  `0x8163be21df713539c257165bdcd2de9ce4a4d097e6ff60ca6ad50c569f966464`; Base InvoicePaid proof
+  `0x2fba4854014cba9a56ca6a29061cef408f94bb03e25a2e36d9ce1a6963fd7055`; UniversalX `0x0654ea35e34844`;
+  public receipt `https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3`.
+  (Invoice `7be9118e` was also cross-chain but its DB `source_chain_id` predates the fix — prefer `40027dcf`.)
 - Recipe: `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the
   V2 delegate (`0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`) + single-shot build/sign/send.
 **Acceptance:**
-- [ ] `docs/proof-pack.md` created with the above, each tx as a clickable explorer link.
-- [ ] The merchant + payer addresses labelled; amounts stated; "verified via RPC" noted.
-- [ ] Exactly ONE claim sentence, copy-pasteable, matching ledger C21 verbatim.
-- [ ] A "what's real / pattern / future" mini-table (mirrors §2).
-- [ ] Screenshot(s) of the public receipt attached or linked.
+- [x] `docs/proof-pack.md` created with the above, each tx as a clickable explorer link.
+- [x] The merchant + payer addresses labelled; amounts stated; "verified via RPC" noted.
+- [x] Exactly ONE claim sentence, copy-pasteable, matching ledger C21 verbatim.
+- [x] A "what's real / pattern / future" mini-table (mirrors §2).
+- [x] Screenshot(s) of the public receipt attached or linked.
 
 #### P0.3 — Cross-chain route visible BEFORE pay `[Effort S–M] [UX 40 + UA 30] [Particle/Arbitrum]`
 **Goal:** Move the "Base → Arbitrum · no bridge · gas in USDC" route from in-flight/receipt into the
