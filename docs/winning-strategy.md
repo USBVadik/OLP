@@ -179,13 +179,13 @@ deployed SpendPolicy; would break C5/C6/C16/C17/C21).
 
 #### P0.5 — 90-second demo + recorded replay fallback `[Effort M] [Polish 10 / saves all]`
 **Goal:** The demo never dies on stage. Pre-recorded, labeled replay of every beat with the same proof links.
-**Files:** `docs/demo-runbook.md` (update to the §5 script), a recorded video, `docs/proof-pack.md` links.
+**Files:** `docs/demo-runbook.md` (now aligned to the honest two-act script + dry-run checklist — done this session), a recorded video, `docs/proof-pack.md` links.
 **Acceptance:**
-- [ ] Both chains pre-delegated for the demo account before judging (native gas topped up).
-- [ ] `getPrimaryAssets` pre-warmed on load; balance read never blocks the flow.
-- [ ] Dual-chain fallback rehearsed (if one RPC is sick, settle on the other).
-- [ ] Recorded backup of all 10 beats exists, clearly labelled "replay" (never shown as live).
-- [ ] Demo amounts tiny (0.05–0.10 USDC); wallet funded (USDC on Arbitrum + a little native gas).
+- [x] Both chains pre-delegated for the demo account (payer delegated on Base C7 + Arbitrum, eth_getCode verified; native gas present).
+- [ ] `getPrimaryAssets` pre-warmed on load; balance read never blocks the flow (loads async with a Retry; not explicitly pre-warmed).
+- [ ] Dual-chain fallback rehearsed (if one RPC is sick, settle on the other). — rehearsal (user)
+- [ ] Recorded backup of all 10 beats exists, clearly labelled "replay" (never shown as live). — recording (user)
+- [x] Demo amounts tiny (0.05–0.10 USDC); wallet funded (2.0 USDC on Arbitrum + native gas).
 
 ### P1 — this week
 
