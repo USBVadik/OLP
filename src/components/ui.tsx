@@ -279,3 +279,43 @@ export function Term({ children, def }: { children: string; def: string }) {
     </span>
   );
 }
+
+
+const APP_NAV_SECTIONS: { href: string; label: string }[] = [
+  { href: "/firewall", label: "Firewall" },
+  { href: "/agent", label: "Agent" },
+  { href: "/dashboard", label: "Merchant" },
+  { href: "/demo-replay", label: "Demo" },
+];
+
+/**
+ * AppNav — section tabs for the app pages, with an active-state underline so a judge always knows
+ * where they are and can jump between Firewall / Agent / Merchant / Demo without returning to the
+ * home page. Pass the current section's href as `active`.
+ */
+export function AppNav({ active, className = "" }: { active?: string; className?: string }) {
+  return (
+    <nav
+      aria-label="Sections"
+      className={`flex flex-wrap items-center gap-1 border-b border-line ${className}`}
+    >
+      {APP_NAV_SECTIONS.map((s) => {
+        const isActive = s.href === active;
+        return (
+          <Link
+            key={s.href}
+            href={s.href}
+            aria-current={isActive ? "page" : undefined}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+              isActive
+                ? "border-gold font-semibold text-ink"
+                : "border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            {s.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

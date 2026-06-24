@@ -12,7 +12,7 @@ import {
   getProofChain,
   type ChainPaymentConfig,
 } from "@/lib/config/payment";
-import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck } from "@/components/ui";
+import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck, AppNav } from "@/components/ui";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
@@ -126,6 +126,8 @@ function DashboardContent() {
           <Wordmark href="/" />
           <span className="op-chip">Merchant dashboard</span>
         </header>
+
+        <AppNav active="/dashboard" className="mb-6" />
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <Chip>

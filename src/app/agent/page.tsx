@@ -22,7 +22,7 @@ import {
   type LogSource,
   type LogTone,
 } from "@/lib/agent/log-formatter";
-import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock, Term } from "@/components/ui";
+import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock, Term, AppNav } from "@/components/ui";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
 
@@ -409,6 +409,8 @@ export default function AgentPage() {
             {address ? <SignOutButton magic={magic} /> : null}
           </div>
         </header>
+
+        <AppNav active="/agent" className="mb-5" />
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <div className="mb-5">

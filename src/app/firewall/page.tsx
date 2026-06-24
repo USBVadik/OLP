@@ -33,6 +33,7 @@ import {
   IconCheck,
   IconBan,
   IconBolt,
+  AppNav,
 } from "@/components/ui";
 
 // Demo on Arbitrum (where SpendPolicy is deployed + USDC + relayer gas live).
@@ -268,6 +269,8 @@ export default function FirewallPage() {
             {address ? <SignOutButton magic={magic} /> : null}
           </div>
         </header>
+
+        <AppNav active="/firewall" className="mb-5" />
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <div className="mb-5">
