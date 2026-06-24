@@ -73,7 +73,7 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
                 key={`${e.ts}-${i}`}
                 className={`mb-1.5 rounded ${
                   isBlocked
-                    ? "animate-block-pulse border-l-2 border-[#E86A4C] bg-[#E86A4C]/12 px-2 py-1"
+                    ? "animate-block-pulse border border-[#E86A4C]/40 bg-[#E86A4C]/12 px-2 py-1"
                     : "px-1.5"
                 }`}
               >

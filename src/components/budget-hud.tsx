@@ -179,7 +179,7 @@ function Bar({
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-paper">
         <div
-          className={`h-full rounded-full transition-all duration-700 ease-out ${fill}`}
+          className={`h-full rounded-full transition-[width,background-color] duration-700 ease-out ${fill}`}
           style={{ width: `${percentLeft}%` }}
         />
       </div>
