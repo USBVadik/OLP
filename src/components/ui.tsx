@@ -252,3 +252,30 @@ export function TxReference({
     </a>
   );
 }
+
+
+/**
+ * Term — an inline glossary tooltip for jargon, so a first-time reader can get a plain-language
+ * definition without leaving the page. Pure CSS (group-hover + group-focus-within), so it works on
+ * hover, keyboard focus, AND tap (the trigger is a focusable button) with no client JS. The full
+ * definition is also in the button's aria-label for screen readers; the visual popover is aria-hidden.
+ */
+export function Term({ children, def }: { children: string; def: string }) {
+  return (
+    <span className="group relative inline-block">
+      <button
+        type="button"
+        aria-label={`${children} — ${def}`}
+        className="cursor-help rounded-sm border-b border-dotted border-ink2/50 font-medium text-ink2 transition-colors hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+      >
+        {children}
+      </button>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-56 -translate-x-1/2 rounded-xl border border-line bg-paper p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-muted opacity-0 shadow-lift transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        {def}
+      </span>
+    </span>
+  );
+}

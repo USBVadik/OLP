@@ -10,6 +10,7 @@ import {
   IconLock,
   IconArrowUpRight,
   IconCheck,
+  Term,
 } from "@/components/ui";
 import { ParticleField } from "@/components/particle-field";
 import { CustomCursor } from "@/components/custom-cursor";
@@ -381,7 +382,8 @@ function AgentEconomySection() {
         The spending limit x402 is missing
       </h2>
       <p className="mt-3 max-w-2xl text-ink2">
-        x402 (Coinbase, Cloudflare, AWS) lets an AI agent pay for any API over HTTP — and nothing
+        <Term def="An open web standard that lets software pay for an API call over HTTP — via the '402 Payment Required' response.">x402</Term>{" "}
+        (Coinbase, Cloudflare, AWS) lets an AI agent pay for any API over HTTP — and nothing
         bounds how much it spends. OneLink Pay is the on-chain leash: one signed mandate, revocable
         anytime, with a public proof receipt for every payment. We build on the spend-permission
         wave rather than reinvent it.
@@ -410,7 +412,11 @@ function AgentEconomySection() {
 
       <p className="mt-5 max-w-2xl rounded-2xl border border-gold/25 bg-gold-soft/40 px-4 py-3 text-sm font-medium text-ink">
         OneLink Pay is the on-chain, revocable spending limit for the x402 agent economy — built on
-        Particle Universal Accounts + EIP-7702, with a public proof receipt for every payment.
+        Particle{" "}
+        <Term def="A Particle account that gives you one balance across many chains — no bridging or picking a network.">Universal Accounts</Term>{" "}
+        +{" "}
+        <Term def="An Ethereum upgrade that lets your normal wallet act as a smart account for a transaction — no separate smart wallet to set up.">EIP-7702</Term>
+        , with a public proof receipt for every payment.
       </p>
     </section>
   );

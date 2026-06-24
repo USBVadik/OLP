@@ -22,7 +22,7 @@ import {
   type LogSource,
   type LogTone,
 } from "@/lib/agent/log-formatter";
-import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock } from "@/components/ui";
+import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock, Term } from "@/components/ui";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
 
@@ -417,9 +417,12 @@ export default function AgentPage() {
               An agent that pays per call — on a leash
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              x402 lets an AI agent pay for any API over HTTP. OneLink Pay bounds it: every x402
-              payment is settled through an on-chain mandate, so the agent can buy what it needs but
-              physically cannot overspend. Over-budget requests are refused before any funds move.
+              <Term def="An open web standard that lets software pay for an API call over HTTP — via the '402 Payment Required' response.">x402</Term>{" "}
+              lets an agent pay for any API over HTTP. OneLink Pay bounds it: every x402 payment is
+              settled through an on-chain{" "}
+              <Term def="A spending permission you sign once: which merchant, how much per charge, per day, in total, and until when — revocable anytime.">mandate</Term>
+              , so the agent can buy what it needs but physically cannot overspend. Over-budget
+              requests are refused before any funds move.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <span className="op-chip" title="Universal Accounts in EIP-7702 mode — one balance across chains">
