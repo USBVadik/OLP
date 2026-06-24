@@ -87,6 +87,7 @@ const CHAIN_LABELS: Record<number, string> = {
   56: "BNB Chain",
   101: "Solana",
   137: "Polygon",
+  143: "Monad",
   146: "Sonic",
   196: "X Layer",
   999: "HyperEVM",
