@@ -30,7 +30,6 @@ import {
   IconLock,
   IconCheck,
   IconArrowUpRight,
-  AppNav,
 } from "@/components/ui";
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
@@ -921,8 +920,6 @@ export default function PayPage({ params }: { params: { id: string } }) {
             {address ? <SignOutButton magic={magic} /> : null}
           </div>
         </header>
-
-        <AppNav className="mb-5" />
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <CheckoutBadges paymentLink={paymentLink} />
