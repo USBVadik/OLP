@@ -104,6 +104,14 @@ export default function HomePage() {
               verifiable proof receipt.
             </p>
 
+            <p
+              className="op-animate-rise mt-3 max-w-xl text-sm leading-relaxed text-muted"
+              style={{ animationDelay: "290ms" }}
+            >
+              In plain words: it&rsquo;s a debit card with a built-in limit — but for your apps and
+              AI agents, and the limit is enforced on-chain, not by trust.
+            </p>
+
             <div
               className="op-animate-rise mt-8 flex flex-wrap gap-3"
               style={{ animationDelay: "340ms" }}

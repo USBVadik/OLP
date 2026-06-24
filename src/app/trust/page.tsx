@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Wordmark, Chip, IconCheck, IconShield, IconArrowUpRight } from "@/components/ui";
+import { Wordmark, Chip, IconCheck, IconShield, IconArrowUpRight, AppNav } from "@/components/ui";
 
 export const metadata = {
   title: "What's real · OneLink Pay",
@@ -64,6 +64,8 @@ export default function TrustPage() {
             Home
           </Link>
         </header>
+
+        <AppNav className="mb-6" />
 
         <section className="op-animate-rise">
           <span className="op-eyebrow">Claim discipline</span>

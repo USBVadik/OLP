@@ -15,7 +15,7 @@ import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { receiptShareUrl } from "@/lib/receipts/share";
 import { ProofReceiptCard, VerificationMethod } from "@/components/proof-receipt";
 import { CopyLinkButton } from "@/components/copy-link-button";
-import { Wordmark, IconCheck, IconShield, IconArrowUpRight } from "@/components/ui";
+import { Wordmark, IconCheck, IconShield, IconArrowUpRight, AppNav } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +102,8 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
             {isCompleted ? "Verified" : "Unverified"}
           </span>
         </header>
+
+        <AppNav className="mb-5" />
 
         {isCompleted ? (
           <>
