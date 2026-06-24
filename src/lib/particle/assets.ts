@@ -84,9 +84,16 @@ export function summarizeUniversalBalance(raw: unknown): UniversalBalanceSummary
 const CHAIN_LABELS: Record<number, string> = {
   1: "Ethereum",
   10: "Optimism",
+  56: "BNB Chain",
+  101: "Solana",
+  137: "Polygon",
+  146: "Sonic",
+  196: "X Layer",
+  5000: "Mantle",
   8453: "Base",
   42161: "Arbitrum",
-  137: "Polygon",
+  43114: "Avalanche",
+  80094: "Berachain",
 };
 
 export function chainLabel(chainId: number): string {

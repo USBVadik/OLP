@@ -276,10 +276,12 @@
   3. Sequential awaits (each charge fully mines before the next) avoid relayer nonce races; the
      "retrying with proof" line keeps the wait legible (R11).
   4. Honesty: claim "unattended deterministic agent loop", never "AI/LLM agent".
-- **mitigation_status:** in_progress (shipped + typecheck/lint/build verified; live multi-buy run to
-  be confirmed during a demo rehearsal)
+- **mitigation_status:** closed 2026-06-21 — **confirmed live on prod**: an autonomous run bought
+  market-insight (0.05) + sentiment-feed (0.08), then the firewall BLOCKED premium-dataset (0.20)
+  ("over the per-charge cap — no funds moved, zero gas") and the agent halted after 2 purchases;
+  Budget HUD drained to 1.87/2.00 (today) and 9.87/10.00 (lifetime).
 - **owner:** builder
-- **review:** live `/agent` autonomous run (user)
+- **review:** demo dress rehearsal (Block E)
 
 ## Security findings (external audit, 2026-06-21)
 

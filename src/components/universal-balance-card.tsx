@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   chainLabel,
+  type ChainBalance,
   type UniversalBalanceSummary,
 } from "@/lib/particle/assets";
 import { IconBolt } from "@/components/ui";
@@ -52,6 +53,19 @@ function amt(n: number): string {
   if (n === 0) return "0";
   if (Number.isInteger(n)) return n.toString();
   return n < 0.01 ? n.toPrecision(2) : n.toFixed(n < 1 ? 4 : 2);
+}
+
+/**
+ * Per-token chain breakdown: lead with the chains that actually hold a balance (named), and
+ * collapse the long tail of $0 chains into "+N more at $0" so the card stays clean while still
+ * conveying the cross-chain breadth. Falls back to the USD total when nothing is held.
+ */
+function breakdown(byChain: ChainBalance[], fallbackUsd: number): string {
+  const nonZero = byChain.filter((c) => c.amount > 0);
+  if (nonZero.length === 0) return usd(fallbackUsd);
+  const named = nonZero.map((c) => `${chainLabel(c.chainId)} ${amt(c.amount)}`);
+  const zeros = byChain.length - nonZero.length;
+  return zeros > 0 ? `${named.join(" · ")} · +${zeros} more at $0` : named.join(" · ");
 }
 
 /**
@@ -115,11 +129,7 @@ export function UniversalBalanceCard({ summary, loading = false, error = null, o
                     {amt(t.amount)} <span className="text-muted">{t.symbol}</span>
                   </dt>
                   <dd className="text-right text-xs text-muted">
-                    {t.byChain.length > 0
-                      ? t.byChain
-                          .map((c) => `${chainLabel(c.chainId)} ${amt(c.amount)}`)
-                          .join(" · ")
-                      : usd(t.amountInUSD)}
+                    {breakdown(t.byChain, t.amountInUSD)}
                   </dd>
                 </div>
               ))}
