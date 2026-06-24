@@ -253,12 +253,20 @@ export default function HomePage() {
         {/* Honest scope footer */}
         <footer className="mt-16 flex flex-col gap-3 border-t border-line pt-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <Wordmark href="/" />
-          <p className="max-w-xl sm:text-right">
-            Honest scope: the on-chain firewall (SpendPolicy) is live on Base + Arbitrum and
-            tested (22 contract tests). Same-chain checkout is proven end-to-end. Cross-chain
-            value movement via Universal Accounts is in progress — Particle UA as the primary
-            rail, Circle Gateway as backup. No gas sponsorship is claimed.
-          </p>
+          <div className="max-w-xl sm:text-right">
+            <p>
+              Honest scope: the on-chain firewall (SpendPolicy) is live on Base + Arbitrum and
+              tested (22 contract tests). Same-chain checkout is proven end-to-end, and cross-chain
+              value movement via Universal Accounts is proven live — no manual bridge. The x402 flow
+              is the pattern (mandate-settled), and no gas sponsorship is claimed.
+            </p>
+            <Link
+              href="/trust"
+              className="mt-2 inline-flex items-center gap-1 font-medium text-ink2 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+            >
+              See exactly what&rsquo;s real &rarr;
+            </Link>
+          </div>
         </footer>
       </div>
     </main>
