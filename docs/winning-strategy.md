@@ -189,27 +189,27 @@ deployed SpendPolicy; would break C5/C6/C16/C17/C21).
 
 ### P1 — this week
 
-#### P1.1 — Magic One Tap / smoothest onboarding `[Effort S] [UX 40] [Magic]`
-- [ ] Google One Tap (inline) instead of full-page redirect, if Magic supports it on our setup.
-- [ ] "No seed phrase — just email/Google; your wallet is non-custodial" copy on the login card.
-- [ ] 10-second onboarding clip captured for the Magic bonus packaging.
+#### P1.1 — Magic smoother onboarding `[Effort S] [UX 40] [Magic]`
+- [~] Google One Tap (inline): **deferred — not feasible on our Magic setup.** `@magic-ext/oauth2` uses a full redirect (`loginWithRedirect`); One Tap is a separate Google Identity Services flow Magic OAuth doesn't accept. Forcing it = real risk for a 10% item.
+- [x] Smoothest path emphasized: Google is now the **primary** one-click action on `/pay` (email demoted to secondary, via a `variant` prop); "no seed phrase, you stay in control" reassurance present.
+- [ ] 10-second onboarding clip captured for the Magic bonus packaging (recording = user task).
 
 #### P1.2 — Budget HUD drain animation `[Effort S] [Polish 10] [Particle]`
-- [ ] On a successful charge, the remaining-cap bars **animate** down (not snap).
-- [ ] (Done) On a block, the HUD flashes "Firewall held · budget untouched" and bars do NOT move.
+- [x] On a successful charge, the remaining-cap bars **animate** down (immediate `refetch` via `refreshSignal`; transition `duration-700 ease-out`).
+- [x] On a block, the HUD flashes "Firewall held · budget untouched" and bars do NOT move.
 
 #### P1.3 — Blocked state as a product moment `[Effort S] [UX 40 + Polish 10]` — ✅ DONE (this session)
 - [x] BLOCKED line slams in (shield glyph, red border, one-shot pulse, bold).
 - [x] Honest copy: over-cap shows "over the per-charge cap. No funds moved, zero gas."; funding errors are NOT mislabeled as blocks.
 
 #### P1.4 — "What's real / pattern / future" slide `[Effort S] [Adoption 20 + integrity]`
-- [ ] One slide mirroring §2's table; shown or available during the pitch.
-- [ ] Pre-empts x402-pattern, agent-initiated, beta-SDK, no-gas-sponsorship in our own voice.
+- [x] In-app trust surface at `/trust` mirroring §2's table; linked from the landing footer.
+- [x] Pre-empts x402-pattern, agent-initiated, beta-SDK, no-gas-sponsorship in our own voice; links a verifiable cross-chain receipt. (Also fixed a stale "cross-chain in progress / Circle backup" claim in the landing footer.)
 
 #### P1.5 — Integrator snippet `[Effort S–M] [Adoption 20] [Particle/Circle-narrative]`
-- [ ] 15–20 line snippet: create a hosted pay link OR `charge` with a signed mandate.
-- [ ] Positioned as "Stripe-style hosted link OR an SDK call" — no contracts needed by the integrator.
-- [ ] Lives in README or `docs/integrate.md`; honest about being a thin reference, not a published package.
+- [x] 15–20 line snippet: create a hosted pay link AND `charge` with a signed mandate.
+- [x] Positioned as "hosted link OR an API call" — no contracts needed by the integrator.
+- [x] Lives in `docs/integrate.md`; honest about being a thin reference, not a published package.
 
 ### P2 — only if P0/P1 are done
 
