@@ -75,6 +75,8 @@ function fmt(atomic: bigint) {
   return `${n % 1 === 0 ? n : n.toFixed(2)} USDC`;
 }
 
+type AgentOutcome = "ok" | "blocked" | "error" | "withheld";
+
 export default function AgentPage() {
   const spendPolicy = getSpendPolicyAddress(CHAIN.chainId);
   const deployed = spendPolicy !== "0x0000000000000000000000000000000000000000";
@@ -104,6 +106,8 @@ export default function AgentPage() {
 
   // Manual re-trigger for the read-only balance (Particle reads can flake mid-demo).
   const reloadBalance = useCallback(() => setBalanceReloadKey((k) => k + 1), []);
+
+  const resources = useMemo(() => listResources(), []);
 
   // A stable agent_budget mandate preview derived once we know the payer address.
   const chosen = useMemo<PaymentMandate | null>(() => {
@@ -237,11 +241,9 @@ export default function AgentPage() {
     }
   }, [magic, address, chosen, spendPolicy, append]);
 
-  const buy = useCallback(
-    async (resource: X402Resource) => {
-      if (!armed || running) return;
-      setRunning(true);
-      setError(null);
+  const chargeForResource = useCallback(
+    async (resource: X402Resource): Promise<AgentOutcome> => {
+      if (!armed) return "error";
       const path = `/api/x402/${resource.id}`;
       try {
         // 1) Unpaid request -> expect 402 + payment requirements (the x402 handshake).
@@ -249,13 +251,13 @@ export default function AgentPage() {
         const unpaid = await fetch(path);
         if (unpaid.status !== 402) {
           append("AGENT", `Unexpected ${unpaid.status} (expected 402 Payment Required).`, "error");
-          return;
+          return "error";
         }
         const body = await unpaid.json();
         const reqs = body?.accepts?.[0];
         if (!reqs) {
           append("FIREWALL", "402 had no payment requirements.", "error");
-          return;
+          return "error";
         }
         append(
           "FIREWALL",
@@ -281,11 +283,11 @@ export default function AgentPage() {
             append("FIREWALL", line.message, line.tone);
             append("AGENT", `Access denied by the firewall — ${resource.title} not delivered.`, "error");
             setBlockPulse((n) => n + 1);
-          } else {
-            const line = firewallResultLine({ kind: "error", message: charge.error ?? "charge failed" });
-            append("FIREWALL", line.message, line.tone);
+            return "blocked";
           }
-          return;
+          const line = firewallResultLine({ kind: "error", message: charge.error ?? "charge failed" });
+          append("FIREWALL", line.message, line.tone);
+          return "error";
         }
         append(
           "FIREWALL",
@@ -313,7 +315,7 @@ export default function AgentPage() {
             const data = await paid.json();
             append("AGENT", `200 OK — received ${resource.title}.`, "ok");
             setBought((prev) => ({ ...prev, [resource.id]: data.data }));
-            return;
+            return "ok";
           }
           const err = await paid.json().catch(() => ({}));
           if (typeof err?.error === "string" && /not found on-chain yet/.test(err.error) && attempt < 5) {
@@ -321,18 +323,79 @@ export default function AgentPage() {
             continue;
           }
           append("FIREWALL", `Resource withheld: ${err?.error ?? paid.status}`, "blocked");
-          return;
+          return "withheld";
         }
+        return "withheld";
       } catch (e: any) {
         append("FIREWALL", `ERROR: ${e?.message ?? "network"}`, "error");
+        return "error";
+      }
+    },
+    [armed, append]
+  );
+
+  // Manual single-resource purchase (the per-API buttons).
+  const buy = useCallback(
+    async (resource: X402Resource) => {
+      if (!armed || running) return;
+      setRunning(true);
+      setError(null);
+      try {
+        await chargeForResource(resource);
       } finally {
         setRunning(false);
       }
     },
-    [armed, running, append]
+    [armed, running, chargeForResource]
   );
 
-  const resources = listResources();
+  // Autonomous run: unattended, the agent works through the affordable APIs in cost order and is
+  // halted by the firewall when it exceeds the per-charge cap. Deterministic — no LLM, no AI claim.
+  const runAutonomous = useCallback(async () => {
+    if (!armed || running) return;
+    setRunning(true);
+    setError(null);
+    try {
+      const plan = [...resources].sort((a, b) =>
+        a.priceAtomic < b.priceAtomic ? -1 : a.priceAtomic > b.priceAtomic ? 1 : 0
+      );
+      append(
+        "AGENT",
+        `Autonomous run — budget ${fmt(armed.mandate.totalCap)}, ${fmt(armed.mandate.maxPerCharge)} per call. I'll buy what I can afford and stop when the firewall blocks me.`,
+        "info"
+      );
+      let purchased = 0;
+      let halted = false;
+      for (const r of plan) {
+        if (r.id in bought) continue;
+        const outcome = await chargeForResource(r);
+        if (outcome === "ok") {
+          purchased += 1;
+          continue;
+        }
+        halted = true;
+        if (outcome === "blocked") {
+          append(
+            "AGENT",
+            `Halted by the firewall after ${purchased} purchase${purchased === 1 ? "" : "s"} — I cannot exceed the mandate. No funds moved beyond it.`,
+            "error"
+          );
+        } else {
+          append("AGENT", `Stopping after ${purchased} purchase${purchased === 1 ? "" : "s"}.`, "info");
+        }
+        break;
+      }
+      if (!halted) {
+        append(
+          "AGENT",
+          `Run complete — ${purchased} purchase${purchased === 1 ? "" : "s"}, all within budget.`,
+          "ok"
+        );
+      }
+    } finally {
+      setRunning(false);
+    }
+  }, [armed, running, resources, bought, chargeForResource, append]);
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
@@ -433,6 +496,23 @@ export default function AgentPage() {
                 <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} refreshSignal={settleTick} />
                 <div className="space-y-2">
                   <p className="op-eyebrow">Paid APIs (x402)</p>
+                  <button
+                    onClick={runAutonomous}
+                    disabled={running}
+                    className="op-btn-primary w-full justify-center"
+                  >
+                    {running ? (
+                      "Agent running…"
+                    ) : (
+                      <>
+                        <IconBolt className="h-4 w-4" /> Send the agent (autonomous run)
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[11px] leading-relaxed text-faint">
+                    One click: the agent works through these APIs within its budget and is stopped by
+                    the firewall the moment it tries to overspend. Or trigger a single call below.
+                  </p>
                   {resources.map((r) => {
                     const owned = r.id in bought;
                     return (
@@ -453,11 +533,11 @@ export default function AgentPage() {
                             </>
                           ) : r.priceAtomic > armed.mandate.maxPerCharge ? (
                             <>
-                              <IconBan className="h-4 w-4 text-danger" /> Send agent (over cap)
+                              <IconBan className="h-4 w-4 text-danger" /> Buy (over cap)
                             </>
                           ) : (
                             <>
-                              <IconBolt className="h-4 w-4 text-gold" /> Send agent to buy
+                              <IconBolt className="h-4 w-4 text-gold" /> Buy this call
                             </>
                           )}
                         </button>
@@ -473,7 +553,7 @@ export default function AgentPage() {
               </div>
 
               <div className="space-y-3">
-                <p className="op-eyebrow">Autonomous AI agent</p>
+                <p className="op-eyebrow">Autonomous agent</p>
                 <AgentTerminal entries={agentLog} />
                 <p className="text-xs leading-relaxed text-muted">
                   Each purchase runs the real x402 handshake: the API answers{" "}
