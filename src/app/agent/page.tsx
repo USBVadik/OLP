@@ -567,7 +567,9 @@ export default function AgentPage() {
                   blocked before settlement.
                 </p>
                 <p className="text-[11px] leading-relaxed text-faint">
-                  The agent sees one balance across chains (Particle Universal Account). Today
+                  The agent sees one balance across chains (Particle{" "}
+                  <Term def="A Particle account that gives you one balance across many chains — no bridging or picking a network.">Universal Account</Term>
+                  ). Today
                   settlement runs on Arbitrum; Particle&apos;s cross-chain V2 extends the same flow to
                   spend from every chain in one transaction.
                 </p>

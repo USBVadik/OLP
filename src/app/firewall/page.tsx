@@ -34,6 +34,7 @@ import {
   IconBan,
   IconBolt,
   AppNav,
+  Term,
 } from "@/components/ui";
 
 // Demo on Arbitrum (where SpendPolicy is deployed + USDC + relayer gas live).
@@ -279,8 +280,10 @@ export default function FirewallPage() {
               Consent your AI agent can&apos;t break
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Sign one scoped mandate. A merchant or agent can then charge — but only inside the
-              limits you approved. Everything else reverts on-chain. Revoke anytime.
+              Sign one scoped{" "}
+              <Term def="A spending permission you sign once: which merchant, how much per charge, per day, in total, and until when — revocable anytime.">mandate</Term>
+              . A merchant or agent can then charge — but only inside the limits you approved.
+              Everything else reverts on-chain. Revoke anytime.
             </p>
           </div>
 

@@ -284,6 +284,7 @@ export function Term({ children, def }: { children: string; def: string }) {
 const APP_NAV_SECTIONS: { href: string; label: string }[] = [
   { href: "/firewall", label: "Firewall" },
   { href: "/agent", label: "Agent" },
+  { href: "/wallet", label: "Wallet" },
   { href: "/dashboard", label: "Merchant" },
   { href: "/demo-replay", label: "Demo" },
 ];
