@@ -39,19 +39,19 @@ export default function HomePage() {
       <div className="op-grain" aria-hidden="true" />
       <div className="mx-auto max-w-6xl px-5">
         {/* Top bar */}
-        <header className="flex items-center justify-between py-6">
+        <header className="flex flex-wrap items-center justify-between gap-y-2 py-6">
           <Wordmark href="/" />
-          <nav className="flex items-center gap-1 text-sm">
-            <Link href="/firewall" className="op-btn-ghost px-3 py-2">
+          <nav className="flex flex-wrap items-center gap-1 text-sm">
+            <Link href="/firewall" className="op-btn-ghost px-3 py-2.5">
               Firewall
             </Link>
-            <Link href="/agent" className="op-btn-ghost px-3 py-2">
+            <Link href="/agent" className="op-btn-ghost px-3 py-2.5">
               Agent
             </Link>
-            <Link href="/demo-replay" className="op-btn-ghost px-3 py-2">
+            <Link href="/demo-replay" className="op-btn-ghost px-3 py-2.5">
               Demo
             </Link>
-            <Link href="/dashboard" className="op-btn-ghost px-3 py-2">
+            <Link href="/dashboard" className="op-btn-ghost px-3 py-2.5">
               Merchant
             </Link>
           </nav>
@@ -115,7 +115,7 @@ export default function HomePage() {
               </Magnetic>
               <Magnetic>
                 <Link href="/agent" className="op-btn-secondary">
-                  See the x402 agent demo
+                  See the agent demo
                 </Link>
               </Magnetic>
               <Link href={`/success/${DEMO_REPLAY_PAYMENT_LINK.id}`} className="op-btn-ghost">
@@ -243,10 +243,8 @@ export default function HomePage() {
             ))}
           </ol>
           <p className="mt-6 text-sm leading-relaxed text-muted">
-            The strict <span className="font-mono text-ink2">approve + payInvoice</span> universal
-            transaction path stays available behind{" "}
-            <span className="font-mono text-ink2">universal_invoice</span> while Particle custom
-            universal calls return maintenance errors.
+            Funds can be sourced from any chain where you hold USDC and settled where the merchant
+            wants — the Universal Account handles the routing, with no manual bridging.
           </p>
         </section>
 
@@ -291,7 +289,7 @@ function PreviewPeek({ amount }: { amount: string }) {
       <dl className="mt-4 divide-y divide-line">
         <Row label="Merchant receives" value={amount} />
         <Row label="Settles on" value="Arbitrum + Base" />
-        <Row label="Payment mode" value={PAYMENT_MODE} mono />
+        <Row label="Funding" value="Cross-chain · no bridge" />
         <Row label="Proof" value="On-chain receipt" />
         <div className="flex items-center justify-between py-3">
           <span className="text-sm text-muted">Spend mandate</span>
