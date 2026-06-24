@@ -57,7 +57,7 @@ agent or merchant *a limited, revocable on-chain permission card, not their wall
 **Rule:** every public claim needs a row in `docs/honest-claim-ledger.md`. No exceptions.
 
 **NEVER say (overclaim denylist):**
-- ❌ "Fully autonomous AI agent" → it's an **agent-initiated harness** over a real on-chain firewall.
+- ❌ "Fully autonomous AI agent" → it's a real **unattended deterministic** agent loop (one click, no human per-step), but **not LLM-driven** — don't imply AI reasoning.
 - ❌ "Coinbase x402 compatible" / "facilitator-compatible" → it's the **x402 *pattern*, `onelink-mandate` settled**.
 - ❌ "Gasless / gas sponsored" → not claimed; no paymaster row in the ledger.
 - ❌ "Zero ETH ever needed" → first-time 7702 delegation needs a little native gas per chain.
@@ -71,7 +71,7 @@ agent or merchant *a limited, revocable on-chain permission card, not their wall
 | Likely question | Honest answer |
 |---|---|
 | "Is this really x402?" | "It's the x402 *pattern* — 402 → pay → retry-with-proof — settled by our on-chain mandate (`onelink-mandate`), not the Coinbase EIP-3009 facilitator. Enforcement is real; wire-compat is not claimed." |
-| "Is the agent autonomous?" | "The on-chain enforcement is 100% real; the agent is an agent-*initiated* harness calling the same relayer + contract a real agent would. The autonomy is dramatized." |
+| "Is the agent autonomous?" | "Yes — it runs unattended: one click and it works through the APIs within budget, halted by the firewall on the over-cap call. It's **deterministic, not LLM-driven**, so we don't claim AI reasoning; the on-chain enforcement is fully real." |
 | "What does 'zero gas' mean?" | "Over-cap charges revert in **simulation**, before broadcast — no funds move and no on-chain gas is spent on the blocked attempt." |
 | "Is cross-chain real?" | "Proven live + deployed (ledger C21). Here are both tx hashes + the UniversalX link. A first-time payer needs a little native gas per chain for the one-time 7702 delegation — that's why we pre-delegate for the demo." |
 | "Did you reinvent spend limits?" | "Correct that the primitive isn't new — here's the prior-art table. Our wedge is the **packaging**: an on-chain revocable mandate bound to x402, entered via a UA/7702 account, with a public receipt." |
@@ -263,6 +263,7 @@ the Universal Account; Gateway is a clean future second rail" — reads as focus
 - ✅ Visceral over-cap block moment + "budget untouched" HUD pulse (P1.3).
 - ✅ Honest charge-error labeling (funding errors not mislabeled as policy blocks).
 - ✅ Magic login reassurance copy (Web2 feel); Sign-out + clickable home logo.
+- ✅ Autonomous agent run on `/agent` (deterministic, unattended, no LLM) — one click, the agent buys within budget and is halted by the firewall; honesty upgraded (autonomy real, not AI).
 
 ---
 

@@ -31,8 +31,8 @@ const ROWS: { claim: string; status: Status; note: string }[] = [
   },
   {
     claim: "The “agent”",
-    status: "pattern",
-    note: "An agent-initiated harness over the real on-chain firewall. The enforcement is real; the autonomy is dramatized.",
+    status: "real",
+    note: "Runs unattended: one click and it works through the x402 APIs within its budget, halted by the firewall on the over-cap call. Deterministic — not LLM-driven, so we don't claim AI reasoning.",
   },
   {
     claim: "Gas",

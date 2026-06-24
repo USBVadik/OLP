@@ -261,6 +261,26 @@
 - **owner:** builder
 - **review:** next live `/pay` 7702 completion
 
+### R20 — Autonomous agent run consumes more demo USDC/gas + adds latency
+
+- **likelihood:** med (each run does N sequential charges)
+- **impact:** low (a demo beat is slightly slower; the demo wallet drains faster)
+- **context:** `/agent` "Send the agent (autonomous run)" loops the proven x402 + charge path over
+  the catalog in cost order until the firewall blocks the over-cap call. Deterministic — no LLM, no
+  AI reasoning claimed.
+- **mitigation:**
+  1. Reuses the proven single-charge path (`chargeForResource`) — no new on-chain surface; the
+     manual per-API buttons remain as a fallback.
+  2. Each run buys only the in-cap APIs (~0.13 USDC) then halts on the over-cap call; ~15 runs per
+     2 USDC on Arbitrum. Keep payer + relayer funded (R13/R16).
+  3. Sequential awaits (each charge fully mines before the next) avoid relayer nonce races; the
+     "retrying with proof" line keeps the wait legible (R11).
+  4. Honesty: claim "unattended deterministic agent loop", never "AI/LLM agent".
+- **mitigation_status:** in_progress (shipped + typecheck/lint/build verified; live multi-buy run to
+  be confirmed during a demo rehearsal)
+- **owner:** builder
+- **review:** live `/agent` autonomous run (user)
+
 ## Security findings (external audit, 2026-06-21)
 
 > Surfaced by an external code-level audit and triaged with Kiro. Funds were never at risk in any
