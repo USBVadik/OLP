@@ -1214,7 +1214,7 @@ function LoginForm({ paymentLink, onLogin, magic, returnTo }: { paymentLink: Pay
       {paymentLink.label ? <p className="px-1 text-sm text-muted">{paymentLink.label}</p> : null}
 
       <div className="space-y-4 rounded-2xl border border-line bg-paper2 p-4">
-        <LoginWithGoogleButton magic={magic} returnTo={returnTo} />
+        <LoginWithGoogleButton magic={magic} returnTo={returnTo} variant="primary" />
         <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted">
           <span className="h-px flex-1 bg-line" />
           <span>or with email</span>
@@ -1236,7 +1236,7 @@ function LoginForm({ paymentLink, onLogin, magic, returnTo }: { paymentLink: Pay
         <button
           onClick={() => { setLoading(true); onLogin(email); }}
           disabled={!email || loading}
-          className="op-btn-primary w-full"
+          className="op-btn-secondary w-full"
         >
           {loading ? "Signing in…" : "Sign in with Magic"}
         </button>

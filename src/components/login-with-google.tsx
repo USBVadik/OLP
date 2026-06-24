@@ -12,6 +12,8 @@ type Props = {
    * Typically `window.location.pathname` of the page that mounts this button.
    */
   returnTo: string;
+  /** Button emphasis. Default "secondary"; pass "primary" to make Google the fastest, headline path. */
+  variant?: "primary" | "secondary";
   /** Optional outer className (margins / spacing). */
   className?: string;
 };
@@ -27,7 +29,7 @@ type Props = {
  *    Magic init.
  *  - The Magic dashboard having Google OAuth enabled with a valid Client ID/Secret.
  */
-export function LoginWithGoogleButton({ magic, returnTo, className = "" }: Props) {
+export function LoginWithGoogleButton({ magic, returnTo, variant = "secondary", className = "" }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -65,7 +67,7 @@ export function LoginWithGoogleButton({ magic, returnTo, className = "" }: Props
         onClick={handleClick}
         disabled={!magic || busy}
         aria-label="Continue with Google"
-        className="op-btn-secondary w-full"
+        className={`op-btn-${variant} w-full`}
       >
         <GoogleG className="h-4 w-4" />
         {busy ? "Redirecting…" : "Continue with Google"}

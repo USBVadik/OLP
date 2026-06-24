@@ -88,6 +88,7 @@ export default function AgentPage() {
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
   const [blockPulse, setBlockPulse] = useState(0);
+  const [settleTick, setSettleTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [balanceSummary, setBalanceSummary] = useState<UniversalBalanceSummary | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
@@ -292,6 +293,7 @@ export default function AgentPage() {
           "ok",
           getExplorerTxUrl(CHAIN, charge.txHash)
         );
+        setSettleTick((n) => n + 1);
 
         // 3) Retry with the on-chain proof; poll briefly while the tx mines.
         const proof = {
@@ -428,7 +430,7 @@ export default function AgentPage() {
                   error={balanceError}
                   onRetry={reloadBalance}
                 />
-                <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} />
+                <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} refreshSignal={settleTick} />
                 <div className="space-y-2">
                   <p className="op-eyebrow">Paid APIs (x402)</p>
                   {resources.map((r) => {

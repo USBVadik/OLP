@@ -87,6 +87,7 @@ export default function FirewallPage() {
   const [armed, setArmed] = useState<{ mandate: PaymentMandate; signature: string } | null>(null);
   const [revoked, setRevoked] = useState(false);
   const [blockPulse, setBlockPulse] = useState(0);
+  const [settleTick, setSettleTick] = useState(0);
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +211,7 @@ export default function FirewallPage() {
             txUrl: getExplorerTxUrl(CHAIN, data.txHash),
           });
           append("FIREWALL", line.message, line.tone, line.txUrl);
+          setSettleTick((n) => n + 1);
         } else if (data.blocked) {
           const line = firewallResultLine({ kind: "blocked", reason: data.reason });
           append("FIREWALL", line.message, line.tone);
@@ -348,6 +350,7 @@ export default function FirewallPage() {
               onRunScenario={runScenario}
               onRevoke={revoke}
               protectedPulse={blockPulse}
+              refreshSignal={settleTick}
             />
           )}
 
@@ -372,6 +375,7 @@ function ArmedPanel({
   onRunScenario,
   onRevoke,
   protectedPulse,
+  refreshSignal,
 }: {
   mandate: PaymentMandate;
   chainId: number;
@@ -382,6 +386,7 @@ function ArmedPanel({
   onRunScenario: (scenario: AgentScenario) => void;
   onRevoke: () => void;
   protectedPulse: number;
+  refreshSignal: number;
 }) {
   const scenarios = buildAgentScenarios(mandate.maxPerCharge);
   const mandateId = computeMandateId(mandate);
@@ -403,7 +408,7 @@ function ArmedPanel({
           <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
         </div>
 
-        <BudgetHud chainId={chainId} mandate={mandate} protectedPulse={protectedPulse} />
+        <BudgetHud chainId={chainId} mandate={mandate} protectedPulse={protectedPulse} refreshSignal={refreshSignal} />
 
         <button onClick={onRevoke} disabled={!!busy || running || revoked} className="op-btn-ghost w-full justify-center">
           <IconLock className="h-4 w-4" /> {revoked ? "Revoked" : "Revoke permission"}

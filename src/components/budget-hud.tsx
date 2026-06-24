@@ -20,6 +20,11 @@ type Props = {
    * whole point: the over-cap attempt moved zero funds.
    */
   protectedPulse?: number;
+  /**
+   * Bump this counter after a SUCCESSFUL charge so the HUD refetches immediately and the bars
+   * drain right away (instead of waiting for the next 8s poll).
+   */
+  refreshSignal?: number;
 };
 
 /**
@@ -27,8 +32,8 @@ type Props = {
  * (and stops once the mandate becomes inert) so the UI stays in sync with charges
  * and revocations without manual refresh.
  */
-export function BudgetHud({ chainId, mandate, protectedPulse }: Props) {
-  const { state, isLoading, error } = useMandateState(chainId, mandate);
+export function BudgetHud({ chainId, mandate, protectedPulse, refreshSignal }: Props) {
+  const { state, isLoading, error, refetch } = useMandateState(chainId, mandate);
   const expirySec = mandate ? Number(mandate.expiry) : 0;
   const countdown = useCountdown(expirySec);
   const [held, setHeld] = useState(false);
@@ -40,6 +45,12 @@ export function BudgetHud({ chainId, mandate, protectedPulse }: Props) {
     const id = setTimeout(() => setHeld(false), 1700);
     return () => clearTimeout(id);
   }, [protectedPulse]);
+
+  // After a successful charge, refetch now so the bars drain immediately (not on the next poll).
+  useEffect(() => {
+    if (!refreshSignal) return;
+    void refetch();
+  }, [refreshSignal, refetch]);
 
   if (!mandate) {
     return null;
@@ -168,7 +179,7 @@ function Bar({
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-paper">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${fill}`}
+          className={`h-full rounded-full transition-all duration-700 ease-out ${fill}`}
           style={{ width: `${percentLeft}%` }}
         />
       </div>
