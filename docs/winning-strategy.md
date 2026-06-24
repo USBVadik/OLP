@@ -155,14 +155,14 @@ header on `docs/deep-research-onelink-pay-uxmaxx.md` (v1) pointing to v2.
 **Goal:** Move the "Base → Arbitrum · no bridge · gas in USDC" route from in-flight/receipt into the
 **pre-signature Trust Preview**, so judges see the magic *before* confirming.
 **Already shipped:** live routing animation during the paying phase + settled route on the receipt
-(`src/components/cross-chain-route.tsx`). **This item = the pre-sign preview增量.**
+(`src/components/cross-chain-route.tsx`). **This item = the pre-sign preview increment (done).**
 **Files:** `src/app/pay/[id]/page.tsx` (Trust Preview / confirm card), reuse `CrossChainRoute`,
 `createUniversalTransaction` preview object (fees, token transfers, `fromChains`/`toChains`).
 **Acceptance:**
-- [ ] Before signing, the confirm card shows source chain(s) → settlement chain + the USDC delta.
-- [ ] If the Particle preview exposes a fee, show it labelled "gas paid in USDC" (only if true on that leg).
-- [ ] Falls back gracefully (no raw SDK error) if the preview read is slow/unavailable.
-- [ ] typecheck + lint + production build green; no new public claim beyond C21.
+- [x] Before signing, the confirm card shows source chain(s) → settlement chain + the USDC delta.
+- [x] If the Particle preview exposes a fee, show it labelled "paid in USDC" (only if true on that leg).
+- [x] Falls back gracefully (no raw SDK error) if the preview read is slow/unavailable (route hidden for same-chain / missing data).
+- [x] typecheck + lint + production build green; no new public claim beyond C21.
 
 #### P0.4 — Mandate Card = "set a card limit" `[Effort S–M] [UX 40 + UA 30] [Particle/Magic]`
 **Goal:** The signing moment reads like a banking "card limit" form, not an EIP-712 signature.

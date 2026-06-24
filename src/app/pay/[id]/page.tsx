@@ -1249,6 +1249,47 @@ function LoginForm({ paymentLink, onLogin, magic, returnTo }: { paymentLink: Pay
   );
 }
 
+// Map a chain id to a display name, with a safe fallback for unknown chains.
+function chainNameForId(chainId: number): string {
+  try {
+    return getPaymentChainById(chainId).name;
+  } catch {
+    return `Chain ${chainId}`;
+  }
+}
+
+// Derive the planned cross-chain route from a built Particle transaction (pre-signature) using the
+// real tokenChanges.fromChains -> toChains. Returns null for same-chain payments (no leg to show).
+function getPreviewRoute(
+  transaction: any,
+  settlementChainId: number
+): { fromNames: string[]; toName: string } | null {
+  const fromChains = transaction?.tokenChanges?.fromChains;
+  const toChains = transaction?.tokenChanges?.toChains;
+  const fromIds: number[] = Array.isArray(fromChains) ? fromChains : [];
+  const settleId: number = (Array.isArray(toChains) && typeof toChains[0] === "number" ? toChains[0] : settlementChainId);
+  const sources = Array.from(new Set(fromIds)).filter((c) => typeof c === "number" && c !== settleId);
+  if (sources.length === 0) return null;
+  return { fromNames: sources.map(chainNameForId), toName: chainNameForId(settleId) };
+}
+
+// Particle deducts the routing/gas fee in USDC (its primary token). Surface it honestly for the
+// preview; returns null if the quote is missing/unparseable. amountInUSD is scaled to 18 decimals.
+function getUsdcFeeLabel(transaction: any): string | null {
+  try {
+    const fees = transaction?.feeQuotes?.[0]?.fees;
+    const totalHex = fees?.totals?.feeTokenAmountInUSD;
+    const symbol = fees?.feeTokens?.[0]?.token?.symbol;
+    if (typeof totalHex !== "string" || !totalHex.startsWith("0x")) return null;
+    const usd = Number(BigInt(totalHex) / 10n ** 12n) / 1e6;
+    if (!Number.isFinite(usd) || usd <= 0) return null;
+    const sym = typeof symbol === "string" ? symbol : "USDC";
+    return `~$${usd < 0.01 ? usd.toFixed(4) : usd.toFixed(2)} ${sym}`;
+  } catch {
+    return null;
+  }
+}
+
 function PreviewStep({
   paymentLink,
   address,
@@ -1273,6 +1314,8 @@ function PreviewStep({
   const previewToken = resolvePaymentToken(paymentLink.token, paymentLink.destination_chain_id);
   const previewTokenAddress =
     (paymentLink.destination_token_address as Address | null) ?? previewToken.address;
+  const previewRoute = transaction ? getPreviewRoute(transaction, settlementChain.chainId) : null;
+  const feeLabel = transaction ? getUsdcFeeLabel(transaction) : null;
   return (
     <div className="space-y-4">
       {/* Wallet info */}
@@ -1324,6 +1367,17 @@ function PreviewStep({
       {transaction ? (
         <div className="rounded-2xl border border-gold/30 bg-gold-soft/40 p-4">
           <p className="op-eyebrow text-gold">Settlement preview</p>
+          {previewRoute ? (
+            <div className="mt-3">
+              <CrossChainRoute
+                status="preview"
+                fromNames={previewRoute.fromNames}
+                toName={previewRoute.toName}
+                amountLabel={getPaymentAmountLabel(paymentLink)}
+                feeLabel={feeLabel}
+              />
+            </div>
+          ) : null}
           <ul className="mt-2 space-y-1.5 text-sm text-ink2">
             <li className="flex gap-2">
               <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
