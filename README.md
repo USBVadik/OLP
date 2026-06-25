@@ -4,6 +4,25 @@
 
 Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-hackathon) (Encode Club + 7702 Collective).
 
+## Evaluate in 2 minutes (for judges)
+
+**Live app:** https://onelink-pay.vercel.app
+
+**No login or wallet needed — verify the core claims right now:**
+
+1. **Watch the 90-second replay** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): both wow moments — cross-chain checkout and the agent blocked on-chain — with the same proof links.
+2. **Verify the cross-chain payment yourself (~60s)** → open the live receipt [`/receipt/40027dcf…`](https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
+3. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
+
+**Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
+
+- **Agent on a leash** → `/agent`: arm a budget → **Send the agent** → it buys within the caps and is **blocked on-chain** on the over-cap call (no funds moved, zero gas) → revoke.
+- **Cross-chain checkout** → `/pay`: Magic login → a merchant is paid on Arbitrum with USDC sourced from Base (no manual bridge) → public proof receipt.
+
+**Prize fit:** Particle Universal Accounts + EIP-7702 (cross-chain, chain-abstracted UX) · Magic (walletless Google/email login) · Arbitrum (USDC settlement + on-chain mandate enforcement).
+
+Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runbook.md`](docs/demo-runbook.md).
+
 ## What's live
 
 - **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` at zero gas. 22 Hardhat tests pass.

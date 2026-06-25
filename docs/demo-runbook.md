@@ -4,6 +4,27 @@ Last updated: 2026-06-21
 
 The definitive "what to show and say" for judges. Reflects the current build (live on Base mainnet).
 
+## Pitch card (rehearse this — 60–90s)
+
+**Hook (10s):** "You can't hand an AI your wallet. OneLink Pay gives it a *card* instead — a spending limit enforced on-chain, not on trust."
+
+**90-second beats:**
+1. Magic login (no seed phrase) → Particle Universal Account in EIP-7702 mode.
+2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable.
+3. **Send the agent** → it buys within budget (`402 → pay → 200`); the Budget HUD drains.
+4. It tries an over-cap buy → **BLOCKED on-chain**: "no funds moved, zero gas."
+5. Cross-chain: the merchant is paid on Arbitrum with USDC sourced from Base — no manual bridge.
+6. Open the public proof receipt → anyone verifies on a block explorer. **Revoke** → agent disarmed.
+
+**Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **no gas sponsorship** (a first-time 7702 delegation needs a little native gas).
+
+**Skeptic Q&A (rehearse):**
+- *"Is this really x402?"* → "The pattern — 402 → pay → retry-with-proof — settled by our on-chain mandate, not the Coinbase facilitator. Enforcement is real; wire-compat isn't claimed."
+- *"Is the agent autonomous?"* → "Unattended, one click — but deterministic, not an LLM. We don't claim AI reasoning; the on-chain limit is fully real."
+- *"What does 'zero gas' mean?"* → "Over-cap charges revert in simulation, before broadcast — no funds move and no gas is spent on the blocked attempt."
+- *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. A first-time payer needs a little native gas per chain for the one-time delegation."
+- *"Didn't you reinvent spend limits?"* → "The primitive isn't new — here's the prior-art table. Our wedge is the packaging: an on-chain revocable mandate bound to x402, via a UA/7702 account, with a public receipt."
+
 ## One-liner
 
 OneLink Pay is the consent + proof layer for Universal Accounts: see exactly what you authorize, have it enforced on-chain by EIP-7702, and get a verifiable receipt. The safety rails the agentic-payments era needs.
