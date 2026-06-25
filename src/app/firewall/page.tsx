@@ -424,7 +424,7 @@ function ArmedPanel({
 
       {/* Right: the agent — autonomous actions + on-chain verdicts */}
       <div className="space-y-3">
-        <p className="op-eyebrow">Autonomous AI agent</p>
+        <p className="op-eyebrow">Autonomous agent</p>
         <AgentTerminal entries={agentLog} />
         <div className="space-y-2">
           {scenarios.map((s) => (

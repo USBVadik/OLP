@@ -386,9 +386,9 @@ function getCreateTransactionError(error: any) {
   }
   if (IS_7702 && isParticleMaintenanceError(error)) {
     return [
-      "EIP-7702 transfer mode is selected, but Particle returned a maintenance error (-32801).",
+      "The network returned a temporary maintenance error while building this transaction (Particle -32801).",
       `Exact Particle error: ${message}`,
-      "This usually means the Universal Accounts V2 migration window is still gating this operation. Use NEXT_PUBLIC_PAYMENT_MODE=transfer_fallback as the safe demo path until Particle confirms V2 is live.",
+      "This is a transient provider issue, not a problem with your payment — please try again in a moment.",
     ].join(" ");
   }
   return `Transaction creation failed: ${message}`;
