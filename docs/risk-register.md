@@ -103,13 +103,14 @@
   2. Tiny amounts on cheap chains (0.10 USDC on Arbitrum).
   3. Dual-chain deployment (Base + Arbitrum) — fall through to whichever is healthy.
   4. Demo runbook rehearsal at least 3 times before submission.
-- **mitigation_status:** deferred — **the hackathon builds DURING the event and the submission /
-  video-upload portal is not open yet (pre-kickoff, 2026-06-19).** Recording (mitigation 1) +
-  rehearsal (mitigation 4) happen in the in-event build window — they are NOT a pre-event action
-  item, so do not surface them as "do now". The code-side mitigations are already in place: tiny
-  amounts (2) and dual-chain Base+Arbitrum (3) shipped + live.
+- **mitigation_status:** in_progress — **event is underway (kickoff 2026-06-22 done; ~2026-06-25 now).**
+  Recording (mitigation 1) + rehearsal (mitigation 4) are now the ACTIVE priority (no longer
+  deferred): the demo wallet is funded (payer ~2 USDC Arbitrum + 0.65 Base), the Pitch card is ready
+  (`docs/demo-runbook.md`), and one live cross-chain run is already verifiable (`/receipt/40027dcf…`).
+  Code-side mitigations shipped + live: tiny amounts (2), dual-chain Base+Arbitrum (3).
+  TODO (user): record the labeled 90-sec backup + 10-sec Magic clip; confirm the submission deadline.
 - **owner:** builder
-- **review:** once the event opens submission (then weekly → daily during submission week)
+- **review:** record the backup now; then daily until submission
 
 ### R5 — Building to the wrong rubric (40/30/20/10 vs 45/25/20/10)
 
@@ -119,9 +120,12 @@
   1. Confirm the exact rubric at Jun 22 kickoff.
   2. Keep UX as the dominant axis priority (safe under both versions).
   3. Update `docs/master-tz.md` §1 if a different rubric is announced.
-- **mitigation_status:** in_progress (waiting on Jun 22)
+- **mitigation_status:** in_progress — kickoff (2026-06-22) has happened; confirm the exact rubric +
+  submission deadline from the kickoff recording / event Discord and update `docs/master-tz.md` §1 if
+  it differs from the assumed UX-dominant split. (Web confirms the pool is ~$15.5K across the 7702
+  Collective: Particle + Arbitrum + Magic + ZeroDev + Openfort, 100% online.)
 - **owner:** builder
-- **review:** Jun 22 kickoff
+- **review:** confirm rubric + deadline from event channels (now)
 
 ### R6 — Scope creep into too many bonuses (ZeroDev + Openfort + x402 + Circle simultaneously)
 
