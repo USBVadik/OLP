@@ -217,7 +217,7 @@ deployed SpendPolicy; would break C5/C6/C16/C17/C21).
 
 ### P2 — only if P0/P1 are done
 
-- [ ] "No USDC yet?" Particle buy/convert probe (`createBuyTransaction`) — empty-state upgrade.
+- [~] "No USDC yet?" Particle buy/convert probe (`createBuyTransaction`) — **shipped as a cold-start nudge on `/agent`**: empty account → receive guidance; holds other tokens → a LIVE *build-only* convert estimate (quote only — no sign, no send, no funds move), capability-gated + graceful, gated on low USDC so it never shows on the funded demo wallet. Live convert *execution* deferred (beta write path; revisit post-Particle V2 GA).
 - [ ] Circle Gateway **sidecar** — only if a concrete bounty requires it (else narrative only; respects R6).
 - [ ] Stricter x402 compatibility (official header/negotiation semantics) — only if cheap + honest.
 - [ ] ZeroDev/Openfort — prior-art slide only; never in the architecture (hard constraint).
