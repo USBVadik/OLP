@@ -24,6 +24,7 @@ import {
 } from "@/lib/agent/log-formatter";
 import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock, Term, AppNav } from "@/components/ui";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
+import { FundUsdcNotice } from "@/components/fund-usdc-notice";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
 
 // Demo on Arbitrum (where SpendPolicy + USDC + relayer gas live).
@@ -483,6 +484,12 @@ export default function AgentPage() {
                 loading={balanceLoading}
                 error={balanceError}
                 onRetry={reloadBalance}
+              />
+              <FundUsdcNotice
+                summary={balanceSummary}
+                ownerAddress={address}
+                targetChainId={CHAIN.chainId}
+                targetUsdcAddress={USDC}
               />
               {chosen ? <MandateCard mandate={chosen} /> : null}
               <button onClick={arm} disabled={!chosen || !!busy} className="op-btn-primary w-full">
