@@ -333,9 +333,16 @@
   3. Back the rolling-window limiter with a shared store (e.g. Upstash Redis) so the cap holds
      across serverless instances (the in-memory cap is per-instance).
   4. Tune `RELAYER_MAX_CHARGES_PER_WINDOW` / `RELAYER_CHARGE_WINDOW_MS` for expected load.
-- **mitigation_status:** accepted for the demo (code guards in place + build-verified); the ops
-  checklist above is required before any non-demo public deploy. NOTE: relayer key generation /
-  rotation is a human ops step — not performed autonomously.
+- **2026-06-21 — distinct relayer key DEPLOYED + live-verified.** A dedicated `RELAYER_PRIVATE_KEY`
+  is now set on local + Vercel prod: relayer `0x0AC0…9f41`, funded on Arbitrum, distinct from the
+  proof-owner `0x8C54…Fb7`. Confirmed live — a prod `/agent` run drove the relayer's nonce 0→2 (two
+  in-cap charges) with gas spent from it, proving prod settles charges via the dedicated key.
+  Checklist steps 1–2 are done; only step 3 (shared/Redis limiter for multi-instance prod) remains,
+  and is optional until a real multi-instance public deploy.
+- **mitigation_status:** accepted for the demo (code guards in place + build-verified; distinct
+  relayer key now deployed + live-verified). The shared limiter (step 3) remains only for a non-demo
+  multi-instance public deploy. NOTE: relayer key generation / rotation is a human ops step — not
+  performed autonomously.
 - **owner:** builder
 - **review:** before any public (non-demo) deploy
 
