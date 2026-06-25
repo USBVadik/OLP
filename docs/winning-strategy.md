@@ -49,6 +49,10 @@ agent or merchant *a limited, revocable on-chain permission card, not their wall
 - **Standards-aligned, not bespoke:** speak the **ERC-7715/7710** permission vocabulary and the
   **Base Spend Permissions** mental model ("ask once to spend up to X, to one merchant, until an
   expiry") so a fintech-literate judge maps it instantly to "a card with a limit."
+- **The guardrail sits above the rail.** Enforcement is independent of *how* funds settle — on-chain
+  via Particle UA today, so other rails (more chains, or a TradFi/PSP connector) could front the
+  **same** mandate as future adapters. (Honest boundary: on a fiat rail the limit is server-enforced
+  unless backed by on-chain pre-auth — we don't claim crypto-grade enforcement off-chain.)
 
 ---
 
@@ -217,6 +221,7 @@ deployed SpendPolicy; would break C5/C6/C16/C17/C21).
 - [ ] Circle Gateway **sidecar** — only if a concrete bounty requires it (else narrative only; respects R6).
 - [ ] Stricter x402 compatibility (official header/negotiation semantics) — only if cheap + honest.
 - [ ] ZeroDev/Openfort — prior-art slide only; never in the architecture (hard constraint).
+- [ ] Rail-agnostic settlement connectors (TradFi/PSP, fiat on/off-ramp) — **narrative + interface direction only**; on-chain UA stays the sole implemented rail. Off-chain rails are server-enforced unless backed by on-chain pre-auth — never claim crypto-grade enforcement on a fiat leg. (See `ARCHITECTURE.md` → "Settlement routes".)
 
 ---
 

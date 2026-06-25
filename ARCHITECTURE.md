@@ -102,6 +102,26 @@ Customer opens /pay/[id] → Magic login (email / Google) → Particle UA reads 
   distinguishes trustless settlement from the attested proof.
 ```
 
+## Settlement routes (rail-agnostic by design)
+
+The Permission Firewall enforces the mandate **above** the settlement rail — the limit logic in
+`SpendPolicy` / the charge flow does not care *how* the money ultimately moves. The active rail is
+selected by `PaymentMode` in `src/lib/config/payment.ts` (today: `universal_7702_transfer` —
+cross-chain settlement via Particle UA; plus `universal_invoice` and a `transfer_fallback` path).
+
+That selector is the natural extension point. New rails — more chains, a different on-chain
+settlement path, or a **TradFi / PSP connector** (cards, bank rails, fiat on/off-ramp) — would plug
+in as additional routes under the *same* mandate, without touching the enforcement contract.
+
+**Honesty boundary (important).** Our differentiator is that enforcement lives **on-chain**
+("policy you can audit, not policy you have to trust"). That guarantee holds for on-chain rails. A
+TradFi/PSP rail settles off-chain, so for that rail the limit would be **server-enforced** (back to
+"by trust") unless it is backed by an on-chain pre-authorization / escrow. We do **not** claim
+crypto-grade enforcement on a fiat leg.
+
+**Status:** only the on-chain Universal Account route is implemented and verified today (C21).
+TradFi/PSP connectors are a documented design direction — **not built**.
+
 ## File structure (representative)
 
 ```
