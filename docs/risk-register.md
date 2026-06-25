@@ -349,12 +349,15 @@
   1. All three debug pages (`cross-chain-proof`, `particle-probe`, `sweep-legacy-ua`) already gate
      every action behind `NEXT_PUBLIC_ENABLE_DEBUG_PROBES === "true"` and render a harmless
      "disabled" stub otherwise. ✅ verified
-  2. `.env.example` defaults the flag to `false`. ⚠️ `.env.local` currently has it `true` (for the
-     local cross-chain investigation) — a production build MUST be built with the flag off/unset
-     (build-time `NEXT_PUBLIC_` var, inlined at build).
-- **mitigation_status:** in_progress (code-gated; deploy-config residual — see checkpoint plan)
+  2. `.env.example` defaults the flag to `false`. `.env.local` keeps it `true` (for the local
+     cross-chain investigation) — but it is gitignored and never reaches Vercel, and `NEXT_PUBLIC_`
+     vars are inlined at build, so prod reflects Vercel's project env (flag unset → disabled).
+- **mitigation_status:** **closed 2026-06-21** — code-gated AND **prod verified clean**: all three
+  debug routes on https://onelink-pay.vercel.app serve the harmless "disabled" stub (curl-checked,
+  3/3 — `to enable this page` / `local-only page` / `to use this route`). Standing rule: any future
+  deploy MUST keep `NEXT_PUBLIC_ENABLE_DEBUG_PROBES` off/unset.
 - **owner:** builder
-- **review:** before any public deploy
+- **review:** re-verify (curl the 3 stubs) after any change to Vercel build env
 
 ## Risks closed (kept for trace)
 
@@ -366,6 +369,7 @@
 | R8 | Receipt page looks centralized | 2026-06-21 | "How is this verified?" disclosure on `/receipt/[id]` + `/success/[id]`: trustless settlement vs attested InvoicePaid proof ("not an oracle"), concrete matched-leg detail, open-source verifier referenced. Build-verified (`/receipt/[id]` completed-branch live visual pending a completed invoice). |
 | R15 | Proof payer was client-supplied (mark-paid) | 2026-06-21 | Record the on-chain transfer sender (`matchingTransfer.from`) as payer instead of the client value; build + tests green; operator-confirmed live (payer_address == on-chain sender). |
 | R17 | Dashboard chain mismatch (labels/explorer links hardcoded to Base) | 2026-06-21 | Resolve each link/payment chain by id for labels + payment-tx links; proof-tx uses the proof chain; header chip relabeled "proof anchor"; operator-confirmed live (links resolve to correct chains). |
+| R18 | Debug routes ship live if the prod build has the probe flag on | 2026-06-21 | Code-gated behind `NEXT_PUBLIC_ENABLE_DEBUG_PROBES`; prod curl-verified all three debug routes serve the disabled stub (3/3), so Vercel's build flag is off; `.env.local`'s `true` is local-only + gitignored. |
 
 ## Pre-mortem schedule
 
