@@ -260,10 +260,15 @@
   2. Keep the pre-recorded backup (R4) as the demo fallback regardless of SDK version.
   3. The version is pinned exact (`-E`) in `package.json`, so prod cannot drift to a newer beta
      unreviewed.
-- **mitigation_status:** open (v2 deployed + build/smoke verified; live 7702 re-verification on
-  prod pending)
+- **mitigation_status:** **closed 2026-06-21** — live 7702 + cross-chain **re-verified on the current
+  prod deploy** (v2-beta.3). A 2 USDC `/pay` payment settled to the merchant on Arbitrum, sourced
+  1.74 from Arbitrum + ~0.26 from Base (cross-chain, no manual bridge), fee paid in USDC; InvoicePaid
+  anchored on Base. RPC-verified independently: Arbitrum settle `0xca63ccc6…f468ce06` (status 1, USDC
+  Transfer 2.0 → merchant), Base proof `0x3a5959e7…09af7a8e` (status 1), UA `0x0655137fc9c8c1`; payer
+  Arbitrum 1.74→0, Base 1.07→0.65, merchant +2.0. Both chains were `already delegated` (0 new 7702
+  auths), so C7 (delegation) + C8 (settle+proof) + C21 (cross-chain) all re-confirmed on the current SDK.
 - **owner:** builder
-- **review:** next live `/pay` 7702 completion
+- **review:** n/a (re-verified live)
 
 ### R20 — Autonomous agent run consumes more demo USDC/gas + adds latency
 
