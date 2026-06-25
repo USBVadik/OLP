@@ -246,6 +246,13 @@ beta latency; present it as an expected variable.
 
 ## 6. Sponsor-prize mapping
 
+**Confirmed from the event (2026-06-25) — entered in UA Track + Arbitrum + Magic:**
+- **Universal Accounts Track (main):** 1st **$2,500** · 2nd $2,000 · 3rd $1,500. Criteria: **UX 40 / prominent UA+EIP-7702 30 / adoption 20 / polish 10** (matches our assumed split). Requirements — UA SDK in **7702 mode**, **≥1 cross-chain value op via UA**, functional demo — **all met** (C21). Winners may be considered for Particle incubation.
+- **Arbitrum "Road to Open House London" $2,000** (independent): **UX 30 / creativity 30 / adoption 20 / execution 20**; must run **primarily on Arbitrum** + chain-abstracted UX. Frame Arbitrum as the home/settlement chain; lean into creativity ("a card for your AI"). Strong subs → Founder House London (Jul 10–12, application-based).
+- **Magic Labs bonus $500** (independent): best/most creative embedded-wallet onboarding UX (social login, accessibility, consumer-ready).
+- **NOT us:** General Track + its ZeroDev ($500, needs SRA) / Openfort ($100, needs Openfort backend wallets + x402) subtracks — we're UA Track and don't use ZeroDev/Openfort (R6 holds).
+- **Realistic max:** $2,500 + $2,000 + $500 = **$5,000**. **Timeline:** Jun 29 = project-outline milestone only (no build); judging = Week 5 (~late July) — runway is generous, so **hold scope, don't over-build**.
+
 | Track | Angle | Minimal qualifying move | Verdict |
 |---|---|---|---|
 | **Particle UA** | Primary. UA + 7702 + chain-agnostic UX + cross-chain value (C21) | Surface Universal Gas + tx preview + route (P0.3) | **All-in** |

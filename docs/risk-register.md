@@ -120,12 +120,15 @@
   1. Confirm the exact rubric at Jun 22 kickoff.
   2. Keep UX as the dominant axis priority (safe under both versions).
   3. Update `docs/master-tz.md` §1 if a different rubric is announced.
-- **mitigation_status:** in_progress — kickoff (2026-06-22) has happened; confirm the exact rubric +
-  submission deadline from the kickoff recording / event Discord and update `docs/master-tz.md` §1 if
-  it differs from the assumed UX-dominant split. (Web confirms the pool is ~$15.5K across the 7702
-  Collective: Particle + Arbitrum + Magic + ZeroDev + Openfort, 100% online.)
+- **mitigation_status:** **closed 2026-06-25** — rubric CONFIRMED from the event and it matches our
+  build exactly. **UA Track (main):** UX 40 / prominent UA+EIP-7702 30 / adoption 20 / polish 10 —
+  prizes 1st $2,500, 2nd $2,000, 3rd $1,500; requirements (UA SDK in 7702 mode + ≥1 cross-chain value
+  op via UA + functional demo) **all met** (C21). **Arbitrum bounty $2,000:** UX 30 / creativity 30 /
+  adoption 20 / execution 20, must run primarily on Arbitrum. **Magic bonus $500:** best embedded-wallet
+  onboarding UX. Timeline is generous: Jun 29 = project-outline milestone only (no build); judging is
+  Week 5 (~late July). No master-tz change needed (the assumed UX-dominant split was correct).
 - **owner:** builder
-- **review:** confirm rubric + deadline from event channels (now)
+- **review:** n/a (confirmed)
 
 ### R6 — Scope creep into too many bonuses (ZeroDev + Openfort + x402 + Circle simultaneously)
 
