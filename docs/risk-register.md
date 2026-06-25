@@ -103,9 +103,13 @@
   2. Tiny amounts on cheap chains (0.10 USDC on Arbitrum).
   3. Dual-chain deployment (Base + Arbitrum) — fall through to whichever is healthy.
   4. Demo runbook rehearsal at least 3 times before submission.
-- **mitigation_status:** open (recordings to be made in Block E of master TZ)
+- **mitigation_status:** deferred — **the hackathon builds DURING the event and the submission /
+  video-upload portal is not open yet (pre-kickoff, 2026-06-19).** Recording (mitigation 1) +
+  rehearsal (mitigation 4) happen in the in-event build window — they are NOT a pre-event action
+  item, so do not surface them as "do now". The code-side mitigations are already in place: tiny
+  amounts (2) and dual-chain Base+Arbitrum (3) shipped + live.
 - **owner:** builder
-- **review:** weekly until Block E, then daily
+- **review:** once the event opens submission (then weekly → daily during submission week)
 
 ### R5 — Building to the wrong rubric (40/30/20/10 vs 45/25/20/10)
 
