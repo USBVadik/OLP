@@ -102,6 +102,7 @@ export function ScrollNarrative() {
     };
     const glowGold = makeGlow(GOLD);
     const glowIris = makeGlow(IRIS);
+    const glowRed = makeGlow(RED);
     let amb: {
       x: number;
       y: number;
@@ -118,13 +119,16 @@ export function ScrollNarrative() {
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Cap device-pixel-ratio: on Retina (dpr 2) a full-screen canvas re-uploads a ~4x
+      // texture to the GPU every frame, which is a dominant scroll-time cost. 1.25 keeps
+      // the soft glowy scene looking fine while cutting raster + upload cost further.
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
       w = rect.width;
       h = rect.height;
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      amb = Array.from({ length: 28 }, () => ({
+      amb = Array.from({ length: 18 }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
         bx: (Math.random() - 0.5) * 0.16,
@@ -152,17 +156,18 @@ export function ScrollNarrative() {
       lastT = now;
       const pTarget = progress();
       // Frame-rate-independent exponential smoothing (behaves the same at 60 and 120 Hz).
-      // Lower rate = smoother/more glide; higher = snappier.
+      // Lower rate = more glide (smoother, but lags scroll a touch more); higher = snappier.
+      // Tuned 5 -> 3 for a more cinematic glide that hides chunky wheel/trackpad steps.
       if (pSmooth < 0) pSmooth = pTarget;
-      else pSmooth += (pTarget - pSmooth) * (1 - Math.exp(-dt * 5));
+      else pSmooth += (pTarget - pSmooth) * (1 - Math.exp(-dt * 3));
       const p = pSmooth;
       const time = (now - start) / 1000;
       ctx.clearRect(0, 0, w, h);
 
       // ---- Geometry + acts (subtle camera drift as you scroll) ----
       const cx = w / 2;
-      const cy = h * 0.58 - p * 22;
-      const R = Math.min(w, h) * 0.26;
+      const cy = h * 0.62 - p * 22;
+      const R = Math.min(w, h) * 0.24;
 
       const a1 = smoothstep(0.02, 0.24, p); // ring draws + agent appears
       const a2 = smoothstep(0.26, 0.54, p); // spend
@@ -177,6 +182,7 @@ export function ScrollNarrative() {
       // Shockwave that expands and fades AFTER impact, so it stays visible at normal scroll speed.
       const shockT = clamp((u3 - 0.5) / 0.36, 0, 1);
       const shock = u3 > 0.5 ? 1 - shockT : 0; // 1 at impact → 0 as the wave dissipates
+      const blockedHold = smoothstep(0.5, 0.58, u3) * (1 - a4); // hold the red "blocked" state through act 3 so a paused frame reads clearly
       const impactX = cx + Math.cos(lungeAng) * R;
       const impactY = cy + Math.sin(lungeAng) * R;
       const tremble = strike + shock > 0.01 ? Math.sin(time * 46) * 3 * (strike + shock * 0.6) : 0;
@@ -241,29 +247,58 @@ export function ScrollNarrative() {
         ctx.restore();
       }
 
+      // ---- Faint full track ring (always present → structure from the very first frame) ----
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(${GOLD},0.13)`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
       // ---- Mandate ring (draws in act 1; trembles + flushes red through the strike) ----
-      const ringRed = clamp(strike + shock * 0.7, 0, 1);
+      const ringRed = clamp(strike + shock * 0.7 + blockedHold * 0.55, 0, 1);
+      const ringRGB = ringRed > 0.05 ? RED : GOLD;
+      const ringStart = -Math.PI / 2;
+      const ringEnd = -Math.PI / 2 + a1 * Math.PI * 2;
+      // Soft halo via a wide, low-alpha additive stroke instead of a per-frame shadowBlur pass.
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineWidth = 2 + ringRed * 1.5 + 10 + ringRed * 10;
+      ctx.strokeStyle = `rgba(${ringRGB},${0.12 + ringRed * 0.2})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R + tremble, ringStart, ringEnd);
+      ctx.stroke();
+      ctx.restore();
+      // Crisp ring on top.
       ctx.save();
       ctx.lineWidth = 2 + ringRed * 1.5;
-      ctx.shadowBlur = 16 + ringRed * 20;
-      ctx.strokeStyle = `rgba(${ringRed > 0.05 ? RED : GOLD},${0.5 + ringRed * 0.5})`;
-      ctx.shadowColor = `rgba(${ringRed > 0.05 ? RED : IRIS},${0.35 + ringRed * 0.45})`;
+      ctx.strokeStyle = `rgba(${ringRGB},${0.5 + ringRed * 0.5})`;
       ctx.beginPath();
-      ctx.arc(cx, cy, R + tremble, -Math.PI / 2, -Math.PI / 2 + a1 * Math.PI * 2);
+      ctx.arc(cx, cy, R + tremble, ringStart, ringEnd);
       ctx.stroke();
       ctx.restore();
 
       // ---- Remaining-budget arc (depletes during spend) ----
       const remaining = clamp(1 - a2 * 0.55 - a3 * 0.1, 0, 1);
       if (a1 > 0.4) {
+        const budgetEnd = -Math.PI / 2 + remaining * Math.PI * 2;
+        // halo underlay (additive) replaces shadowBlur
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        ctx.lineWidth = 11;
+        ctx.strokeStyle = `rgba(${IRIS},${0.14 * a1})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * 0.78, -Math.PI / 2, budgetEnd);
+        ctx.stroke();
+        ctx.restore();
         ctx.save();
         ctx.lineWidth = 5;
         ctx.lineCap = "round";
         ctx.strokeStyle = `rgba(${IRIS},${0.55 * a1})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(${IRIS},0.5)`;
         ctx.beginPath();
-        ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + remaining * Math.PI * 2);
+        ctx.arc(cx, cy, R * 0.78, -Math.PI / 2, budgetEnd);
         ctx.stroke();
         ctx.restore();
       }
@@ -277,13 +312,17 @@ export function ScrollNarrative() {
           if (flowing < 0.05) continue;
           const x = cx + (np.x - cx) * t;
           const y = cy + (np.y - cy) * t;
+          const pr = 2.2 + (1 - t) * 1.2;
           ctx.save();
           ctx.globalAlpha = flowing * (1 - t) * 1.2;
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = `rgba(${GOLD},0.9)`;
+          // soft bloom via the pre-rendered gold sprite instead of shadowBlur
+          ctx.globalCompositeOperation = "lighter";
+          const gs = pr * 7;
+          ctx.drawImage(glowGold, x - gs / 2, y - gs / 2, gs, gs);
+          ctx.globalCompositeOperation = "source-over";
           ctx.fillStyle = `rgba(${GOLD},0.95)`;
           ctx.beginPath();
-          ctx.arc(x, y, 2.2 + (1 - t) * 1.2, 0, Math.PI * 2);
+          ctx.arc(x, y, pr, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }
@@ -295,7 +334,7 @@ export function ScrollNarrative() {
       const agentDist = idleR + reach * (R * 1.04 - idleR);
       const ax = cx + Math.cos(lungeAng) * agentDist;
       const ay = cy + Math.sin(lungeAng) * agentDist + bob * (1 - a3);
-      const agentRed = clamp(strike + shock * 0.6, 0, 1);
+      const agentRed = clamp(strike + shock * 0.6 + blockedHold * 0.5, 0, 1);
       const agentColor = agentRed > 0.1 ? RED : IRIS;
 
       // Comet trail — faint at idle, stretches into a streak through the lunge.
@@ -363,14 +402,18 @@ export function ScrollNarrative() {
         ctx.restore();
       }
 
-      // Agent body.
+      // Agent body — soft bloom via a pre-rendered glow sprite (no per-frame shadowBlur).
+      const agentR = 6 + Math.max(0, reach) * 2;
+      const agentGlow = agentColor === RED ? glowRed : glowIris;
       ctx.save();
       ctx.globalAlpha = a1 * (1 - a4 * 0.15);
-      ctx.shadowBlur = 14 + strike * 16;
-      ctx.shadowColor = `rgba(${agentColor},0.85)`;
+      ctx.globalCompositeOperation = "lighter";
+      const ags = (agentR + 14 + strike * 16) * 2.4;
+      ctx.drawImage(agentGlow, ax - ags / 2, ay - ags / 2, ags, ags);
+      ctx.globalCompositeOperation = "source-over";
       ctx.fillStyle = `rgba(${agentColor},0.95)`;
       ctx.beginPath();
-      ctx.arc(ax, ay, 6 + Math.max(0, reach) * 2, 0, Math.PI * 2);
+      ctx.arc(ax, ay, agentR, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -391,13 +434,8 @@ export function ScrollNarrative() {
         ctx.restore();
       }
 
-      // Vignette: deepen the edges so the eye stays on the ring.
-      const vg = ctx.createRadialGradient(cx, cy, R * 0.45, cx, cy, Math.max(w, h) * 0.78);
-      vg.addColorStop(0, "rgba(0,0,0,0)");
-      vg.addColorStop(0.7, "rgba(10,8,6,0.18)");
-      vg.addColorStop(1, "rgba(8,7,5,0.62)");
-      ctx.fillStyle = vg;
-      ctx.fillRect(0, 0, w, h);
+      // (Edge vignette moved to a static CSS overlay — see JSX below — so we no longer repaint
+      // a full-screen radial gradient on the canvas every frame while scrolling.)
 
       // Drive the active beat for the text overlay.
       const act = p < 0.26 ? 0 : p < 0.55 ? 1 : p < 0.8 ? 2 : 3;
@@ -493,6 +531,18 @@ export function ScrollNarrative() {
 
         {/* The film */}
         <canvas ref={canvasRef} className="absolute inset-0 z-[5] h-full w-full" aria-hidden="true" />
+
+        {/* Static edge vignette — was repainted on the canvas every frame; moved to a CSS
+            overlay so scrubbing stays at full frame rate while scrolling. Sits above the
+            canvas (z-[5]) and below the text (z-10). */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[6]"
+          aria-hidden="true"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 60%, rgba(0,0,0,0) 30%, rgba(10,8,6,0.18) 62%, rgba(8,7,5,0.62) 100%)",
+          }}
+        />
 
         {/* Scroll progress dots */}
         <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-2">
