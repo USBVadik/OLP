@@ -322,8 +322,20 @@
   2. In-memory rolling-window budget caps gas-spending sends (`RELAYER_MAX_CHARGES_PER_WINDOW`,
      default 30 / 10 min); simulation-only "blocked" calls stay unthrottled. ✅ shipped (right-sized
      for the demo — production needs a shared limiter, e.g. Redis)
-- **mitigation_status:** in_progress (guards shipped + build-verified; for a public deploy also set
-  a distinct `RELAYER_PRIVATE_KEY` + a shared rate limiter)
+- **code status:** COMPLETE — both code mitigations are shipped + build-verified (the charge route
+  reads an optional dedicated `RELAYER_PRIVATE_KEY`, an in-memory global window caps relayer-gas
+  sends, and simulate-first means blocked calls cost zero gas). The remainder is OPS/INFRA, not code.
+- **go-live ops checklist (before any non-demo public deploy):**
+  1. Generate a fresh EOA used ONLY as the relayer; fund it with a little native gas on each
+     settlement chain (Base/Arbitrum). Keep its key separate from `RECEIPT_EMITTER_OWNER_PRIVATE_KEY`.
+  2. Set `RELAYER_PRIVATE_KEY` in the Vercel project env (Production) to that key, then redeploy —
+     the route auto-prefers it over the proof-owner key.
+  3. Back the rolling-window limiter with a shared store (e.g. Upstash Redis) so the cap holds
+     across serverless instances (the in-memory cap is per-instance).
+  4. Tune `RELAYER_MAX_CHARGES_PER_WINDOW` / `RELAYER_CHARGE_WINDOW_MS` for expected load.
+- **mitigation_status:** accepted for the demo (code guards in place + build-verified); the ops
+  checklist above is required before any non-demo public deploy. NOTE: relayer key generation /
+  rotation is a human ops step — not performed autonomously.
 - **owner:** builder
 - **review:** before any public (non-demo) deploy
 
