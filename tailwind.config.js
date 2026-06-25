@@ -11,7 +11,7 @@ module.exports = {
         ink: "#23201B",
         ink2: "#4A443C",
         muted: "#6E665C",
-        faint: "#9A9286",
+        faint: "#736B5E",
         line: "#ECE6DC",
         line2: "#E0D8CA",
         cream: "#FBF8F3",

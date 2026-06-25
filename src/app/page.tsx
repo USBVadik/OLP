@@ -49,6 +49,9 @@ export default function HomePage() {
             <Link href="/agent" className="op-btn-ghost px-3 py-2.5">
               Agent
             </Link>
+            <Link href="/wallet" className="op-btn-ghost px-3 py-2.5">
+              Wallet
+            </Link>
             <Link href="/demo-replay" className="op-btn-ghost px-3 py-2.5">
               Demo
             </Link>
@@ -98,10 +101,9 @@ export default function HomePage() {
               className="op-animate-rise mt-5 max-w-xl text-lg leading-relaxed text-ink2"
               style={{ animationDelay: "240ms" }}
             >
-              Sign one scoped mandate. Your AI agent (or a merchant) can charge USDC — but only
-              inside the per-charge, daily, and total caps you approved. Over-cap, off-merchant,
-              or post-revoke charges revert on-chain at zero gas. Every payment ships a public,
-              verifiable proof receipt.
+              Sign one scoped mandate. Your AI agent (or a merchant) can spend USDC only inside the
+              per-charge, daily, and total caps you set — over-cap charges revert on-chain at zero
+              gas, and every payment ships a verifiable proof receipt.
             </p>
 
             <p
@@ -132,6 +134,14 @@ export default function HomePage() {
               </Link>
             </div>
 
+            <p
+              className="op-animate-rise mt-3 max-w-xl text-xs leading-relaxed text-muted"
+              style={{ animationDelay: "360ms" }}
+            >
+              The live buttons run on our funded demo account. Exploring on your own?{" "}
+              <Link href="/demo-replay" className="op-link">Watch the 90-second replay</Link> — no
+              wallet needed.
+            </p>
             <p
               className="op-animate-rise mt-4 max-w-xl text-sm leading-relaxed text-muted"
               style={{ animationDelay: "400ms" }}
@@ -234,7 +244,7 @@ export default function HomePage() {
           </div>
           <ol className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {[
-              { t: "Sign in", d: "Email login with Magic — no seed phrase or extension." },
+              { t: "Sign in", d: "Email or Google login with Magic — no seed phrase or extension." },
               { t: "Universal Account", d: "Particle builds a human-readable preview of the transfer." },
               { t: "USDC settles", d: "Merchant receives USDC on Arbitrum or Base." },
               { t: "Server verifies", d: "Backend matches the Transfer to the invoice amount." },
@@ -385,8 +395,7 @@ const PRIOR_ART: { name: string; what: string; edge: string }[] = [
 function AgentEconomySection() {
   return (
     <section className="mt-24">
-      <span className="op-eyebrow">Built for the agent economy</span>
-      <h2 className="mt-1 font-display text-2xl font-semibold text-ink sm:text-3xl">
+      <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
         The spending limit x402 is missing
       </h2>
       <p className="mt-3 max-w-2xl text-ink2">
@@ -442,7 +451,7 @@ function SponsorStrip() {
   ];
   return (
     <section className="mt-12">
-      <span className="op-eyebrow">Built with</span>
+      <p className="text-sm font-semibold text-ink2">Built with</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {items.map((s) => (
           <div

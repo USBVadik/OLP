@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { formatUnits, type Address } from "viem";
 import { ARBITRUM_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
@@ -330,6 +331,11 @@ export default function FirewallPage() {
                   {address.slice(0, 10)}…{address.slice(-6)}
                 </p>
               </div>
+              <p className="rounded-2xl border border-line bg-paper2 p-3 text-xs leading-relaxed text-muted">
+                A live charge settles in USDC on Arbitrum from your account. Exploring without funds?{" "}
+                <Link href="/demo-replay" className="op-link">Watch the labeled replay</Link> — every
+                beat, with the same proof links.
+              </p>
               <PermissionFirewall
                 merchantAddress={DEMO_MERCHANT}
                 tokenAddress={USDC}

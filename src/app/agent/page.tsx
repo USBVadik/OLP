@@ -314,7 +314,7 @@ export default function AgentPage() {
           const paid = await fetch(path, { headers: { "X-PAYMENT": xPayment } });
           if (paid.ok) {
             const data = await paid.json();
-            append("AGENT", `200 OK — received ${resource.title}.`, "ok");
+            append("AGENT", `200 OK — received ${resource.title}.`, "ok", getExplorerTxUrl(CHAIN, charge.txHash));
             setBought((prev) => ({ ...prev, [resource.id]: data.data }));
             return "ok";
           }
