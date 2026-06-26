@@ -23,6 +23,15 @@ const BEATS = [
   { k: "Proof", h: "Proof recorded. Revoke anytime.", s: "Every payment ships a verifiable receipt. You hold the kill switch." },
 ];
 
+// Per-act cinematic backgrounds (Nano Banana Pro / Vertex AI). Atmosphere only — the ring,
+// agent and nodes are drawn by the canvas on top. Index matches BEATS / the active beat.
+const ACT_BG = [
+  "/fx/act1-consent.webp",
+  "/fx/act2-spend.webp",
+  "/fx/act3-blocked.webp",
+  "/fx/act4-proof.webp",
+];
+
 function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
 }
@@ -128,7 +137,7 @@ export function ScrollNarrative() {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      amb = Array.from({ length: 18 }, () => ({
+      amb = Array.from({ length: 10 }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
         bx: (Math.random() - 0.5) * 0.16,
@@ -500,12 +509,55 @@ export function ScrollNarrative() {
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
       </div>
       <div className="sticky top-0 flex h-screen flex-col items-center justify-start overflow-hidden">
-        {/* Cinematic cosmic backdrop — dark fill + AI nebula, full-bleed edge to edge. */}
+        {/* Cinematic cosmic backdrop — generated per-act art (Nano Banana Pro), crossfaded by
+            the active beat with a slow Ken Burns drift. Geometry (ring/agent/nodes) is drawn by
+            the canvas on top. */}
         <div className="absolute inset-0 bg-[#13110d]" aria-hidden="true">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/fx/nebula.webp" alt="" className="h-full w-full object-cover opacity-[0.55]" />
+          {ACT_BG.map((src, i) => {
+            // eslint-disable-next-line @next/next/no-img-element
+            return (
+              <img
+                key={src}
+                src={src}
+                alt=""
+                className={`act-bg act-bg-${i + 1} absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ease-out ${
+                  active === i ? "opacity-[0.62]" : "opacity-0"
+                }`}
+              />
+            );
+          })}
           <div className="absolute inset-0 bg-gradient-to-b from-[#13110d]/80 via-[#13110d]/10 to-[#13110d]/95" />
         </div>
+
+        <style jsx>{`
+          .act-bg {
+            animation: actKenBurns 28s ease-in-out infinite alternate;
+            will-change: transform, opacity;
+          }
+          .act-bg-2 {
+            animation-delay: -7s;
+          }
+          .act-bg-3 {
+            animation-delay: -14s;
+          }
+          .act-bg-4 {
+            animation-delay: -21s;
+          }
+          @keyframes actKenBurns {
+            from {
+              transform: scale(1.08) translate3d(-1.5%, 1%, 0);
+            }
+            to {
+              transform: scale(1.16) translate3d(1.5%, -1.5%, 0);
+            }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .act-bg {
+              animation: none;
+              transform: scale(1.08);
+            }
+          }
+        `}</style>
 
         {/* Beat text */}
         <div className="relative z-10 mx-auto max-w-2xl px-5 pt-[12vh] text-center">
