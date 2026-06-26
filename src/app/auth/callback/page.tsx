@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { consumeReturnPath } from "@/lib/magic/redirect";
+import { Wordmark } from "@/components/ui";
 
 /**
  * Module-level guard against React Strict Mode's double-mount in dev. The Magic SDK
@@ -103,15 +104,26 @@ function CallbackShell({
   title: string;
   children?: React.ReactNode;
 }) {
+  const loading = !children;
   return (
-    <main className="min-h-screen bg-canvas px-4 py-16">
-      <div className="mx-auto max-w-md">
-        <div className="op-card p-8">
-          <p className="op-eyebrow">Magic OAuth</p>
-          <h1 className="mt-2 text-xl font-semibold text-ink">{title}</h1>
+    <main className="op-shell flex min-h-screen items-center justify-center px-4 py-16">
+      <div className="w-full max-w-md">
+        <div className="op-card op-animate-rise p-8">
+          <Wordmark href="/" />
+          <div className="mt-6 flex items-center gap-2">
+            {loading ? (
+              <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold/50" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-gold" />
+              </span>
+            ) : null}
+            <p className="op-eyebrow">Magic · secure sign-in</p>
+          </div>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-ink">{title}</h1>
           {children ?? (
-            <p className="mt-3 text-sm text-ink2">
-              Completing the round-trip with Magic.
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              Completing the secure round-trip with Magic — you&rsquo;ll be returned to right where
+              you left off.
             </p>
           )}
         </div>

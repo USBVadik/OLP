@@ -428,7 +428,7 @@ export default function AgentPage() {
               requests are refused before any funds move.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="op-chip" title="Universal Accounts in EIP-7702 mode — one balance across chains">
+              <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode — one balance across chains">
                 Particle · one balance, every chain
               </span>
               <span className="op-chip" title="Magic embedded wallet — email/Google login, your wallet is your email">

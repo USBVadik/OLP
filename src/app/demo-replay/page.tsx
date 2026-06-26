@@ -8,6 +8,7 @@ import {
   Chip,
   Field,
   TxReference,
+  AppNav,
   IconCheck,
   IconArrowUpRight,
   IconShield,
@@ -39,25 +40,37 @@ export default function DemoReplayPage() {
           </Link>
         </header>
 
+        <AppNav className="mb-6" />
+
         {/* Intro */}
         <section className="op-animate-rise">
-          <span className="op-eyebrow">Demo replay</span>
-          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink">
-            Trust before you pay. Proof after it settles.
+          <span className="op-eyebrow">Demo replay · no wallet needed</span>
+          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
+            Trust before you pay.{" "}
+            <span className="text-gold">Proof</span> after it settles.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink2">
-            This walkthrough replays a real, verified payment: the customer paid {amount} on{" "}
+            Watch a real, verified payment without spending a thing: the customer paid {amount} on{" "}
             {ACTIVE_CHAIN.name}, the backend verified the USDC transfer, and a ReceiptEmitter proof
-            was recorded before the invoice was marked paid. No new payment is executed and no gas is
-            spent.
+            was recorded on-chain before the invoice was marked paid.
           </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Chip tone="verify">
+              <IconCheck className="h-3.5 w-3.5" /> No wallet needed
+            </Chip>
+            <Chip>No gas spent</Chip>
+            <Chip>Everything verifiable on-chain</Chip>
+          </div>
         </section>
 
         {/* Three moments */}
-        <section className="mt-8 grid gap-3 sm:grid-cols-3">
-          <Moment icon={<IconShield className="h-4 w-4" />} step="Before" title="Trust Preview" />
-          <Moment icon={<IconReceipt className="h-4 w-4" />} step="After" title="Proof Receipt" />
-          <Moment icon={<IconLock className="h-4 w-4" />} step="Live" title="Permission Firewall" href="/firewall" />
+        <section className="mt-10">
+          <p className="op-eyebrow mb-3">The three moments that build trust</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Moment icon={<IconShield className="h-4 w-4" />} step="Before" title="Trust Preview" />
+            <Moment icon={<IconReceipt className="h-4 w-4" />} step="After" title="Proof Receipt" />
+            <Moment icon={<IconLock className="h-4 w-4" />} step="Live" title="Permission Firewall" href="/firewall" />
+          </div>
         </section>
 
         {/* Verified summary */}

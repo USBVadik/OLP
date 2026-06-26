@@ -60,6 +60,8 @@ function StatusChip({ status }: { status: Status }) {
 export default function TrustPage() {
   const receiptUrl =
     "https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3";
+  const counts = { real: 0, pattern: 0, future: 0 } as Record<Status, number>;
+  for (const r of ROWS) counts[r.status] += 1;
   return (
     <main className="op-shell px-5 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
@@ -85,8 +87,12 @@ export default function TrustPage() {
         </section>
 
         <section className="mt-8 op-card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line px-6 py-4">
-            <span className="op-eyebrow">Real · pattern · future</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip tone="verify"><IconCheck className="h-3 w-3" /> {counts.real} real · live</Chip>
+              <Chip tone="gold">{counts.pattern} pattern</Chip>
+              <Chip>{counts.future} future</Chip>
+            </div>
             <Chip tone="verify"><IconShield className="h-3.5 w-3.5" /> No overclaiming</Chip>
           </div>
           <ul className="divide-y divide-line">

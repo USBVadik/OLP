@@ -276,8 +276,14 @@ export default function FirewallPage() {
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <div className="mb-5">
-            <p className="op-eyebrow">Live enforcement demo</p>
-            <h1 className="mt-1 font-display text-2xl font-semibold text-ink">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-verify/50" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-verify" />
+              </span>
+              <p className="op-eyebrow">Live enforcement · on-chain</p>
+            </div>
+            <h1 className="mt-1.5 font-display text-2xl font-semibold text-ink">
               Consent your AI agent can&apos;t break
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">

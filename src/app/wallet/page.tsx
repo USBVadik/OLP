@@ -159,9 +159,12 @@ export default function WalletPage() {
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <div className="mb-5">
-            <p className="op-eyebrow">Universal Account</p>
-            <h1 className="mt-1 font-display text-2xl font-semibold text-ink">
-              One balance. Receive on any chain.
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="op-eyebrow">Universal Account</p>
+              <span className="op-chip-iris">Powered by Particle</span>
+            </div>
+            <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
+              One balance. <span className="text-iris">Receive on any chain.</span>
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Your account holds a single USDC balance across every supported chain — powered by

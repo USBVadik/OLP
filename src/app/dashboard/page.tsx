@@ -223,11 +223,27 @@ function DashboardContent() {
                 </button>
               </div>
             </div>
-            {createdUrl && (
-              <div className="mt-4 break-all rounded-xl border border-verify/20 bg-verify-soft p-3 text-sm text-ink2">
-                {createdUrl}
-              </div>
-            )}
+            {createdUrl &&
+              (createdUrl.startsWith("Error:") ? (
+                <div className="mt-4 rounded-xl border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+                  {createdUrl}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-xl border border-verify/20 bg-verify-soft p-4">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-verify">
+                    <IconCheck className="h-4 w-4" /> Payment link ready
+                  </p>
+                  <a
+                    href={createdUrl}
+                    className="mt-2 block break-all font-mono text-xs text-ink2 underline-offset-2 hover:text-ink hover:underline"
+                  >
+                    {createdUrl}
+                  </a>
+                  <p className="mt-1.5 text-xs text-muted">
+                    Share this link with your customer to collect payment.
+                  </p>
+                </div>
+              ))}
           </section>
         )}
 
@@ -254,7 +270,14 @@ function DashboardContent() {
           </div>
 
           {links.length === 0 ? (
-            <p className="mt-6 text-sm text-faint">No links found.</p>
+            <div className="mt-6 rounded-2xl border border-dashed border-line2 bg-paper2 p-8 text-center">
+              <p className="text-sm font-medium text-ink2">No payment links yet</p>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
+                {merchantId
+                  ? "This merchant address has no payment links. Create one above to start accepting payments."
+                  : "Enter a merchant address above to view its payment links, statuses, and on-chain proofs."}
+              </p>
+            </div>
           ) : (
             <ul className="mt-5 space-y-3">
               {links.map((l: any) => {
