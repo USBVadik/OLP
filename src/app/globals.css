@@ -18,6 +18,17 @@
     font-feature-settings: "ss01", "cv01", "cv11";
   }
 
+  /* Typographic line-breaking: balance short headings (even line lengths), prettify long
+     prose (fewer orphans). Progressive enhancement — ignored by browsers that lack it. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
   /* Tabular, even figures for amounts and tx data. */
   .tnum {
     font-variant-numeric: tabular-nums;
@@ -95,7 +106,7 @@
 
   /* Links */
   .op-link {
-    @apply font-medium text-gold underline-offset-2 hover:underline;
+    @apply rounded-sm font-medium text-gold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40;
   }
 
   /* Disclosure (native <details>) */

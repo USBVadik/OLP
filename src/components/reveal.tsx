@@ -19,15 +19,26 @@ export function Reveal({
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
+  // `armed` gates the hidden start state. It only turns on after mount decides this element is
+  // below the fold, so SSR / no-JS / crawlers render the content visible by default — a skipped
+  // or failed reveal can never ship a blank section.
+  const [armed, setArmed] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const el = ref.current;
+    if (!el) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       setShown(true);
       return;
     }
-    const el = ref.current;
-    if (!el) return;
+    // Already in view at mount → just show it (no hide, no flash, no entrance needed).
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+      setShown(true);
+      return;
+    }
+    setArmed(true);
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
@@ -42,12 +53,13 @@ export function Reveal({
   }, []);
 
   const Comp = Tag as any;
+  const hidden = armed && !shown;
   return (
     <Comp
       ref={ref}
       style={{ transitionDelay: shown ? `${delay}ms` : "0ms" }}
-      className={`transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.21,0.6,0.35,1)] will-change-[opacity,transform] ${
-        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      className={`transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.21,0.6,0.35,1)] will-change-[opacity,transform] motion-reduce:transition-none ${
+        hidden ? "opacity-0 translate-y-6" : "opacity-100 translate-y-0"
       } ${className}`}
     >
       {children}
