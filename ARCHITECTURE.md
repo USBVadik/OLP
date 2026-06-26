@@ -174,11 +174,11 @@ OneLink-Pay/
 - [x] EIP-7702 delegation of the Magic EOA — C7
 - [x] Checkout + `ReceiptEmitter` InvoicePaid proof; public shareable `/receipt/[id]` — C8, C9, C20
 - [x] **Cross-chain settlement via Particle UA** (Base → Arbitrum, no manual bridge); live in prod — C21
+- [x] Live 7702 + cross-chain payment re-verified on the current prod `/pay` beta SDK — R19 closed
 - [x] Prior-art positioning (landing + README) — C19
 
 ### In progress / known risk
 
-- [ ] Re-run one live 7702 + cross-chain payment through the prod `/pay` UI on the beta SDK (R19)
 - [ ] Pre-recorded backup video of every demo beat (R4)
 - [ ] Distinct `RELAYER_PRIVATE_KEY` + shared rate limiter before any non-demo public deploy (R16)
 
