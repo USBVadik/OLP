@@ -82,7 +82,7 @@ Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, s
 | On-chain spend mandate (per-charge/daily/total/expiry/merchant/revoke), over-cap reverts at zero gas | **Real, live + 22 contract tests** |
 | Walletless login (Magic email/Google) | **Real, live** |
 | x402 agent loop (402 → pay → 200; over-cap blocked) | **Real — x402 *pattern*, `onelink-mandate` settled (NOT Coinbase facilitator-compatible)** |
-| The "agent" | **Agent-*initiated* harness over the real on-chain firewall — autonomy is dramatized, enforcement is not** |
+| The "agent" | **Real unattended deterministic loop** — one click; it works through the x402 APIs within budget and is halted by the firewall on the over-cap call. NOT LLM-driven (no AI decision-making claimed); on-chain enforcement is real |
 | Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — a first-time 7702 delegation per chain needs a little native gas |
 | Gas sponsorship / paymaster | **Not claimed** — paymaster-compatible, deliberately deferred |
 | Circle Gateway / ZeroDev / Openfort | **Not integrated** — narrative / prior-art. Session keys (ZeroDev) are the production primitive we'd adopt to *arm* unattended automation |

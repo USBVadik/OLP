@@ -70,11 +70,12 @@ public-facing artifact contains them, they must be removed before use.
 - ❌ "OneLink Pay integrates Circle Gateway."
   Reason: not yet built. Add row only after a deposit + mint round-trip is observed.
 - ❌ "A fully autonomous LLM agent decides and pays on its own in our demo."
-  Reason: the `/firewall` demo uses an agent-styled harness (a button that emits agent-voice
-  log lines and calls the real charge route) — not an autonomous decision-making loop. The
-  on-chain enforcement is real (C16); the autonomy is dramatized. A genuinely autonomous agent
-  loop is the x402 stretch (E5). When framing to judges, say "agent-initiated" or "an agent
-  calls the same firewall", not "our autonomous agent thinks and pays".
+  Reason: the agent runs a real **unattended deterministic** loop (`/agent` one-click autonomous
+  run — it works through the x402 APIs in budget, no human per-step) that calls the same relayer +
+  SpendPolicy, and the on-chain enforcement is real (C16). What is NOT present is AI/LLM
+  *decision-making* — the loop is deterministic, not a planner that "thinks". A genuinely LLM-driven
+  agent loop is the x402 stretch (E5). When framing to judges, say "unattended deterministic agent"
+  or "an agent calls the same firewall", not "our autonomous agent thinks and pays".
 
 - ❌ "OneLink Pay is Coinbase x402 / facilitator compatible."
   Reason: our gateway uses the x402 HTTP *pattern* with a custom `onelink-mandate` settlement
