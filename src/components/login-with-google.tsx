@@ -73,7 +73,7 @@ export function LoginWithGoogleButton({ magic, returnTo, variant = "secondary", 
         {busy ? "Redirecting…" : "Continue with Google"}
       </button>
       {err ? (
-        <p className="mt-2 text-xs text-red-600" role="alert">
+        <p className="mt-2 text-xs text-danger" role="alert">
           {err}
         </p>
       ) : null}
@@ -126,7 +126,7 @@ export function SignOutButton({ magic, className = "" }: { magic: any | null; cl
       disabled={busy}
       aria-label="Sign out"
       className={[
-        "inline-flex items-center rounded-full border border-line bg-paper2 px-3 py-1.5 text-xs font-medium text-ink2 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center rounded-full border border-line bg-paper2 px-3 py-1.5 text-xs font-medium text-ink2 transition-colors hover:border-gold/40 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50",
         className,
       ].join(" ")}
     >

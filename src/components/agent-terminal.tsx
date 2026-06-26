@@ -61,7 +61,7 @@ export function AgentTerminal({ entries, autoScroll = true }: Props) {
         className="h-72 overflow-y-auto px-4 py-3 font-mono text-[12.5px] leading-relaxed"
       >
         {entries.length === 0 ? (
-          <p className="text-[#7A7165]">
+          <p className="text-[#8A8174]">
             Idle. Trigger the agent to watch it pay inside the mandate — and get blocked when it
             tries to break out.
           </p>
