@@ -8,7 +8,7 @@ import {
   formatUsdcAmount,
 } from "@/lib/mandates/format";
 import { type PaymentMandate } from "@/lib/mandates/types";
-import { IconCheck, IconShield } from "@/components/ui";
+import { IconCheck, IconShield, IconChevronDown } from "@/components/ui";
 
 type Props = {
   /** The mandate the user is about to sign. */
@@ -104,9 +104,12 @@ export function MandateCard({ mandate, initiallyExpanded = false }: Props) {
         type="button"
         onClick={() => setExpanded((p) => !p)}
         aria-expanded={expanded}
-        className="mt-3 text-xs text-muted hover:text-ink"
+        className="mt-3 inline-flex items-center gap-1 text-xs text-muted transition-colors hover:text-ink"
       >
-        {expanded ? "▾ Hide technical details" : "▸ Show technical details"}
+        <IconChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        />
+        {expanded ? "Hide technical details" : "Show technical details"}
       </button>
       {expanded ? (
         <dl className="mt-2 space-y-1 rounded-xl bg-paper p-3 font-mono text-[11px] text-ink2">
