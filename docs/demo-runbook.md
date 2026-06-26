@@ -16,7 +16,7 @@ The definitive "what to show and say" for judges. Reflects the current build (li
 5. Cross-chain: the merchant is paid on Arbitrum with USDC sourced from Base — no manual bridge.
 6. Open the public proof receipt → anyone verifies on a block explorer. **Revoke** → agent disarmed.
 
-**Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **no gas sponsorship** (a first-time 7702 delegation needs a little native gas).
+**Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC, no destination-chain gas) but **no gas sponsorship** is claimed (a first-time 7702 delegation needs a little native gas).
 
 **Skeptic Q&A (rehearse):**
 - *"Is this really x402?"* → "The pattern — 402 → pay → retry-with-proof — settled by our on-chain mandate, not the Coinbase facilitator. Enforcement is real; wire-compat isn't claimed."
@@ -98,8 +98,10 @@ prompt-injected agent physically cannot exceed what you signed."
 
 **Honesty lines (say them):** the agent is a real **unattended deterministic** loop — **not**
 LLM-driven, so no AI reasoning is claimed. The x402 flow is the *pattern* settled by our
-`onelink-mandate` scheme — **not** the Coinbase facilitator. **No gas sponsorship** is claimed; a
-first-time 7702 delegation needs a little native gas per chain (we pre-delegate before the demo).
+`onelink-mandate` scheme — **not** the Coinbase facilitator. **Gas abstraction** is real — the
+network fee is paid in USDC from the UA, no destination-chain gas to hold. **No gas *sponsorship***
+is claimed (the account is paymaster-compatible, but no paymaster covers the fee); a first-time
+7702 delegation needs a little native gas per chain (we pre-delegate before the demo).
 
 *(Alternative scripted version of the same beat lives at `/firewall` — preset scenarios instead of
 the one-click autonomous run.)*
@@ -144,7 +146,8 @@ Accounts:
 
 - **Live and proven:** EIP-7702 delegation; on-chain mandate enforcement (per-charge / daily /
   total / expiry / merchant / revoke); the **autonomous agent on a leash**; on-chain proof receipts;
-  and **cross-chain value movement via the Universal Account (C21)** — a merchant paid on Arbitrum
+  **gas abstraction** (the network fee is paid in USDC, no destination-chain gas to hold); and
+  **cross-chain value movement via the Universal Account (C21)** — a merchant paid on Arbitrum
   with USDC sourced from Base in one operation, no manual bridge (proven live + deployed).
 - **Honest framing:** the x402 flow is the *pattern* (`onelink-mandate` scheme, not the Coinbase
   facilitator); the agent is an *unattended deterministic* loop (not LLM-driven); prod runs a

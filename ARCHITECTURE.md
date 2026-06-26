@@ -183,10 +183,13 @@ OneLink-Pay/
 
 ### Out of scope (deliberately)
 
-- ZeroDev / Openfort session keys — we enforce a payment policy in our own auditable
-  `SpendPolicy` contract instead (see `docs/risk-register.md` R6).
+- ZeroDev / Openfort session keys — cited prior-art. Enforcement today is our own auditable
+  `SpendPolicy` contract (the differentiator). Session keys are the production primitive we'd
+  adopt to *arm* unattended / recurring pulls (see `docs/risk-register.md` R6).
 - Circle Gateway — not built; cross-chain is proven via Particle UA (no second rail as primary).
-- Gas sponsorship / paymaster — not claimed.
+- Gas *sponsorship* / paymaster — not claimed. (Gas *abstraction* — the network fee is paid in
+  USDC from the UA, no destination-chain gas to hold — IS live; sponsorship, where a paymaster
+  covers the fee, is the deliberately-deferred part. The account is paymaster-compatible.)
 - A fully autonomous LLM agent loop — the demo is agent-initiated over the real firewall.
 
 ## Key decisions

@@ -35,14 +35,19 @@ const ROWS: { claim: string; status: Status; note: string }[] = [
     note: "Runs unattended: one click and it works through the x402 APIs within its budget, halted by the firewall on the over-cap call. Deterministic — not LLM-driven, so we don't claim AI reasoning.",
   },
   {
-    claim: "Gas",
+    claim: "Gas abstraction — network fee paid in USDC, no destination-chain gas to hold",
+    status: "real",
+    note: "Particle deducts the routing/network fee in USDC from your Universal Account, so you never top up native gas on the destination chain. One exception: a first-time EIP-7702 delegation per chain needs a little native gas (we pre-delegate before the demo).",
+  },
+  {
+    claim: "Gas sponsorship / paymaster",
     status: "future",
-    note: "First-time EIP-7702 delegation needs a little native gas per chain. No gas sponsorship / paymaster is claimed.",
+    note: "Not claimed. The account is paymaster-compatible, but no paymaster covers fees in this build — a deliberate scope choice, not a missing capability.",
   },
   {
     claim: "Circle Gateway · ZeroDev · Openfort",
     status: "future",
-    note: "Not integrated. Mentioned only as narrative / prior-art — cross-chain is proven natively via Particle.",
+    note: "Not integrated — narrative / prior-art only; cross-chain is proven natively via Particle. For arming unattended automation, ZeroDev session keys are the production primitive we'd adopt; enforcement today is our own SpendPolicy contract.",
   },
 ];
 

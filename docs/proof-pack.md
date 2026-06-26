@@ -83,8 +83,9 @@ Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, s
 | Walletless login (Magic email/Google) | **Real, live** |
 | x402 agent loop (402 → pay → 200; over-cap blocked) | **Real — x402 *pattern*, `onelink-mandate` settled (NOT Coinbase facilitator-compatible)** |
 | The "agent" | **Agent-*initiated* harness over the real on-chain firewall — autonomy is dramatized, enforcement is not** |
-| Gas | First-time 7702 delegation needs a little native gas per chain; **no gas sponsorship claimed** |
-| Circle Gateway / ZeroDev / Openfort | **Not integrated** — narrative / prior-art only |
+| Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — a first-time 7702 delegation per chain needs a little native gas |
+| Gas sponsorship / paymaster | **Not claimed** — paymaster-compatible, deliberately deferred |
+| Circle Gateway / ZeroDev / Openfort | **Not integrated** — narrative / prior-art. Session keys (ZeroDev) are the production primitive we'd adopt to *arm* unattended automation |
 
 ---
 
