@@ -18,6 +18,7 @@ import { Magnetic } from "@/components/magnetic";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { Reveal } from "@/components/reveal";
 import { ScrollNarrative } from "@/components/scroll-narrative";
+import { CrossChainRoute } from "@/components/cross-chain-route";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
@@ -261,10 +262,21 @@ export default function HomePage() {
               </Reveal>
             ))}
           </ol>
-          <p className="mt-6 text-sm leading-relaxed text-muted">
-            Funds can be sourced from any chain where you hold USDC and settled where the merchant
-            wants — the Universal Account handles the routing, with no manual bridging.
-          </p>
+          <Reveal>
+            <div className="mt-7 grid items-center gap-5 rounded-2xl border border-line bg-paper2 p-5 lg:grid-cols-[1fr_1.05fr]">
+              <div>
+                <span className="op-chip-gold">
+                  <IconCheck className="h-3.5 w-3.5" /> Proven live · Base &rarr; Arbitrum
+                </span>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Funds are sourced from any chain where you hold USDC and settled where the merchant
+                  wants — the Universal Account routes it in one operation, with no manual bridge and
+                  the network fee paid in USDC. This is the exact cross-chain flow we proved on-chain.
+                </p>
+              </div>
+              <CrossChainRoute status="settled" fromNames={["Base"]} toName="Arbitrum" amountLabel="1.00 USDC" />
+            </div>
+          </Reveal>
         </section>
 
         {/* Honest scope footer */}

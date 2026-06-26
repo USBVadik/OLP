@@ -1,18 +1,33 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDemoReplaySuccess } from "@/lib/demo/replay";
-import { getActivePaymentChain, getConfiguredPaymentMode, getProofChain } from "@/lib/config/payment";
+import {
+  BASE_CHAIN,
+  getConfiguredPaymentMode,
+  getPaymentChainById,
+  getProofChain,
+  type ChainPaymentConfig,
+} from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
-import { Wordmark, VerifiedSeal, Field, TxReference, Chip, IconCheck, IconArrowUpRight } from "@/components/ui";
-import { VerificationMethod } from "@/components/proof-receipt";
+import { Wordmark, IconCheck, IconArrowUpRight, AppNav } from "@/components/ui";
+import { ProofReceiptCard, VerificationMethod } from "@/components/proof-receipt";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
-const ACTIVE_CHAIN = getActivePaymentChain();
-const PAYMENT_MODE = getConfiguredPaymentMode();
+function chainFor(chainId: number): ChainPaymentConfig {
+  try {
+    return getPaymentChainById(chainId);
+  } catch {
+    return BASE_CHAIN;
+  }
+}
 
-function formatAmount(amount: string, tokenSymbol: string, chainId: number) {
-  const token = resolvePaymentToken(tokenSymbol, chainId);
-  return `${formatAtomicTokenAmount(amount, token)} ${token.symbol}`;
+function amountLabelFor(amount: string, token: string, chainId: number) {
+  try {
+    const t = resolvePaymentToken(token, chainId);
+    return `${formatAtomicTokenAmount(amount, t)} ${t.symbol}`;
+  } catch {
+    return `${amount} ${token}`;
+  }
 }
 
 export default function SuccessPage({ params }: { params: { id: string } }) {
@@ -20,7 +35,9 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
   if (!replay) notFound();
 
   const { link, payment, paymentExplorer, proofExplorer } = replay;
-  const amount = formatAmount(link.amount, link.token, link.destination_chain_id);
+  const settlementChain = chainFor(link.destination_chain_id);
+  const proofChain = getProofChain();
+  const amount = amountLabelFor(link.amount, link.token, link.destination_chain_id);
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
@@ -32,42 +49,30 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
           </span>
         </header>
 
-        {/* Certificate */}
-        <article className="op-card op-animate-rise overflow-hidden">
-          {/* Gold accent rule */}
-          <div className="h-1 w-full bg-gradient-to-r from-gold-soft via-gold to-gold-soft" aria-hidden="true" />
+        <AppNav className="mb-5" />
 
-          <div className="px-6 pt-8 text-center sm:px-10">
-            <p className="op-eyebrow">Proof Receipt</p>
-            <div className="mt-5">
-              <VerifiedSeal animate />
-            </div>
-            <p className="mt-5 text-sm text-muted">You paid</p>
-            <p className="mt-1 font-display text-5xl font-semibold tracking-tight text-ink tnum">{amount}</p>
-            <div className="mt-4 flex justify-center">
-              <Chip tone="verify">
-                <IconCheck className="h-3.5 w-3.5" /> Verified on {ACTIVE_CHAIN.name}
-              </Chip>
-            </div>
+        <ProofReceiptCard
+          amountLabel={amount}
+          merchant={link.merchant_address}
+          invoiceId={link.contract_invoice_id}
+          mode={getConfiguredPaymentMode()}
+          settlementChainName={settlementChain.name}
+          proofChainName={proofChain.name}
+          isCrossChain={settlementChain.chainId !== proofChain.chainId}
+          payment={{ hash: payment.tx_hash, href: paymentExplorer }}
+          proof={{ hash: payment.receipt_tx_hash, href: proofExplorer }}
+        />
+
+        {/* Share & verify */}
+        <div className="op-card mt-4 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="op-eyebrow">Share &amp; verify</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted">
+              Anyone can re-check the settlement and the InvoicePaid proof on-chain — no account
+              needed.
+            </p>
           </div>
-
-          <div className="px-6 pb-2 pt-7 sm:px-10">
-            <dl className="divide-y divide-line">
-              <Field label="Merchant" value={link.merchant_address} mono />
-              <Field label="Invoice ID" value={link.contract_invoice_id} mono />
-              <Field label="Payment mode" value={PAYMENT_MODE} mono />
-              <Field label="Proof status" value={<span className="text-verify">InvoicePaid recorded</span>} />
-            </dl>
-          </div>
-
-          <div className="space-y-2 px-6 pb-6 sm:px-10">
-            <p className="op-eyebrow mb-1">On-chain proof</p>
-            <TxReference label="Payment transaction" hash={payment.tx_hash} href={paymentExplorer} />
-            <TxReference label="Proof transaction" hash={payment.receipt_tx_hash} href={proofExplorer} />
-          </div>
-
-          {/* Certificate footer */}
-          <div className="flex flex-col gap-3 border-t border-line bg-paper2 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10">
+          <div className="flex flex-wrap gap-2">
             <CopyLinkButton />
             <Link
               href={`/dashboard?demo=replay&merchantId=${link.merchant_id}`}
@@ -77,13 +82,13 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
               <IconArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
-        </article>
+        </div>
 
         <div className="mt-4">
           <VerificationMethod
             amountLabel={amount}
-            settlementChainName={ACTIVE_CHAIN.name}
-            proofChainName={getProofChain().name}
+            settlementChainName={settlementChain.name}
+            proofChainName={proofChain.name}
           />
         </div>
 
