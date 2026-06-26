@@ -125,7 +125,7 @@ export default function TrustPage() {
         </section>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          The agent demo is agent-initiated, the x402 scheme is our own (not facilitator-compatible),
+          The agent runs unattended once started (deterministic, not an LLM), the x402 scheme is our own (not facilitator-compatible),
           and no gas sponsorship is claimed. Saying so plainly is the point.
         </p>
       </div>

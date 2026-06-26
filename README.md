@@ -44,7 +44,7 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 
 - The cross-chain proof was made with the identical prod code and independently verified on-chain; a fresh payment through the prod `/pay` UI has not been re-run since, and a first-time payer needs a little native gas on each touched chain for the one-time 7702 delegation.
 - Prod runs a **beta** Particle SDK (`2.0.0-beta.3`, pinned exact) — the build Particle confirmed real EIP-7702 + cross-chain requires; the beta API surface can shift between releases.
-- `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" is an agent-initiated harness over the same firewall, not a fully autonomous LLM loop.
+- `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" runs a real **unattended deterministic** loop over the same firewall (one click, then no human per-step) — not an LLM that reasons, so no AI decision-making is claimed.
 - `@particle-network/authkit` is installed but is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
 
 ## How OneLink compares (prior art)

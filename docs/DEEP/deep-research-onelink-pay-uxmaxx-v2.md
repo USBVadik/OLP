@@ -337,7 +337,7 @@ on "we invented limits."
 |---|---|
 | "Cross-chain via UA" (C21) | "Proven live and deployed; here's the UniversalX link + both tx hashes. A first-time payer needs a little native gas per chain for the one-time 7702 delegation — that's why we pre-delegated for this demo." |
 | "x402" gateway (C17) | "It's the x402 *pattern* — 402 → pay → retry-with-proof — settled by our on-chain mandate (`onelink-mandate` scheme), **not** the Coinbase EIP-3009 facilitator. The enforcement is real; the wire-compat is not claimed." |
-| "Agent on a leash" (C16) | "The agent is an agent-*initiated* harness calling the same relayer + contract a real agent would. The on-chain enforcement is 100% real; the autonomy is dramatized." |
+| "Agent on a leash" (C16) | "The agent runs a real unattended deterministic loop (one click, then no human per-step) calling the same relayer + contract a real agent would. The on-chain enforcement is 100% real; it is NOT LLM-driven — no AI decision-making is claimed (that's the x402 stretch, E5)." |
 | "Provable / every payment" (C20) | "The settlement is trustless; the InvoicePaid receipt is an on-chain *attestation*, and the recorded payer is bound to the actual on-chain sender — not a client value." |
 | "Beta SDK" (R19) | "Pinned exact; cross-chain proven on this exact build; backup recording ready." |
 | "You reinvented spend permissions" | "Correct that the primitive isn't new — here's the prior-art table. Our wedge is the packaging: on-chain revocable mandate bound to x402, entered via a UA/7702 account, with a public receipt." |

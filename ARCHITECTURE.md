@@ -79,7 +79,8 @@ Agent: pay within the mandate              → POST /api/mandates/charge (loop 1
 ```
 
 Settlement scheme is `onelink-mandate` (the x402 *pattern*, not the Coinbase EIP-3009 facilitator).
-The agent is an agent-initiated harness over the real firewall, not an autonomous LLM loop.
+The agent runs a real unattended deterministic loop over the real firewall (one click, then no
+human per-step) — not an LLM that reasons.
 
 ### 3. Checkout + cross-chain settlement via Particle UA (C7, C8, C21)
 
