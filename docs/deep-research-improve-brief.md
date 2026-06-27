@@ -195,3 +195,88 @@ the existing wow impossible to miss — and having the backup video so a live fl
 Questions 17–19 (and 8–9 where market data helps) are the ones that benefit from live web research:
 recent UA/7702 hackathon-winning patterns, the current x402 ecosystem surface, and the trajectory of
 Coinbase Spend Permissions / ERC-7715. Everything else is decidable internally with the team.
+
+
+---
+
+## 7. External research findings (Q17–19 + market) — 2026-06-26
+
+> Live web research answering the external questions. *Content was rephrased for compliance with
+> licensing restrictions; sources linked inline.* Figures are third-party reported, not ours.
+
+### 7.1 x402 is real, hyperscaler-backed — but demand is still early
+- By April 2026 x402 had ~69,000 active agents, 165M+ transactions, ~$50M cumulative volume, avg
+  ticket ~$0.30 ([cryptonews](https://cryptonews.com/news/coinbase-x402-ai-agent-app-store-crypto-payments/),
+  [eco.com](https://eco.com/support/en/articles/14846274-pay-per-call-apis-for-ai-agents)).
+- **Honesty caveat (use this, don't overclaim):** a March 2026 CoinDesk piece reports daily volume
+  around only ~$28K, much of it testing/"gamed", i.e. demand isn't there *yet* despite a large
+  ecosystem valuation ([CoinDesk](https://www.coindesk.com/markets/2026/03/11/coinbase-backed-ai-payments-protocol-wants-to-fix-micropayment-but-demand-is-just-not-there-yet)).
+- **Hyperscaler validation (timely pitch ammo):** on June 17, 2026 AWS wired x402 into CloudFront +
+  WAF so any site behind the CDN can charge agents per request in USDC — first hyperscaler to put
+  on-chain settlement at the CDN edge ([thirdweb](https://blog.thirdweb.com/aws-cloudfront-now-accepts-onchain-payments-from-ai-agents-via-x402-what-builders-need-to-know/),
+  [The Defiant](https://thedefiant.io/news/defi/aws-cloudfront-coinbase-x402-ai-agents-usdc-base)).
+  Coinbase also tied x402 into Amazon Bedrock AgentCore Payments ([Crypto Briefing](https://cryptobriefing.com/coinbase-agentic-checkout-payments-apis/)),
+  and Google Cloud + Solana lets agents pay for Gemini/BigQuery/Vertex + 50+ APIs in stablecoins
+  ([Gate](https://www.gate.com/blog/102653/solana-google-cloud-stablecoin-ai-agent-api-pay-per-use-x402-protocol-onchain-payments-web3-infrastructure-analysis)).
+
+### 7.2 Competitive landscape — the wedge must get sharper (Q19)
+The biggest finding: **"agent wallet + spend limits + x402" is no longer novel by itself.**
+- **Coinbase Agentic Wallets** (launched Feb 11, 2026): an MPC wallet + x402 client + programmable
+  spend controls + gasless Base rail, via CLI/MCP ([eco.com](https://eco.com/support/support/en/articles/14845485-coinbase-agentic-wallets-explained)).
+- **ERC-7715 session keys** (scoped spend caps + allowlists + expiry, approve-once) are a draft EIP
+  already live across Coinbase, ZeroDev, Biconomy, Safe ([eco.com](https://eco.com/support/en/articles/15254038-erc-7715-session-keys-2026-granular-permissions-explained)).
+- **Coinbase Spend Permissions** let apps spend tokens on your behalf from a Base smart wallet
+  ([Coinbase Help](https://help.coinbase.com/en/wallet/getting-started/smart-wallet-permissions)).
+
+**So our differentiation can't be "we limit agent spend." It must be the packaging that none of
+them combine:**
+1. **On the user's own EOA via EIP-7702** — same address, no new smart/MPC account, no asset
+   migration — not a vendor-issued wallet.
+2. **Chain-abstracted via Particle UA** — one balance across EVM **+ Solana** (15 chains), not
+   Base-centric.
+3. **A public, independently-verifiable proof receipt** per payment (verified → matched → recorded)
+   — a trust artifact the vendor stacks don't emit.
+4. **Our own auditable `SpendPolicy` contract** — the product, not a setting in a vendor dashboard.
+
+### 7.3 EIP-7702 / Universal Accounts — the thesis is validated (Q17)
+- Particle is "all-in on 7702": any existing EOA can be upgraded to a Universal Account with no new
+  address or migration, unifying balances across Ethereum/Base/Solana/BNB as one pool
+  ([Particle blog](https://blog.particle.network/monthly-update-all-in-on-7702/)). 7702 mode
+  requires an embedded (WaaS) wallet for `signAuthorization` — **confirming our Magic choice is the
+  correct/required path** ([Particle docs](https://developers.particle.network/universal-accounts/ua-reference/desktop/eip7702-wallets)).
+- The EIP-7702 **drainer/phishing risk** (signing a delegation to malicious code) is documented in
+  the literature ([arXiv](https://arxiv.org/html/2512.12174v1)) — which directly validates our
+  "on-chain guardrail for 7702" thesis. *Lead with this:* the very mechanism we use has a named #1
+  risk, and our mandate is the safety rail for it.
+
+### 7.4 Where we sit in the 2026 stack
+Industry framing converges on a composed stack: **AP2 (authorize / signed mandates) + ACP (checkout)
++ x402 / MPP (settle)** ([alignify](https://alignify.co/blog/agentic-payments),
+[CCN](https://www.ccn.com/education/crypto/ai-agents-payment-rails-mpp-acp-ap2-x402-explained/)).
+AP2's mandates prove human consent **off-chain** (Verifiable Credentials). **Our crisp slot:** the
+**on-chain enforcement** layer that the stack is missing — consent that the account itself enforces
+via 7702, not just a signed credential. Pitch line: *"AP2 proves consent off-chain; x402 settles;
+OneLink enforces the mandate on-chain at your own account."*
+
+### 7.5 Concrete adoption angles (Q8–Q9)
+- **x402 Bazaar** is the live discovery layer — a machine-readable catalog of x402 API endpoints
+  ([x402 docs](https://docs.x402.org/extensions/bazaar)). Calling a **real Bazaar-listed third-party
+  API** (instead of only our own catalog) in the `/agent` demo would concretely prove "plugs into
+  the real agentic economy." Worth a thin, optional integration — measure risk first.
+- **First-customer framings that now have external backing:** an AI-agent dev paying x402 APIs
+  (AWS CloudFront / Bedrock / Google Cloud are live rails to name), or a SaaS doing capped agent
+  budgets. Name one concretely in the pitch instead of "the agentic economy" in the abstract.
+
+### 7.6 What this changes for us (recommendations)
+1. **Re-sharpen the wedge (Q14):** lead the differentiation with the 4-point packaging in §7.2 —
+   explicitly "vs Coinbase Agentic Wallets / ERC-7715 / ZeroDev," because judges may know those exist.
+   The prior-art table should name Coinbase Agentic Wallets (new since our last positioning pass).
+2. **Lead the pitch with the validated thesis (§7.3):** the documented 7702 drainer risk + the
+   missing on-chain-enforcement slot (§7.4). That's a stronger, externally-grounded opening than
+   "give your AI a card."
+3. **Make the adoption beat concrete (§7.5):** name a real rail (AWS CloudFront x402, June 2026) and,
+   if low-risk, call one real x402 Bazaar API live.
+4. **Keep the honesty flex (§7.1 caveat):** x402 demand is still early — say it plainly; it makes our
+   "real, verifiable, on-chain" framing more credible, not less.
+5. **Unanswered externally:** specific UXMAXX/Encode UA-hackathon *winner* patterns aren't public
+   (current event); best proxy is Particle's own 7702 positioning above, which we already meet/exceed.
