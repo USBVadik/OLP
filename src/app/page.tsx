@@ -59,6 +59,9 @@ export default function HomePage() {
             <Link href="/dashboard" className="op-btn-ghost px-3 py-2.5">
               Merchant
             </Link>
+            <Link href="/trust" className="op-btn-ghost px-3 py-2.5">
+              What&rsquo;s real
+            </Link>
           </nav>
         </header>
 
@@ -377,6 +380,11 @@ function Pillar({
 }
 
 const PRIOR_ART: { name: string; what: string; edge: string }[] = [
+  {
+    name: "Coinbase Agentic Wallets",
+    what: "Vendor MPC agent wallet on Base — bundles an x402 client + programmable spend limits.",
+    edge: "No vendor wallet: the limit lives on your own EOA via EIP-7702 (same address), chain-abstracted across EVM + Solana, with a public proof receipt.",
+  },
   {
     name: "Coinbase Spend Permissions",
     what: "Allowance (token, period, amount) + revoke for smart wallets.",

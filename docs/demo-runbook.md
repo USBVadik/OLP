@@ -25,7 +25,7 @@ deployed live at onelink-pay.vercel.app.
 - *"Is the agent autonomous?"* → "Unattended, one click — but deterministic, not an LLM. We don't claim AI reasoning; the on-chain limit is fully real."
 - *"What does 'zero gas' mean?"* → "Over-cap charges revert in simulation, before broadcast — no funds move and no gas is spent on the blocked attempt."
 - *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. A first-time payer needs a little native gas per chain for the one-time delegation."
-- *"Didn't you reinvent spend limits?"* → "The primitive isn't new — here's the prior-art table. Our wedge is the packaging: an on-chain revocable mandate bound to x402, via a UA/7702 account, with a public receipt."
+- *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / ERC-7715 already do this."* → "The primitive isn't new — and we say so. Our wedge is the packaging none of them combine: the limit lives on your **own EOA via EIP-7702** (same address, no vendor wallet), **chain-abstracted across EVM + Solana** via Particle, with a **public proof receipt** per payment and our **own auditable SpendPolicy** — not a setting in a vendor dashboard."
 
 ## One-liner
 
@@ -42,6 +42,9 @@ Three 2026 rails are converging:
 The missing piece: nothing enforces the mandate **on-chain at the user's account**. OneLink Pay fills that gap — sign one scoped mandate, the Universal Account can be charged only inside it, everything else reverts, and the user can revoke instantly. It is the on-chain guardrail that makes agentic, cross-chain payments safe.
 
 Positioning: **Particle handles execution. OneLink Pay handles consent, proof, and payment safety.**
+
+One line for judges: **AP2 proves consent off-chain; x402 settles; OneLink enforces the mandate
+on-chain at your own account** — the enforcement layer the 2026 agentic-payments stack is missing.
 
 ## What is live and proven
 

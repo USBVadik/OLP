@@ -287,6 +287,7 @@ const APP_NAV_SECTIONS: { href: string; label: string }[] = [
   { href: "/wallet", label: "Wallet" },
   { href: "/dashboard", label: "Merchant" },
   { href: "/demo-replay", label: "Demo" },
+  { href: "/trust", label: "What’s real" },
 ];
 
 /**
