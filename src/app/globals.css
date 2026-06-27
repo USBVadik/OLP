@@ -42,6 +42,11 @@
 @layer components {
   .op-shell {
     @apply min-h-screen bg-canvas text-ink;
+    /* Clip horizontal bleed from full-bleed decorative layers (hero aurora, Ken Burns
+       backdrops) so mobile never gets a sideways-scroll jitter. `clip` (not `hidden`)
+       leaves overflow-y visible, so it does NOT create a scroll container — the sticky
+       scroll-narrative and the fixed grain/cursor keep working. */
+    overflow-x: clip;
   }
 
   /* Eyebrow / small uppercase label */
