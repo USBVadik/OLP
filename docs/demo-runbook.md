@@ -1,8 +1,10 @@
 # OneLink Pay — Demo Runbook
 
-Last updated: 2026-06-21
+Last updated: 2026-06-26
 
-The definitive "what to show and say" for judges. Reflects the current build (live on Base mainnet).
+The definitive "what to show and say" for judges. Reflects the current build — Arbitrum-first, with
+cross-chain settlement via the Particle Universal Account (prod mode `universal_7702_transfer`),
+deployed live at onelink-pay.vercel.app.
 
 ## Pitch card (rehearse this — 60–90s)
 
@@ -177,7 +179,7 @@ Accounts:
 ### 0. Pre-flight
 
 - [ ] Clean Chrome profile, no ad-block / extensions (R7).
-- [ ] Demo machine on the latest pushed commit: `git rev-parse --short HEAD` ≥ `db23369`.
+- [ ] Demo machine on the latest pushed commit: `git rev-parse --short HEAD` ≥ `15df7c1`.
 - [ ] `.env.local` populated: Magic key, Particle project/client/app ids, `NEXT_PUBLIC_SPEND_POLICY_ADDRESS_ARBITRUM`, `RECEIPT_EMITTER_OWNER_PRIVATE_KEY`, Arbitrum RPC.
 - [ ] Demo wallet `0x53Bd…206a` funded: a little USDC on **Arbitrum** + a little ETH on Arbitrum (relayer/owner gas) and on Base (proof gas).
 - [ ] If serving a **deployed** build (not localhost): that build was built with `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` (R18). Confirm `/debug/*` shows the "disabled" stub.
