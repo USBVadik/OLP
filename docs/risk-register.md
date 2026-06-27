@@ -416,9 +416,9 @@
   SELECT + `enable row level security` on merchants/payment_links/payments — so a future
   `psql < schema.sql` / fresh project is secure by construction (closes the latent drift). ✅ shipped
 - **mitigation_status:** closed 2026-06-25 — **live verified not-exposed**; schema-file drift fixed.
-  Optional belt-and-suspenders: make RLS explicit on the live project too. Note: the `service_role`
-  key CANNOT run DDL via REST — that needs the dashboard SQL editor, a DB connection string, or a
-  Management API token. Not required, since live already denies anon.
+  Belt-and-suspenders **DONE**: RLS explicitly enabled on merchants/payment_links/payments via the
+  dashboard SQL editor (2026-06-25); re-verified over REST — anon → payments/payment_links = 0 rows,
+  service_role → 23 / 13 rows (app reads via service_role unaffected).
 - **owner:** builder
 - **review:** re-run the anon REST count check after any schema change
 
