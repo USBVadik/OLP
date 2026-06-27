@@ -394,6 +394,75 @@
 - **owner:** builder
 - **review:** re-verify (curl the 3 stubs) after any change to Vercel build env
 
+## Security findings (external audit pass 2, 2026-06-25)
+
+> A second external audit. Independently re-verified against current code: all 8 findings reference
+> real code (no stale-branch errors, no false positives). 5 genuinely open (remediated in spec
+> `audit-remediation-pass2`), 1 accepted demo-only (F2/R10), 2 already closed (F4/R16, F6/R18).
+
+### R21 — Supabase schema-file drift: `schema.sql` granted `anon` SELECT (the FILE looked exposed)
+
+- **likelihood:** low (the live DB does not honor it — see live test)
+- **impact:** low–med ONLY if a fresh project were provisioned from `schema.sql` as-was (then anon
+  could read `payments`). On the CURRENT live DB: not exposed.
+- **found_by:** external audit pass 2 (flagged the FILE) — then re-verified against the LIVE DB.
+- **LIVE TEST (2026-06-25, anon + service_role via REST count):**
+  - ANON → `payments`: HTTP 200, `content-range: */0` (0 rows)
+  - ANON → `payment_links`: HTTP 200, `*/0` (0 rows)
+  - SERVICE_ROLE → `payments`: HTTP 206, `0-0/23` (23 rows)
+  - ⇒ the live DB already denies anon row reads (RLS effectively on / no effective anon grant). The
+    auditor read the schema FILE, not the live DB. **No live leak.**
+- **mitigation:** `supabase/schema.sql` corrected to match the secure reality — `anon` gets NO table
+  SELECT + `enable row level security` on merchants/payment_links/payments — so a future
+  `psql < schema.sql` / fresh project is secure by construction (closes the latent drift). ✅ shipped
+- **mitigation_status:** closed 2026-06-25 — **live verified not-exposed**; schema-file drift fixed.
+  Optional belt-and-suspenders: make RLS explicit on the live project too. Note: the `service_role`
+  key CANNOT run DDL via REST — that needs the dashboard SQL editor, a DB connection string, or a
+  Management API token. Not required, since live already denies anon.
+- **owner:** builder
+- **review:** re-run the anon REST count check after any schema change
+
+### R22 — Receipt funding-source chain was client-reported but read as verified
+
+- **likelihood:** med (every cross-chain receipt)
+- **impact:** low (settlement + Base InvoicePaid proof ARE server-verified; only the "funded from
+  <chain>" provenance came from the client `sourceChainIds`)
+- **found_by:** external audit pass 2
+- **mitigation:**
+  1. The receipt's settled cross-chain caption now labels the funding source as **reported by your
+     wallet**, keeping "verified on-chain" on the settlement + proof legs only
+     (`src/components/cross-chain-route.tsx`). ✅ shipped
+  2. (future, out of scope) server-verify the route from the UA / UniversalX to upgrade "reported"
+     → "verified".
+- **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green)
+- **owner:** builder
+- **review:** next live `/pay` cross-chain completion
+
+### R23 — Wallet receive copy overclaimed reach ("every chain / Solana / anywhere")
+
+- **likelihood:** low
+- **impact:** low (a precise judge could flag that the EVM receive address can't take Solana SPL)
+- **found_by:** external audit pass 2
+- **mitigation:**
+  1. `src/app/wallet/page.tsx` copy narrowed to "any EVM chain" / "Particle-supported chains";
+     dropped the "Solana, or anywhere else" claim against the EVM receive address. ✅ shipped
+- **mitigation_status:** closed 2026-06-25 (copy narrowed; honest)
+- **owner:** builder
+- **review:** demo dress rehearsal (Block E)
+
+### Audit pass 2 — items already covered (no new work)
+
+- **F2 (x402 replay):** already **R10** (accepted, demo-only; production needs a consumed-tx store).
+  Audit sharpened it: a charge ≥ price can satisfy a *different* resource, not just re-fetch the
+  same one — still within R10's "needs a consumed-proof store" remedy.
+- **F4 (relayer gas guard in-memory):** already **R16** (dedicated `RELAYER_PRIVATE_KEY` deployed +
+  live-verified; shared/Redis limiter is a documented pre-prod ops step, not code).
+- **F6 (debug send routes):** already **R18** (all 3 gated on `NEXT_PUBLIC_ENABLE_DEBUG_PROBES`;
+  prod curl-verified serving disabled stubs). Server-side guard = optional defense-in-depth.
+- **F8 (`<img>` lint warning):** fixed in `audit-remediation-pass2` — the misplaced
+  `eslint-disable-next-line` was moved onto the `<img>` line with a justification; the `viem/ox`
+  dynamic-dependency build note is accepted (dependency characteristic, non-blocker).
+
 ## Risks closed (kept for trace)
 
 | id | risk | closed_on | how |

@@ -77,17 +77,21 @@ alter table if exists payments
 
 -- Explicit Data API grants for Supabase PostgREST / supabase-js compatibility.
 -- Required for new Supabase projects after 2026-05-30 and existing projects after 2026-10-30.
--- RLS is intentionally left unchanged here; RLS hardening needs a separate policy pass
--- so the checkout/demo flow is not accidentally blocked.
+--
+-- Least-privilege (audit-remediation-pass2): the app reads payment_links/payments ONLY via the
+-- server-side service_role client (`supabaseAdmin`) — the public anon client (`supabase`) is unused
+-- (no importer, no `.from`/`.rpc`/`.auth` call). So anon gets NO table access and RLS is enabled
+-- deny-by-default on all three tables. service_role bypasses RLS, so the server-rendered
+-- /receipt/[id] and every /api route keep working unchanged. This closes the prior exposure where
+-- a public anon key could read all payer addresses, tx hashes, preview JSON, and error messages.
 
 grant usage on schema public to anon;
 grant usage on schema public to authenticated;
 grant usage on schema public to service_role;
 
-grant select
-  on public.payment_links,
-     public.payments
-  to anon;
+-- anon: schema usage only. Intentionally NO table SELECT (a public anon key must not read the
+-- payments / payment_links tables). On an existing project that previously granted it, revoke:
+--   revoke select on public.payment_links, public.payments from anon;
 
 grant select
   on public.merchants,
@@ -108,3 +112,19 @@ grant usage, select
 grant usage, select
   on all sequences in schema public
   to service_role;
+
+-- Row Level Security: deny-by-default. No anon/authenticated row policy is defined, so PostgREST
+-- callers (anon/authenticated keys) see ZERO rows; service_role bypasses RLS and serves the app.
+alter table public.merchants      enable row level security;
+alter table public.payment_links  enable row level security;
+alter table public.payments       enable row level security;
+
+-- ── Apply on an EXISTING Supabase project (run once in the SQL editor) ───────────────────────────
+--   revoke select on public.payment_links, public.payments from anon;
+--   alter table public.merchants      enable row level security;
+--   alter table public.payment_links  enable row level security;
+--   alter table public.payments       enable row level security;
+-- Post-apply check:
+--   1. With the ANON key, `select * from payments limit 1` must return 0 rows (RLS denies).
+--   2. The public /receipt/[id] page (server-rendered via service_role) must still render a
+--      completed payment.

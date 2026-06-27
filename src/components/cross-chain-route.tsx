@@ -104,7 +104,7 @@ export function CrossChainRoute({
     ? `Routing your payment through the Universal Account and settling on ${toName}.`
     : preview
       ? `Planned cross-chain route: your USDC will be sourced from ${sources.join(" and ")} and settled on ${toName}, no manual bridge.`
-      : `Funded from ${sources.join(" and ")} and settled on ${toName} with no manual bridge.`;
+      : `Settled on ${toName}, verified on-chain. Funding source reported by your wallet: ${sources.join(" and ")}, no manual bridge.`;
 
   return (
     <div
@@ -193,8 +193,9 @@ export function CrossChainRoute({
         ) : (
           <>
             Funded from <span className="font-medium text-ink2">{sources.join(" + ")}</span> and
-            delivered on <span className="font-medium text-ink2">{toName}</span> — no manual bridge;
-            the Universal Account sourced the USDC across chains.
+            delivered on <span className="font-medium text-ink2">{toName}</span> — no manual bridge.
+            The settlement and proof are verified on-chain (above); the funding source is{" "}
+            <span className="font-medium text-ink2">reported by your wallet</span>.
           </>
         )}
       </p>

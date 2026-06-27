@@ -165,14 +165,14 @@ export default function WalletPage() {
               <span className="op-chip-iris">Powered by Particle</span>
             </div>
             <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
-              One balance. <span className="text-iris">Receive on any chain.</span>
+              One balance. <span className="text-iris">Receive on any EVM chain.</span>
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Your account holds a single USDC balance across every supported chain — powered by
+              Your account holds a single USDC balance across Particle-supported chains — powered by
               Particle{" "}
               <Term def="A Particle account that gives you one balance across many chains — no bridging or picking a network.">Universal Accounts</Term>
-              . Get paid on Base, Arbitrum, Solana, or anywhere else, and it all arrives as one
-              balance. No bridging, no chain to choose.
+              . Get paid on Base, Arbitrum, or any supported EVM chain at your address, and it
+              arrives as one balance. No bridging, no chain to choose.
             </p>
           </div>
 

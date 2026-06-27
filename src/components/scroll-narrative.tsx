@@ -514,8 +514,8 @@ export function ScrollNarrative() {
             the canvas on top. */}
         <div className="absolute inset-0 bg-[#13110d]" aria-hidden="true">
           {ACT_BG.map((src, i) => {
-            // eslint-disable-next-line @next/next/no-img-element
             return (
+              // eslint-disable-next-line @next/next/no-img-element -- decorative aria-hidden crossfade backdrop, CSS-animated (Ken Burns); next/image adds no value and fights the absolute/opacity layering
               <img
                 key={src}
                 src={src}

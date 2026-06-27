@@ -40,10 +40,13 @@ axis listed under its parent epic.
 
 ### E2. Cross-chain UA gate (compliance for UA Track)
 - **Scores:** UA+7702 30 + Polish 10
-- **Why:** the binary eligibility gate for UA Track. Today blocked at Particle's settlement
-  backend (`REFUND_FAILED` / `-32613`). Two-rail strategy: try Particle transfer-rail first
-  (Jun 22 kickoff with DevRel), Circle Gateway as backup (Jun 25 workshop). Get the rule
-  interpretation in writing from organizers as insurance.
+- **STATUS (updated 2026-06-25): RESOLVED.** Cross-chain value movement via the Particle UA in
+  EIP-7702 mode is **proven live and deployed (ledger C21, 2026-06-21)** — see `docs/status.md`
+  and risk **R1**. The Circle Gateway backup rail was not needed. The note below is kept for trace.
+- **Why (historical):** the binary eligibility gate for UA Track. Was blocked at Particle's
+  settlement backend (`REFUND_FAILED` / `-32613`) on SDK 1.1.1; two-rail strategy (Particle
+  transfer-rail first, Circle Gateway backup). **Resolved** on
+  `@particle-network/universal-account-sdk@2.0.0-beta.3` (C21).
 - **Specs:** `cross-chain-ua-particle`, `cross-chain-circle-gateway`,
   `organizer-rule-clarification`.
 
@@ -144,7 +147,7 @@ Format: `<id> | <story> | <axis> | INVEST?`
 | `magic-social-login` | E3.S1, E3.S2 | P1 | 4h | **closed 2026-06-21** (T15 + T17 user-confirmed; T18 email regression + T19 incognito strict-cookies deferred to demo dress rehearsal in Block E) |
 | `legible-mandate-card` | E1.S1 (HUD), part of E1.S4 | P1 | 4h | **closed 2026-06-21** (card + budget HUD live on `/firewall`, user-confirmed; 25 format unit tests; bar drains; default preset → agent_budget) |
 | `agent-on-a-leash-demo` | E1.S1, E1.S2, E1.S3, E1.S5 | P1 | 6-8h | **closed 2026-06-21** (split-screen agent terminal + scenarios + revoke; proven live on Arbitrum; 66 unit tests; C16) |
-| `cross-chain-ua-particle` | E2.S1 | P2 | 4-8h (infra-bound) | scaffold pending |
+| `cross-chain-ua-particle` | E2.S1 | P2 | 4-8h (infra-bound) | **proven live 2026-06-21 (C21)** — see `status.md` / R1 |
 | `organizer-rule-clarification` | E2.S3 | P2 | 1h | scaffold pending |
 | `cross-chain-circle-gateway` | E2.S2 | P2 (backup) | 8-12h | scaffold pending |
 | `proof-receipt-polish` | E4.S1 | P3 | 2-3h | **closed 2026-06-21** (share URL helper 5 tests; server-side QR + Share section on completed `/receipt/[id]`; build clean; C20). Note: completed-branch render verified by build + QR generation; live visual pending a completed invoice. |
@@ -218,6 +221,7 @@ Each row written when a spec is closed (Definition of Done met).
 | `particle-unified-balance` | 2026-06-21 | `/agent` Unified Balance HUD (read-only `getPrimaryAssets`) | UniversalBalanceCard surfaces the real cross-chain aggregated balance + sponsor badges + honest cross-chain caption; build clean (105 tests total); `/agent` renders 200 | C18 | 11 new node:test cases (`assets.ts`) |
 | `landing-narrative-prior-art` | 2026-06-21 | `/` landing (nav + hero → `/agent`; agent-economy section; prior-art table; sponsor strip) + README | `/agent` now one click from the landing; prior-art comparison on landing + README (sourced); build clean (105 tests); `/` renders 200 with the `/agent` link + agent-economy copy | C19 | none (copy/JSX) |
 | `proof-receipt-polish` | 2026-06-21 | `/receipt/[id]` Share & verify section (server QR + copy link) | `receiptShareUrl` 5 unit tests; server-side QR SVG (`qrcode`) + CopyLinkButton + "scan to verify" on completed receipts; build clean (110 tests); QR generation verified | C20 | 5 new node:test cases (`share.ts`) |
+| `cross-chain-ua-particle` | 2026-06-21 | `/pay` checkout (cross-chain settle) + public `/receipt/[id]` | **C21** — invoice `7be9118e` settled 1.0 USDC cross-chain (Base → merchant on Arbitrum `0x41217d8b…c3dd12e1`), InvoicePaid on Base `0x9d66901d…4068359e`, UniversalX `0x0654e9323a0bf7`; RPC-verified. Full detail in `status.md` + risk R1 | C21 | rail proven live; guarded by `mark-paid` verification |
 
 ## 8. Acceptance for the master TZ itself
 
