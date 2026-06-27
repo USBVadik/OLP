@@ -5,6 +5,7 @@ import { ARBITRUM_CHAIN, getPublicRpcUrl } from "@/lib/config/payment";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 import { ReceiveCard } from "@/components/receive-card";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
+import { WithdrawForecastCard } from "@/components/withdraw-forecast-card";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
 import { Wordmark, Chip, AppNav, IconBolt, Term } from "@/components/ui";
 
@@ -205,6 +206,9 @@ export default function WalletPage() {
                 error={balanceError}
                 onRetry={reloadBalance}
               />
+              {balanceSummary && balanceSummary.totalUsd > 0 ? (
+                <WithdrawForecastCard summary={balanceSummary} />
+              ) : null}
               <ReceiveCard address={address} />
             </div>
           )}
