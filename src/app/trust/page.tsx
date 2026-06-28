@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Wordmark, Chip, IconCheck, IconShield, IconArrowUpRight, AppNav } from "@/components/ui";
+import { EcosystemStack } from "@/components/ecosystem-stack";
+import { TrustGap } from "@/components/trust-gap";
+import { RailComparison } from "@/components/rail-comparison";
 
 export const metadata = {
   title: "What's real · OneLink Pay",
@@ -109,6 +112,12 @@ export default function TrustPage() {
             ))}
           </ul>
         </section>
+
+        <div className="mt-6 space-y-6">
+          <EcosystemStack />
+          <TrustGap />
+          <RailComparison />
+        </div>
 
         <section className="mt-6 op-card-quiet p-5">
           <p className="flex items-center gap-2 font-semibold text-ink">

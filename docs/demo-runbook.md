@@ -54,6 +54,7 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 - **Autonomous agent on a leash.** One-click unattended run buys within the mandate and is halted by the firewall on the over-cap call (deterministic — not LLM-driven).
 - **Proof Receipt.** A verified -> matched -> recorded trail, shareable at `/receipt/[id]`; anyone can verify on a block explorer.
 - **InvoicePaid proof** anchored on Base via `ReceiptEmitter`.
+- **Where we fit + the trust gap (`/trust`).** A 2026-stack map (OneLink = the enforcement & proof layer on top of AP2 / x402 / cards), third-party trust data (~¾ won't let AI pay even with limits set; only ~14% trust an agent to buy — each sourced + linked), and a fair "vs the giants" comparison (Visa/OpenAI, Coinbase Agentic Wallets, Circle/Catena, AP2). The "why us, not them" evidence, in-app.
 
 ## Live demo (~2 minutes, two acts)
 
