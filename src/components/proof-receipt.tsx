@@ -130,7 +130,10 @@ export function ProofReceiptCard({
 
       {/* Verification trail */}
       <div className="px-6 pb-2 pt-7 sm:px-8">
-        <p className="op-eyebrow mb-3">Verification trail</p>
+        <p className="op-eyebrow">Verification trail</p>
+        <p className="mb-3 mt-1 text-xs leading-relaxed text-muted">
+          Each step links to an independent block explorer — verify it yourself, no account.
+        </p>
         <ol className="ml-0.5">
           <Leg
             index={1}
