@@ -44,6 +44,9 @@ export default function HomePage() {
         <header className="flex flex-wrap items-center justify-between gap-y-2 py-6">
           <Wordmark href="/" />
           <nav className="flex flex-wrap items-center gap-1 text-sm">
+            <Link href="/pitch" className="op-btn-ghost px-3 py-2.5">
+              Pitch
+            </Link>
             <Link href="/firewall" className="op-btn-ghost px-3 py-2.5">
               Firewall
             </Link>
