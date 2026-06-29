@@ -192,8 +192,8 @@ export default function PitchPage() {
               Agent on a leash
               <IconArrowUpRight className="h-4 w-4" />
             </Link>
-            <Link href="/pay" className="op-btn-secondary">
-              Cross-chain checkout
+            <Link href="/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3" className="op-btn-secondary">
+              Cross-chain receipt
             </Link>
             <Link href="/demo-replay" className="op-btn-ghost">
               90-second replay
