@@ -22,3 +22,7 @@ gcp-*.json
 *.mov
 *.mp4
 .vercel
+
+# Internal strategy/research docs — never publish
+Deep Research Blueprint for OneLink Pay at UXmaxx.pdf
+Стратегия победы на UXmaxx Hackathon.pdf
