@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { getDemoReplaySuccess } from "@/lib/demo/replay";
 import {
   BASE_CHAIN,
-  getConfiguredPaymentMode,
   getPaymentChainById,
+  getPaymentModeLabel,
   getProofChain,
   type ChainPaymentConfig,
 } from "@/lib/config/payment";
@@ -55,7 +55,7 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
           amountLabel={amount}
           merchant={link.merchant_address}
           invoiceId={link.contract_invoice_id}
-          mode={getConfiguredPaymentMode()}
+          mode={getPaymentModeLabel()}
           settlementChainName={settlementChain.name}
           proofChainName={proofChain.name}
           isCrossChain={settlementChain.chainId !== proofChain.chainId}

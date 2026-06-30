@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEMO_REPLAY_PAYMENT, DEMO_REPLAY_PAYMENT_LINK, getDemoReplaySuccess } from "@/lib/demo/replay";
-import { getActivePaymentChain, getConfiguredPaymentMode } from "@/lib/config/payment";
+import { getActivePaymentChain, getPaymentModeLabel } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import {
   Wordmark,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui";
 
 const ACTIVE_CHAIN = getActivePaymentChain();
-const PAYMENT_MODE = getConfiguredPaymentMode();
+const PAYMENT_MODE_LABEL = getPaymentModeLabel();
 
 function formatAmount() {
   const token = resolvePaymentToken(DEMO_REPLAY_PAYMENT_LINK.token, DEMO_REPLAY_PAYMENT_LINK.destination_chain_id);
@@ -88,7 +88,7 @@ export default function DemoReplayPage() {
               <Field label="Merchant" value={DEMO_REPLAY_PAYMENT_LINK.merchant_address} mono />
               <Field label="Payer Universal Account" value={DEMO_REPLAY_PAYMENT.payer_address} mono />
               <Field label="Invoice ID" value={DEMO_REPLAY_PAYMENT_LINK.contract_invoice_id} mono />
-              <Field label="Payment mode" value={PAYMENT_MODE} mono />
+              <Field label="Payment mode" value={PAYMENT_MODE_LABEL} />
             </dl>
           </div>
 

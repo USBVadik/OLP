@@ -9,6 +9,7 @@ import {
   getConfiguredPaymentMode,
   getExplorerTxUrl,
   getPaymentChainById,
+  getPaymentModeLabel,
   getProofChain,
   type ChainPaymentConfig,
 } from "@/lib/config/payment";
@@ -16,6 +17,7 @@ import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck, AppNav } from
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
+const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 const PROOF_CHAIN = getProofChain();
 
 /** Resolve a link/payment's settlement chain by id, falling back to the default chain on bad data. */
@@ -131,10 +133,10 @@ function DashboardContent() {
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <Chip>
-            mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
+            payment mode <span className="ml-1 font-semibold text-ink">{PAYMENT_MODE_LABEL}</span>
           </Chip>
           <Chip>
-            proof anchor <span className="ml-1 font-mono text-ink">{PROOF_CHAIN.name}</span>
+            proof anchor <span className="ml-1 font-semibold text-ink">{PROOF_CHAIN.name}</span>
           </Chip>
           <Chip>
             proof <span className="ml-1 font-semibold text-ink">ReceiptEmitter</span>
@@ -292,11 +294,9 @@ function DashboardContent() {
                           {formatLinkAmount(l)} on {chainForId(l.destination_chain_id).name}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="op-chip-concept">mode {PAYMENT_MODE}</span>
+                          <span className="op-chip-concept">{PAYMENT_MODE_LABEL}</span>
                           {l.registered_tx_hash && (
-                            <span className="op-chip-concept font-mono">
-                              registered {l.registered_tx_hash.slice(0, 10)}…
-                            </span>
+                            <span className="op-chip-concept">On-chain invoice</span>
                           )}
                         </div>
                         {isDemoReplay && isPaid && (

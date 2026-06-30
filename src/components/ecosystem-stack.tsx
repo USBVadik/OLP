@@ -8,8 +8,7 @@ import { STACK_2026 } from "@/lib/positioning/landscape";
 export function EcosystemStack() {
   return (
     <section className="op-card p-6 sm:p-7">
-      <span className="op-eyebrow">The 2026 agentic-payments stack</span>
-      <h2 className="mt-2 font-display text-2xl font-semibold text-ink">Where OneLink fits</h2>
+      <h2 className="font-display text-2xl font-semibold text-ink">Where OneLink fits the 2026 stack</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         We don&rsquo;t replace the rails — we&rsquo;re the consent, on-chain enforcement, and proof
         layer on top of any of them.

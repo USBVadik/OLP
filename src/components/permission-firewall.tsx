@@ -38,6 +38,7 @@ export function PermissionFirewall({
   decimals,
   payerAddress,
   onMandateChange,
+  conceptMode = false,
 }: {
   merchantAddress: string;
   tokenAddress: Address;
@@ -47,6 +48,8 @@ export function PermissionFirewall({
   decimals: number;
   payerAddress?: string | null;
   onMandateChange?: (mandate: PaymentMandate, preset: MandatePreset) => void;
+  /** When true (e.g. inside checkout), label the caps clearly as a not-yet-armed concept preview. */
+  conceptMode?: boolean;
 }) {
   const [preset, setPreset] = useState<MandatePreset>("agent_budget");
 
@@ -84,13 +87,19 @@ export function PermissionFirewall({
         <span className="op-eyebrow inline-flex items-center gap-1.5">
           <IconShield className="h-3.5 w-3.5 text-gold" /> Permission Firewall
         </span>
-        <Chip tone="gold">Consent</Chip>
+        {conceptMode ? <ConceptTag>Concept mode</ConceptTag> : <Chip tone="gold">Consent</Chip>}
       </div>
 
       <p className="px-5 pt-2 text-sm leading-relaxed text-muted">
         Universal Accounts execute invisibly. The firewall makes the consent visible: you grant a
         scoped, revocable permission — and everything outside it is blocked.
       </p>
+      {conceptMode ? (
+        <p className="mx-5 mt-3 rounded-xl border border-line2 bg-paper2 px-3.5 py-2.5 text-xs leading-relaxed text-muted">
+          Concept preview — these caps illustrate the permission you&rsquo;d grant before
+          automation. This checkout doesn&rsquo;t arm an agent or change today&rsquo;s payment.
+        </p>
+      ) : null}
 
       {/* Preset selector */}
       <div className="mt-4 grid grid-cols-1 gap-2 px-5 sm:grid-cols-3">

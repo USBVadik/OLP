@@ -9,8 +9,7 @@ import { TRUST_STATS, TRUST_TAKEAWAY } from "@/lib/positioning/landscape";
 export function TrustGap() {
   return (
     <section className="op-card p-6 sm:p-7">
-      <span className="op-eyebrow">The trust gap we close</span>
-      <h2 className="mt-2 font-display text-2xl font-semibold text-ink">Why trust is the bottleneck</h2>
+      <h2 className="font-display text-2xl font-semibold text-ink">The trust gap we close</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
         The agent economy isn&rsquo;t short of rails — it&rsquo;s short of trust. Independent
         research, not our numbers:

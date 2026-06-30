@@ -4,9 +4,9 @@ import QRCode from "qrcode";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import {
   BASE_CHAIN,
-  getConfiguredPaymentMode,
   getExplorerTxUrl,
   getPaymentChainById,
+  getPaymentModeLabel,
   getProofChain,
   getUniversalXActivityUrl,
   type ChainPaymentConfig,
@@ -111,7 +111,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               amountLabel={amountLabel}
               merchant={link.merchant_address}
               invoiceId={link.contract_invoice_id}
-              mode={getConfiguredPaymentMode()}
+              mode={getPaymentModeLabel()}
               settlementChainName={settlementChain.name}
               proofChainName={proofChain.name}
               isCrossChain={settlementChain.chainId !== proofChain.chainId}

@@ -85,6 +85,23 @@ export function getConfiguredPaymentMode(): PaymentMode {
   return "transfer_fallback";
 }
 
+/**
+ * Human-readable label for a payment mode, for judge/consumer-facing UI. The raw mode token
+ * (e.g. "universal_7702_transfer") stays available in developer disclosures; this is a display
+ * helper only and does not change any execution, routing, or env behavior.
+ */
+export function getPaymentModeLabel(mode: PaymentMode = getConfiguredPaymentMode()): string {
+  switch (mode) {
+    case "universal_7702_transfer":
+      return "Universal Account";
+    case "universal_invoice":
+      return "Universal invoice";
+    case "transfer_fallback":
+    default:
+      return "Instant USDC";
+  }
+}
+
 export function getExplorerTxUrl(chain: ChainPaymentConfig, txHash: string): string {
   return `${chain.explorerTxBaseUrl}/${txHash}`;
 }

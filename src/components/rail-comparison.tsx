@@ -9,8 +9,7 @@ import { COMPARISON } from "@/lib/positioning/landscape";
 export function RailComparison() {
   return (
     <section className="op-card p-6 sm:p-7">
-      <span className="op-eyebrow">A different approach</span>
-      <h2 className="mt-2 font-display text-2xl font-semibold text-ink">Vs the giants</h2>
+      <h2 className="font-display text-2xl font-semibold text-ink">How OneLink is different</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink2">
         Other tools move money between people. OneLink makes the payments your apps and agents
         <em className="not-italic font-semibold text-ink"> send</em> safe — non-custodial, on-chain

@@ -15,6 +15,7 @@ import {
   getConfiguredPaymentMode,
   getExplorerTxUrl,
   getPaymentChainById,
+  getPaymentModeLabel,
   getProofChain,
   getPublicRpcUrl,
   getUniversalXActivityUrl,
@@ -136,6 +137,7 @@ async function delegateChain7702(
 
 const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
+const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
 
 interface PaymentLink {
@@ -1018,12 +1020,10 @@ function CheckoutBadges({ paymentLink }: { paymentLink: PaymentLink | null }) {
   const settlementChain = getSettlementChainForLink(paymentLink);
   return (
     <div className="mb-5 flex flex-wrap gap-2" title={getModeHelpText()}>
-      <Chip>
-        mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
-      </Chip>
-      <Chip>
-        chain <span className="ml-1 font-mono text-ink">{settlementChain.name} {settlementChain.chainId}</span>
-      </Chip>
+      <span className="op-chip-iris">
+        <IconShield className="h-3.5 w-3.5" /> {PAYMENT_MODE_LABEL}
+      </span>
+      <Chip>{settlementChain.name}</Chip>
     </div>
   );
 }
@@ -1088,11 +1088,11 @@ function PaymentSummary({
           label="Merchant receives"
           value={`${getPaymentAmountLabel(paymentLink)} on ${settlementChain.name}`}
         />
-        <Field label="Settlement chain" value={`${settlementChain.name} (${settlementChain.chainId})`} />
+        <Field label="Active chain" value={settlementChain.name} />
         {isCrossChain ? (
-          <Field label="Proof anchored on" value={`${proofChain.name} (${proofChain.chainId})`} />
+          <Field label="Proof anchored on" value={proofChain.name} />
         ) : null}
-        <Field label="Payment mode" value={PAYMENT_MODE} mono />
+        <Field label="Payment mode" value={PAYMENT_MODE_LABEL} />
         <Field label="Merchant" value={shortAddress(paymentLink.merchant_address)} mono />
         {address ? <Field label="Your wallet" value={shortAddress(address)} mono /> : null}
       </dl>
@@ -1170,7 +1170,7 @@ function SuccessState({
         amountLabel={getPaymentAmountLabel(paymentLink)}
         merchant={paymentLink.merchant_address}
         invoiceId={paymentLink.contract_invoice_id}
-        mode={PAYMENT_MODE}
+        mode={PAYMENT_MODE_LABEL}
         settlementChainName={settlementChain.name}
         proofChainName={proofChain.name}
         isCrossChain={isCrossChain}
@@ -1318,12 +1318,6 @@ function PreviewStep({
   const feeLabel = transaction ? getUsdcFeeLabel(transaction) : null;
   return (
     <div className="space-y-4">
-      {/* Wallet info */}
-      <div className="rounded-2xl border border-line bg-paper2 p-4">
-        <p className="op-eyebrow">Connected wallet · Magic</p>
-        <p className="mt-1 font-mono text-sm text-ink2">{shortAddress(address)}</p>
-      </div>
-
       <PaymentSummary paymentLink={paymentLink} address={address} />
 
       <PermissionFirewall
@@ -1334,12 +1328,13 @@ function PreviewStep({
         symbol={previewToken.symbol}
         decimals={previewToken.decimals}
         payerAddress={address}
+        conceptMode
       />
 
       {/* Balances */}
       <div className="rounded-2xl border border-line bg-paper p-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-ink">Universal Account balance</p>
+          <p className="text-sm font-medium text-ink">Your balance</p>
           {balances?.error ? (
             <span className="text-xs font-medium text-danger">Unavailable</span>
           ) : balances ? (
