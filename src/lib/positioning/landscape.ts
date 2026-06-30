@@ -106,9 +106,9 @@ export const COMPARISON: CompareRow[] = [
     kind: "built",
   },
   {
-    player: "Front AP2 / card rails too",
-    approach: "—",
-    ours: "The same firewall is designed to sit in front of other rails.",
+    player: "Other rails (cards · bank · PSP)",
+    approach: "Settle off-chain, each with its own controls — or none — and nothing on-chain.",
+    ours: "The same mandate is designed to front them too — one on-chain guardrail across rails.",
     ledgerRef: "—",
     kind: "directional",
   },
