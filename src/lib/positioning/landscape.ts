@@ -99,6 +99,13 @@ export const COMPARISON: CompareRow[] = [
     kind: "built",
   },
   {
+    player: "Consumer crypto wallets (send-money apps)",
+    approach: "Move money between people — send, request, split — chain-abstracted with a web2-smooth feel.",
+    ours: "Not another wallet: we make app & agent payments safe — an on-chain limit they can't exceed + a proof anyone can verify.",
+    ledgerRef: "C1–C6, C16, C20",
+    kind: "built",
+  },
+  {
     player: "Front AP2 / card rails too",
     approach: "—",
     ours: "The same firewall is designed to sit in front of other rails.",
