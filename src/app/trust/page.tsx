@@ -25,7 +25,7 @@ const ROWS: { claim: string; status: Status; note: string }[] = [
   {
     claim: "Walletless login (Magic email / Google)",
     status: "real",
-    note: "No seed phrase, no extension — a Magic embedded wallet, live.",
+    note: "No seed phrase, no extension — a Magic embedded wallet, live. And it's a requirement, not just polish: Particle's UA 7702 mode upgrades your account by signing an EIP-7702 authorization, a method browser-extension wallets like MetaMask don't expose by design — so the wallet is embedded, never a popup.",
   },
   {
     claim: "Agent buys an x402-gated API; over-cap call is blocked",

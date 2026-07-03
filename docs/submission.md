@@ -10,7 +10,13 @@
 - **Arbitrum "Road to Open House London"** — **$2,000** (independent).
 - **Magic Labs bonus** — **$500** (independent).
 
-Realistic max: **$5,000**. Milestone "project outline" due Jun 29; final judging Week 5 (~late July).
+Realistic max: **$5,000**.
+
+**Key dates** — per the Encode/UXmaxx workshop hosts (⚠️ unverified — confirm on Discord): mid-hackathon
+checkpoint **Jul 5** (a required submission; Jul 5 2026 is a Sunday, matching the host), final submission
+**Jul 19**, finale + prize-giving **Jul 30**. UX workshop track along the way: ZeroDev chain-abstraction
+Jul 7 · x402 Jul 8 · Magic social-login Jul 22. (An earlier "project outline" milestone ~Jun 29 was noted
+separately — verify whether it still stands or is the same thing as the Jul 5 checkpoint.)
 
 ---
 
