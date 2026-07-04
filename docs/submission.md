@@ -111,4 +111,4 @@ separately — verify whether it still stands or is the same thing as the Jul 5 
 - x402 is the **pattern** (`onelink-mandate` scheme), not the Coinbase EIP-3009 facilitator — enforcement is real, wire-compat is not claimed.
 - The agent is an **unattended deterministic** loop — **not** LLM-driven; no AI reasoning is claimed.
 - **No gas sponsorship** is claimed; a first-time 7702 delegation needs a little native gas per chain.
-- Prod runs a pinned **beta** Particle SDK (`2.0.0-beta.3`) — the build that ships real EIP-7702 + cross-chain.
+- Prod runs the pinned **stable** Particle SDK (`2.0.3`) — real EIP-7702 + cross-chain; same-chain and cross-chain (Arbitrum→Base) settlement live-verified on it, RPC-checked (2026-07-04).

@@ -274,8 +274,17 @@
   Transfer 2.0 → merchant), Base proof `0x3a5959e7…09af7a8e` (status 1), UA `0x0655137fc9c8c1`; payer
   Arbitrum 1.74→0, Base 1.07→0.65, merchant +2.0. Both chains were `already delegated` (0 new 7702
   auths), so C7 (delegation) + C8 (settle+proof) + C21 (cross-chain) all re-confirmed on the current SDK.
+
+  **2026-07-04 — now on STABLE `2.0.3` (no longer a beta build).** Prod was bumped `2.0.0-beta.3` →
+  `@particle-network/universal-account-sdk@2.0.3` (commit `2ba0dd4`, lockfile-confirmed) and
+  re-verified live with TWO real `/pay` payments, both independently RPC-verified: (a) **same-chain**
+  invoice `580a1fd4` — Arbitrum settle `0x044ad7b6…778179ca` (status 0x1, merchant +1.0), Base
+  InvoicePaid `0x1a3491fc…c1b2630d`; (b) **cross-chain Arbitrum→Base** invoice `2cbb6ff6` — 2 USDC
+  delivered on Base, ~0.95 USDC sourced from Arbitrum (`fromChains [8453,42161]`), no manual bridge —
+  Base settle `0x8a283c49…8516677d` (status 0x1, merchant +2.0), Base InvoicePaid `0xa32740cf…6238923e`
+  (status 0x1), UA `0x0655c4d551b159`. R19 fully closed on the stable SDK.
 - **owner:** builder
-- **review:** n/a (re-verified live)
+- **review:** n/a (re-verified live on stable 2.0.3)
 
 ### R20 — Autonomous agent run consumes more demo USDC/gas + adds latency
 

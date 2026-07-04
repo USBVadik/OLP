@@ -156,8 +156,8 @@ Accounts:
   **cross-chain value movement via the Universal Account (C21)** — a merchant paid on Arbitrum
   with USDC sourced from Base in one operation, no manual bridge (proven live + deployed).
 - **Honest framing:** the x402 flow is the *pattern* (`onelink-mandate` scheme, not the Coinbase
-  facilitator); the agent is an *unattended deterministic* loop (not LLM-driven); prod runs a
-  pinned Particle **beta** SDK (`2.0.0-beta.3`).
+  facilitator); the agent is an *unattended deterministic* loop (not LLM-driven); prod runs the
+  pinned **stable** Particle SDK (`2.0.3`) — same-chain + cross-chain settlement live-verified on it (2026-07-04).
 - **Not claimed:** gas sponsorship; AI/LLM agent reasoning; Circle / ZeroDev / Openfort integration.
 
 ## Run locally
