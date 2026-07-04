@@ -139,6 +139,10 @@ const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
 const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
+// One-tap checkout (Spec `one-tap-checkout`): collapse "Build preview" + "Confirm & pay" into a
+// single "Pay" after the Trust Preview. Default OFF — the two-step flow stays the shipped default
+// until this is live-verified. Flip via the Vercel env var; no logic redeploy needed.
+const ONE_TAP_CHECKOUT = process.env.NEXT_PUBLIC_ONE_TAP_CHECKOUT === "true";
 
 interface PaymentLink {
   id: string;
@@ -690,6 +694,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
       } catch (attemptErr: any) {
         log("recordPaymentAttempt", "error", { message: attemptErr.message });
       }
+      return tx;
     } catch (e: any) {
       log("createTransaction", "error", {
         message: e.message,
@@ -773,9 +778,10 @@ export default function PayPage({ params }: { params: { id: string } }) {
   }, [ua, magic, address, ensureDelegated7702]);
 
   // 7. Send transaction
-  const handlePay = useCallback(async () => {
-    if (!ua || !transaction || !magic) return;
-    if (!transaction.rootHash) {
+  const handlePay = useCallback(async (txArg?: any) => {
+    const tx = txArg ?? transaction;
+    if (!ua || !tx || !magic) return;
+    if (!tx.rootHash) {
       setError("Payment failed: transaction preview is missing rootHash. Please recreate the preview.");
       setStep("error");
       return;
@@ -785,13 +791,13 @@ export default function PayPage({ params }: { params: { id: string } }) {
     setPayPhase(IS_7702 ? "Preparing EIP-7702 payment..." : null);
     try {
       log("sendTransaction", "starting", {
-        transactionId: transaction.transactionId,
-        rootHash: transaction.rootHash,
+        transactionId: tx.transactionId,
+        rootHash: tx.rootHash,
       });
 
       let result: any;
       if (IS_7702) {
-        result = await sendVia7702(transaction);
+        result = await sendVia7702(tx);
       } else {
         // Sign with Magic provider (cast to any for protected method access)
         const provider = magic.rpcProvider as any;
@@ -808,7 +814,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
           signature: signature.slice(0, 20) + "...",
         });
 
-        result = await ua.sendTransaction(transaction, signature);
+        result = await ua.sendTransaction(tx, signature);
       }
       log("sendTransaction", "ok", result);
 
@@ -829,7 +835,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         // Particle settles asynchronously, so the settlement hash is usually absent from the
         // immediate result. Poll getTransaction, and fail fast (clear message) if the
         // transaction reaches a terminal failure/refund state without settling.
-        if (!txHash && transaction.transactionId) {
+        if (!txHash && tx.transactionId) {
           setPayPhase(
             isCrossChainSettlement
               ? "Waiting for cross-chain settlement on " + settlementChain.name + "..."
@@ -862,7 +868,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
           );
         }
 
-        const uaTransactionId = transaction.transactionId ?? result?.transactionId ?? null;
+        const uaTransactionId = tx.transactionId ?? result?.transactionId ?? null;
         const markPaidRes = await fetch(`/api/payments/${paymentLink.id}/mark-paid`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -910,6 +916,23 @@ export default function PayPage({ params }: { params: { id: string } }) {
     }
   }, [ua, transaction, magic, address, paymentLink, sendVia7702]);
 
+  // One-tap orchestrator (Spec one-tap-checkout): from a single "Pay" tap after the Trust Preview,
+  // build + pre-delegate (blind plumbing) then sign + send + mark-paid. Reuses the proven handlers;
+  // the Trust Preview stays the single explicit consent. Flag-gated by ONE_TAP_CHECKOUT.
+  const handlePayOneTap = useCallback(async () => {
+    if (!ua || !paymentLink || !address) return;
+    setError(null);
+    setStep("paying");
+    setPayPhase("Preparing your payment…");
+    const built = await handleCreateTransaction();
+    if (!built) {
+      // build / pre-delegation failed — error already surfaced by handleCreateTransaction; no funds moved.
+      setStep("error");
+      return;
+    }
+    await handlePay(built);
+  }, [ua, paymentLink, address, handleCreateTransaction, handlePay]);
+
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
@@ -950,6 +973,8 @@ export default function PayPage({ params }: { params: { id: string } }) {
               isCreatingTx={isCreatingTx}
               onCreateTx={handleCreateTransaction}
               onPay={handlePay}
+              oneTap={ONE_TAP_CHECKOUT}
+              onPayOneTap={handlePayOneTap}
             />
           )}
 
@@ -1299,6 +1324,8 @@ function PreviewStep({
   isCreatingTx,
   onCreateTx,
   onPay,
+  oneTap,
+  onPayOneTap,
 }: {
   paymentLink: PaymentLink;
   address: string | null;
@@ -1308,6 +1335,8 @@ function PreviewStep({
   isCreatingTx: boolean;
   onCreateTx: () => void;
   onPay: () => void;
+  oneTap: boolean;
+  onPayOneTap: () => void;
 }) {
   const settlementChainIds = transaction ? getSettlementChainIds(transaction) : [];
   const settlementChain = getSettlementChainForLink(paymentLink);
@@ -1419,7 +1448,11 @@ function PreviewStep({
       ) : null}
 
       {/* Actions */}
-      {!transaction ? (
+      {oneTap ? (
+        <button onClick={onPayOneTap} disabled={isCreatingTx} className="op-btn-primary w-full">
+          {isCreatingTx ? "Processing…" : `Pay ${getPaymentAmountLabel(paymentLink)}`}
+        </button>
+      ) : !transaction ? (
         <button onClick={onCreateTx} disabled={isCreatingTx} className="op-btn-primary w-full">
           {isCreatingTx ? "Building preview…" : "Build payment preview"}
         </button>

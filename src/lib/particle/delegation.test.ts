@@ -29,3 +29,26 @@ test("getDelegationStatus fails closed to not-delegated on read error", async ()
 test("ZERO_ADDRESS is the canonical zero address used to clear a 7702 delegation", () => {
   assert.equal(ZERO_ADDRESS, "0x0000000000000000000000000000000000000000");
 });
+
+// Regression coverage for the revert-tx link bug: send7702Transaction's return shape is not a
+// guaranteed bare hash string, so we deep-scan for a canonical 32-byte hash. (This is the test that
+// should have existed first — it captures exactly the object-return case that broke the link.)
+import { extractTxHash } from "./delegation";
+
+const HASH = "0x" + "a".repeat(64);
+
+test("extractTxHash finds a canonical tx hash across return shapes", () => {
+  assert.equal(extractTxHash(HASH), HASH); // bare string
+  assert.equal(extractTxHash({ hash: HASH }), HASH); // { hash }
+  assert.equal(extractTxHash({ transactionHash: HASH }), HASH); // { transactionHash }
+  assert.equal(extractTxHash({ txHash: HASH }), HASH); // { txHash }
+  assert.equal(extractTxHash({ result: { receipt: { transactionHash: HASH } } }), HASH); // nested
+});
+
+test("extractTxHash returns undefined when there is no canonical hash", () => {
+  assert.equal(extractTxHash("not-a-hash"), undefined);
+  assert.equal(extractTxHash("0x1234"), undefined); // too short
+  assert.equal(extractTxHash({ status: "ok", code: 200 }), undefined);
+  assert.equal(extractTxHash(null), undefined);
+  assert.equal(extractTxHash(undefined), undefined);
+});

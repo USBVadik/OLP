@@ -16,7 +16,7 @@ Every spec must declare which axes it scores against.
 ## 1. Working principles (non-negotiable)
 
 1. **Test-Driven Development (TDD).** Red → green → refactor. No production code without a
-   failing test first. Solidity via Hardhat (`contracts/test/*.test.ts`). TypeScript via Vitest
+   failing test first. Solidity via Hardhat (`contracts/test/*.test.ts`). TypeScript via `node:test`
    (`*.test.ts` next to source). UI via interaction-level tests where feasible, manual checklists
    in `tasks.md` otherwise. See §6 for the rhythm.
 2. **Spec-driven development.** No code change without a spec. No spec without a user story.
@@ -94,7 +94,7 @@ If a story violates a letter, split or rewrite it before scaffolding the spec.
 
 A task is Done when ALL of the following are true:
 
-1. **Tests written first and now green.** Hardhat for contracts; Vitest for TS modules; manual
+1. **Tests written first and now green.** Hardhat for contracts; `node:test` for TS modules; manual
    checklist for UI in `tasks.md` (with screenshots / tx hashes captured).
 2. **TypeScript clean.** `corepack pnpm typecheck` exits 0.
 3. **Lint clean.** `corepack pnpm lint` exits 0.

@@ -48,7 +48,7 @@ export async function getDelegationStatus(
 // send7702Transaction's return shape isn't guaranteed to be a bare hash string across Magic builds —
 // deep-scan the value for a canonical 32-byte tx hash so the explorer link is built from a clean
 // hash (or omitted entirely if none is found), never a malformed `.../[object Object]` URL.
-function extractTxHash(value: any): string | undefined {
+export function extractTxHash(value: any): string | undefined {
   if (typeof value === "string") {
     return /^0x[0-9a-fA-F]{64}$/.test(value) ? value : undefined;
   }

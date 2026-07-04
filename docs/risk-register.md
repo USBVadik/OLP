@@ -308,6 +308,26 @@
 - **owner:** builder
 - **review:** demo dress rehearsal (Block E)
 
+### R21 — One-tap checkout could hide consent or break the payment flow when enabled
+
+- **likelihood:** low (flag OFF by default; only re-sequences the proven build/sign/send verbatim)
+- **impact:** high (hiding the spend consent, or breaking settlement, would undercut our thesis + the revenue path)
+- **context:** Spec `one-tap-checkout` collapses `/pay`'s "Build preview" + "Confirm & pay" into a
+  single "Pay" after the Trust Preview, behind `NEXT_PUBLIC_ONE_TAP_CHECKOUT` (build-time, **default
+  OFF**). The orchestrator only re-sequences existing handlers (`handleCreateTransaction` now returns
+  the tx; `handlePay(txArg?)` accepts it); build/sign/send internals + SpendPolicy/EIP-712 unchanged.
+- **mitigation:**
+  1. **Flag OFF in prod** until live-verified → shipping is a no-op behaviour change; two-step is the fallback.
+  2. **One-consent rule** by construction: the Trust Preview is the single explicit approval; one
+     "Pay" tap = one spend; only plumbing (delegation, inline auths, rootHash) is blind-signed.
+  3. Rollback = unset the env var + redeploy (no code change).
+  4. Gate green (typecheck / lint / 121 unit / build); payment path git-verified untouched.
+- **mitigation_status:** **open** — enable only after a user-run §7 live-verify: a same-chain AND a
+  cross-chain one-tap `/pay` settle with the route/fee visible by the paying phase and the Trust
+  Preview never bypassed. Until then the flag stays OFF and no public claim is made.
+- **owner:** builder
+- **review:** flip to closed after the flag-ON live-verify (record tx hashes)
+
 ## Security findings (external audit, 2026-06-21)
 
 > Surfaced by an external code-level audit and triaged with Kiro. Funds were never at risk in any
