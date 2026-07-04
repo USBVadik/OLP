@@ -806,11 +806,11 @@ export default function PayPage({ params }: { params: { id: string } }) {
         // Particle expects an EIP-191 signature of transaction.rootHash.
         const signature = await provider.request({
           method: "personal_sign",
-          params: [transaction.rootHash, from],
+          params: [tx.rootHash, from],
         }) as string;
 
         log("signRootHash", "ok", {
-          rootHash: transaction.rootHash,
+          rootHash: tx.rootHash,
           signature: signature.slice(0, 20) + "...",
         });
 
@@ -843,7 +843,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
           );
           for (let attempt = 0; attempt < 20 && !txHash; attempt++) {
             await new Promise((resolve) => setTimeout(resolve, 3000));
-            const status = await ua.getTransaction(transaction.transactionId);
+            const status = await ua.getTransaction(tx.transactionId);
             const statusCode = Number(status?.status);
             txHash =
               getSettlementOpHash(status, settlementChain.chainId) ??
