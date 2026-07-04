@@ -45,6 +45,22 @@ export async function getDelegationStatus(
   return out;
 }
 
+// send7702Transaction's return shape isn't guaranteed to be a bare hash string across Magic builds —
+// deep-scan the value for a canonical 32-byte tx hash so the explorer link is built from a clean
+// hash (or omitted entirely if none is found), never a malformed `.../[object Object]` URL.
+function extractTxHash(value: any): string | undefined {
+  if (typeof value === "string") {
+    return /^0x[0-9a-fA-F]{64}$/.test(value) ? value : undefined;
+  }
+  if (value && typeof value === "object") {
+    for (const v of Object.values(value)) {
+      const found = extractTxHash(v);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
 export interface UndelegateResult {
   /** The account was already a plain wallet on this chain — nothing sent. */
   alreadyPlain?: boolean;
@@ -83,12 +99,13 @@ export async function undelegateChain(
     chainId,
     nonce: auth.nonce + 1, // the EOA sends its own Type-4 tx
   });
-  const txHash = await magic.wallet.send7702Transaction({
+  const sent = await magic.wallet.send7702Transaction({
     to: ownerAddress,
     data: "0x",
     authorizationList: [authorization],
   });
-  logFn?.("undelegate", "submitted", { chainId, txHash });
+  const txHash = extractTxHash(sent);
+  logFn?.("undelegate", "submitted", { chainId, txHash: txHash ?? sent });
 
   for (let i = 0; i < 15; i++) {
     await new Promise((resolve) => setTimeout(resolve, 2000));

@@ -47,7 +47,7 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
   const [loading, setLoading] = useState(true);
   const [confirmChainId, setConfirmChainId] = useState<number | null>(null);
   const [busyChainId, setBusyChainId] = useState<number | null>(null);
-  const [results, setResults] = useState<Record<number, { txHash: string; href: string | null }>>({});
+  const [results, setResults] = useState<Record<number, { txHash: string; href: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async (uaInstance: any) => {
@@ -176,12 +176,13 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
 
               {result ? (
                 <a
-                  href={result.href ?? undefined}
+                  href={result.href}
                   target="_blank"
                   rel="noreferrer"
                   className="op-link mt-1.5 inline-flex items-center gap-1 text-xs"
                 >
                   <IconCheck className="h-3 w-3 text-verify" /> Revert tx
+                  <span className="font-mono">{`${result.txHash.slice(0, 6)}…${result.txHash.slice(-4)}`}</span>
                   <IconArrowUpRight className="h-3 w-3" />
                 </a>
               ) : null}
