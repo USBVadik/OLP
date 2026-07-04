@@ -83,11 +83,12 @@ export async function POST(request: Request) {
     // invoice is registered and proven on the proof chain regardless of settlement chain.
     const settlementChain = getPaymentChainById(parsed.destinationChainId);
     const proofChain = getProofChain();
-    // Per-chain demo caps (atomic USDC). Optimism is the cross-chain target; allow up to
-    // 3 USDC so the amount comfortably exceeds the routing fee (small amounts can be skipped
-    // by solvers as uneconomical).
+    // Per-chain demo caps (atomic USDC). Set to 3 USDC on every settlement chain so an invoice
+    // can exceed the payer's LOCAL USDC on that chain and force Particle to source the shortfall
+    // cross-chain (the amount also comfortably clears the routing fee — tiny amounts can be
+    // skipped by solvers as uneconomical).
     const maxAtomicByChain: Record<number, bigint> = {
-      [BASE_CHAIN.chainId]: BigInt(250_000),
+      [BASE_CHAIN.chainId]: BigInt(3_000_000),
       [ARBITRUM_CHAIN.chainId]: BigInt(3_000_000),
       [OPTIMISM_CHAIN.chainId]: BigInt(3_000_000),
     };
