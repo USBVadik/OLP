@@ -1,24 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ARBITRUM_CHAIN, getPublicRpcUrl } from "@/lib/config/payment";
+import { ARBITRUM_CHAIN, BASE_CHAIN, getPublicRpcUrl } from "@/lib/config/payment";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 import { ReceiveCard } from "@/components/receive-card";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
 import { WithdrawForecastCard } from "@/components/withdraw-forecast-card";
+import { AccountModeCard } from "@/components/account-mode-card";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
 import { Wordmark, Chip, AppNav, IconBolt, Term } from "@/components/ui";
 
-// Read-only consumer wallet view: log in, see one balance across chains, receive on any chain.
-// No transactions are signed here — it's the "receive into one balance" face of the UA.
-const CHAIN = ARBITRUM_CHAIN;
+// Consumer wallet view: log in, see one balance across chains, receive on any chain, and manage the
+// account itself (revert the EIP-7702 delegation to a plain wallet). Only the Account panel signs a
+// (fundless) delegation-clearing Type-4 tx; the balance + receive parts stay read-only.
 
 let Magic: any = null;
 let OAuthExtension: any = null;
+let EVMExtension: any = null;
 async function loadMagic() {
   if (!Magic) {
     const m = await import("magic-sdk");
     Magic = m.Magic;
+  }
+  if (!EVMExtension) {
+    const e = await import("@magic-ext/evm");
+    EVMExtension = e.EVMExtension;
   }
   if (!OAuthExtension) {
     const o = await import("@magic-ext/oauth2");
@@ -66,8 +72,16 @@ export default function WalletPage() {
       const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!;
       setMagic(
         new Magic(key, {
-          network: { rpcUrl: getPublicRpcUrl(CHAIN), chainId: CHAIN.chainId },
-          extensions: [new OAuthExtension()],
+          // The EVM extension enables the 7702 signing surface (sign7702Authorization /
+          // send7702Transaction / evm.switchChain) the Account panel needs to revert delegation.
+          // Mirrors the proven /pay init (Base default + Arbitrum).
+          extensions: [
+            new EVMExtension([
+              { rpcUrl: getPublicRpcUrl(BASE_CHAIN), chainId: BASE_CHAIN.chainId, default: true },
+              { rpcUrl: getPublicRpcUrl(ARBITRUM_CHAIN), chainId: ARBITRUM_CHAIN.chainId },
+            ]),
+            new OAuthExtension(),
+          ],
         })
       );
     });
@@ -210,6 +224,7 @@ export default function WalletPage() {
                 <WithdrawForecastCard summary={balanceSummary} />
               ) : null}
               <ReceiveCard address={address} />
+              <AccountModeCard magic={magic} address={address} />
             </div>
           )}
 
@@ -221,8 +236,8 @@ export default function WalletPage() {
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted">
-          <Chip>read-only</Chip>
-          <span>this view never moves funds — it shows your balance and receive address</span>
+          <Chip>non-custodial</Chip>
+          <span>your balance, receive address, and account controls — the key stays yours</span>
         </div>
       </div>
     </main>

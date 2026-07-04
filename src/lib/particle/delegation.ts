@@ -1,0 +1,103 @@
+"use client";
+
+// EIP-7702 delegation helpers (read status + undelegate). These mirror the proven
+// `delegateChain7702` flow in `src/app/pay/[id]/page.tsx` beat-for-beat — the ONLY difference for
+// undelegation is that the 7702 authorization is signed to the ZERO address instead of the
+// Universal Account delegate contract, which clears the delegation and returns the EOA to a plain
+// wallet. Pattern confirmed by the Particle workshop + reference repo (docs/workshop-insights.md §A/B).
+//
+// Kept as a separate, additive module: the live-verified payment path is not touched. The Particle
+// SDK is typed as `any` app-wide (see src/types/particle.d.ts), so instances are `any` here too.
+
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+export interface ChainDelegation {
+  isDelegated: boolean;
+  /** The delegate contract the EOA points at (when delegated). */
+  delegate?: string;
+}
+
+type LogFn = (action: string, result: string, data?: unknown) => void;
+
+/**
+ * Read per-chain 7702 delegation status from the SDK. Fail-closed: on any read error every
+ * requested chain is reported as not-delegated (the UI simply shows "Plain wallet" and offers no
+ * action), never throwing into the caller.
+ */
+export async function getDelegationStatus(
+  ua: any,
+  chainIds: number[],
+): Promise<Record<number, ChainDelegation>> {
+  const out: Record<number, ChainDelegation> = {};
+  let deployments: any[] = [];
+  try {
+    deployments = (await ua.getEIP7702Deployments()) || [];
+  } catch {
+    deployments = [];
+  }
+  for (const id of chainIds) {
+    const dep = (deployments || []).find((d: any) => d?.chainId === id);
+    out[id] = {
+      isDelegated: Boolean(dep?.isDelegated),
+      delegate: dep?.address ?? dep?.delegate ?? undefined,
+    };
+  }
+  return out;
+}
+
+export interface UndelegateResult {
+  /** The account was already a plain wallet on this chain — nothing sent. */
+  alreadyPlain?: boolean;
+  /** The Type-4 transaction hash, if broadcast. */
+  txHash?: string;
+  /** Whether the SDK reported the delegation cleared before the poll timed out. */
+  confirmed?: boolean;
+}
+
+/**
+ * Clear the 7702 delegation on ONE chain: sign a 7702 authorization to the zero address and
+ * broadcast the Type-4 transaction from the owner EOA (needs a little native gas on that chain,
+ * exactly like the one-time delegation). Polls until the SDK reports the delegation cleared.
+ *
+ * Reversible both ways: a future payment re-delegates via the existing `/pay` flow.
+ */
+export async function undelegateChain(
+  magic: any,
+  ua: any,
+  ownerAddress: string,
+  chainId: number,
+  logFn?: LogFn,
+): Promise<UndelegateResult> {
+  const status = await getDelegationStatus(ua, [chainId]);
+  if (!status[chainId]?.isDelegated) {
+    logFn?.("undelegate", "already plain", { chainId });
+    return { alreadyPlain: true };
+  }
+
+  logFn?.("undelegate", "undelegating", { chainId });
+  await magic.evm.switchChain(chainId);
+  // getEIP7702Auth gives the current nonce (+ the delegate address, which we intentionally ignore).
+  const [auth] = await ua.getEIP7702Auth([chainId]);
+  const authorization = await magic.wallet.sign7702Authorization({
+    contractAddress: ZERO_ADDRESS, // <-- the only difference vs delegate (which uses auth.address)
+    chainId,
+    nonce: auth.nonce + 1, // the EOA sends its own Type-4 tx
+  });
+  const txHash = await magic.wallet.send7702Transaction({
+    to: ownerAddress,
+    data: "0x",
+    authorizationList: [authorization],
+  });
+  logFn?.("undelegate", "submitted", { chainId, txHash });
+
+  for (let i = 0; i < 15; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const fresh = await getDelegationStatus(ua, [chainId]);
+    if (!fresh[chainId]?.isDelegated) {
+      logFn?.("undelegate", "confirmed", { chainId });
+      return { txHash, confirmed: true };
+    }
+  }
+  logFn?.("undelegate", "submitted but not confirmed in time", { chainId });
+  return { txHash, confirmed: false };
+}
