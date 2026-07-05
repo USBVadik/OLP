@@ -353,8 +353,12 @@
      (verify plan), then live-verify the reveal on `/wallet` (Pro → "Reveal my private key").
 - **mitigation_status:** in_progress — honest code shipped + gate green; enabling export in the Magic
   dashboard + a live `/wallet` reveal test is a user/ops step (not doable autonomously).
+  **2026-07-05 — CLOSED: operator enabled Key Export in the Magic dashboard and live-verified on
+  prod `/wallet` (Pro → "Reveal my private key" opened Magic's reveal UI and showed the key).**
+  Promoted to claim C22. The reveal is entirely inside Magic's UI — neither Magic nor OneLink sees
+  the key.
 - **owner:** builder
-- **review:** after enabling Magic key export + a live `/wallet` reveal test
+- **review:** re-verify if the Magic plan / dashboard export setting changes
 
 ## Security findings (external audit, 2026-06-21)
 
