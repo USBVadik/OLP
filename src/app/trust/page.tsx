@@ -3,6 +3,7 @@ import { Wordmark, Chip, IconCheck, IconShield, IconArrowUpRight, AppNav } from 
 import { EcosystemStack } from "@/components/ecosystem-stack";
 import { TrustGap } from "@/components/trust-gap";
 import { RailComparison } from "@/components/rail-comparison";
+import { StandardsAlignment } from "@/components/standards-alignment";
 
 export const metadata = {
   title: "What's real · OneLink Pay",
@@ -117,6 +118,7 @@ export default function TrustPage() {
           <EcosystemStack />
           <TrustGap />
           <RailComparison />
+          <StandardsAlignment />
         </div>
 
         <section className="mt-6 op-card-quiet p-5">

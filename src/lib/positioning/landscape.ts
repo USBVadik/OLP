@@ -18,6 +18,20 @@ export type Sourced = { source: string; url: string; asOf: string };
 
 export type TrustStat = Sourced & { stat: string };
 
+// Emerging Ethereum standards for bounded, revocable, code-enforced agent spend. OneLink is a
+// working implementation of the SAME IDEA today (our own SpendPolicy) — `relation` may only be
+// "aligned" (same shape as our live mandate) or "complements" (e.g. proof receipt vs reputation).
+// It is NEVER "implements": we do not ship any single draft ERC. `study` is an optional secondary
+// citation (e.g. an empirical paper) and, when present, must itself be fully sourced.
+export type Standard = Sourced & {
+  name: string;
+  status: string; // "Draft ERC · discussion" | "Draft EIP" — must read as not-yet-final
+  what: string; // fair one-line description of the standard
+  ours: string; // how OneLink relates (maps to a ledger C-row)
+  relation: "aligned" | "complements";
+  study?: Sourced;
+};
+
 export type CompareRow = {
   player: string;
   approach: string; // fair description of THEIR approach
@@ -78,6 +92,20 @@ export const COMPARISON: CompareRow[] = [
     kind: "built",
   },
   {
+    player: "AWS Bedrock AgentCore Payments",
+    approach: "Managed, session-level spend limits inside a cloud agent runtime (with Coinbase + Stripe).",
+    ours: "Non-custodial and on your own on-chain account — the limit is a public contract anyone can re-check, with a proof receipt per payment.",
+    ledgerRef: "C1–C6, C16",
+    kind: "built",
+  },
+  {
+    player: "MetaMask Smart Accounts · ERC-7715 session keys",
+    approach: "Wallet-granted session keys with granular permissions — now across Coinbase, ZeroDev, Safe and MetaMask.",
+    ours: "We don't reinvent the primitive — we package it as a legible, revocable payments mandate with a public proof receipt, on your own EIP-7702 account.",
+    ledgerRef: "C7, C14, C21",
+    kind: "built",
+  },
+  {
     player: "Circle / Catena",
     approach: "Managed, custodial agent-payment rails (Catena is filing for a trust-bank charter to custody funds).",
     ours: "Non-custodial — you hold the keys; we enforce, we don't custody.",
@@ -114,11 +142,65 @@ export const COMPARISON: CompareRow[] = [
   },
 ];
 
-/** Honesty guard: every market stat must carry a non-empty source, url, and asOf. */
-export function assertAllSourced(stats: TrustStat[]): void {
-  for (const s of stats) {
+// Emerging Ethereum standards for bounded/revocable agent spend. OneLink is aligned (same shape as
+// our live SpendPolicy) or complementary (proof receipt vs reputation) — it implements NONE of these
+// draft ERCs. Every entry is third-party sourced (guarded by the unit test). Primary sources
+// verified 2026-07.
+export const STANDARDS: Standard[] = [
+  {
+    name: "Asset-Enforced Spend Mandate",
+    status: "Draft ERC · discussion",
+    what: "Per-charge cap, expiry, allowed token and instant revoke enforced by the asset itself — not by the agent behaving well.",
+    ours: "The same shape, live today: our SpendPolicy enforces per-charge / daily / total caps + expiry + revoke on-chain (C1–C6). The draft explores the token layer; we enforce at the account layer.",
+    relation: "aligned",
+    source: "Ethereum Magicians",
+    url: "https://ethereum-magicians.org/t/erc-asset-enforced-spend-mandate/28831",
+    asOf: "2026-06",
+  },
+  {
+    name: "ERC-8226 · Regulated Agent Mandate",
+    status: "Draft EIP",
+    what: "Scoped, time-bounded, financially capped delegation to an on-chain agent, checked before each transfer.",
+    ours: "OneLink already enforces scoped, capped, expiring, revocable mandates on-chain today (SpendPolicy — C1–C6, C16).",
+    relation: "aligned",
+    source: "Ethereum Improvement Proposals",
+    url: "https://eips.ethereum.org/EIPS/eip-8226",
+    asOf: "2026-06",
+  },
+  {
+    name: "ERC-8312 · Bounded Agent Actions",
+    status: "Draft ERC · discussion",
+    what: "Track how much of a bounded mandate an agent has already spent, so a contract can see the room that is left.",
+    ours: "Our SpendPolicy already accounts spend against the caps and reverts over-budget charges at zero gas (C3).",
+    relation: "aligned",
+    source: "Ethereum Magicians",
+    url: "https://ethereum-magicians.org/t/erc-8312-bounded-agent-actions/28851",
+    asOf: "2026-06",
+  },
+  {
+    name: "ERC-8004 · Trustless Agents",
+    status: "Draft EIP",
+    what: "On-chain registries for agent identity, reputation and validation.",
+    ours: "Complementary, not competing: reputation is attested, and its reliability is under active study; our proof receipt is a verifiable record of the actual settlement — proof of the interaction, re-checkable with no account (C20).",
+    relation: "complements",
+    source: "Ethereum Improvement Proposals",
+    url: "https://eips.ethereum.org/EIPS/eip-8004",
+    asOf: "2026-06",
+    study: {
+      source: "arXiv 2606.26028 · empirical study",
+      url: "https://arxiv.org/html/2606.26028v1",
+      asOf: "2026-06",
+    },
+  },
+];
+
+/** Honesty guard: every sourced entry must carry a non-empty source, url, and asOf. Generic over
+ * any `Sourced` (trust stats, standards). `label` shapes the error message per content type. */
+export function assertAllSourced<T extends Sourced>(items: T[], label = "trust stat"): void {
+  for (const s of items) {
     if (!s.source?.trim() || !s.url?.trim() || !s.asOf?.trim()) {
-      throw new Error(`Unsourced trust stat: ${JSON.stringify(s.stat)} (source/url/asOf required)`);
+      const id = (s as { stat?: string }).stat ?? (s as { name?: string }).name ?? s.source ?? "";
+      throw new Error(`Unsourced ${label}: ${JSON.stringify(id)} (source/url/asOf required)`);
     }
   }
 }

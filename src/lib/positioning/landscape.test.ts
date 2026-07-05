@@ -4,8 +4,10 @@ import {
   STACK_2026,
   TRUST_STATS,
   COMPARISON,
+  STANDARDS,
   assertAllSourced,
   type TrustStat,
+  type Standard,
 } from "./landscape";
 
 // Honesty guards for the /trust positioning content. These are not cosmetic: this content sits
@@ -40,6 +42,42 @@ test("COMPARISON: every row has a ledgerRef; directional rows are never dressed 
       assert.equal(row.ledgerRef, "—", `directional row must not claim a ledger row: ${row.player}`);
     } else {
       assert.notEqual(row.ledgerRef, "—", `built row must reference a ledger row: ${row.player}`);
+    }
+  }
+});
+
+// --- standards-aligned-trust: emerging-standards honesty guards ---
+// The /trust standards block sits on the claim-discipline page. An unsourced standard, or a
+// standard dressed as "implemented" rather than "aligned/complements", must fail CI, not ship.
+
+test("assertAllSourced is generic: STANDARDS pass; a bad standard throws with its label", () => {
+  assert.ok(STANDARDS.length > 0, "expected at least one standard");
+  assert.doesNotThrow(() => assertAllSourced(STANDARDS, "standard"));
+  const bad: Standard[] = [
+    { name: "x", status: "", what: "", ours: "", relation: "aligned", source: "", url: "", asOf: "" },
+  ];
+  assert.throws(() => assertAllSourced(bad, "standard"), /Unsourced standard/);
+});
+
+test("every STANDARD carries source + https url + asOf, a description, our relation, and a valid relation kind", () => {
+  const allowed = new Set(["aligned", "complements"]);
+  for (const s of STANDARDS) {
+    assert.ok(s.source.trim(), `missing source: ${s.name}`);
+    assert.match(s.url, /^https?:\/\//, `standard url must be a link: ${s.name}`);
+    assert.ok(s.asOf.trim(), `missing asOf: ${s.name}`);
+    assert.ok(s.what.trim(), `missing what: ${s.name}`);
+    assert.ok(s.ours.trim(), `missing ours: ${s.name}`);
+    assert.ok(s.status.trim(), `missing status: ${s.name}`);
+    assert.ok(allowed.has(s.relation), `relation must be aligned|complements (never "implements"): ${s.name}`);
+  }
+});
+
+test("any STANDARD secondary study citation is itself fully sourced", () => {
+  for (const s of STANDARDS) {
+    if (s.study) {
+      assert.ok(s.study.source.trim(), `study missing source: ${s.name}`);
+      assert.match(s.study.url, /^https?:\/\//, `study url must be a link: ${s.name}`);
+      assert.ok(s.study.asOf.trim(), `study missing asOf: ${s.name}`);
     }
   }
 });
