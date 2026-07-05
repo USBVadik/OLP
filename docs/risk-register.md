@@ -322,11 +322,15 @@
      "Pay" tap = one spend; only plumbing (delegation, inline auths, rootHash) is blind-signed.
   3. Rollback = unset the env var + redeploy (no code change).
   4. Gate green (typecheck / lint / 121 unit / build); payment path git-verified untouched.
-- **mitigation_status:** **open** — enable only after a user-run §7 live-verify: a same-chain AND a
-  cross-chain one-tap `/pay` settle with the route/fee visible by the paying phase and the Trust
-  Preview never bypassed. Until then the flag stays OFF and no public claim is made.
+- **mitigation_status:** **closed 2026-07-05** — live-verified on prod (flag ON, persisted). Same-chain
+  one-tap (invoice `1eee91a0`: Arbitrum settle `0x4a92662b…`, proof `0x1789d3e2…`) AND cross-chain
+  one-tap (invoice `be9c4494`: 2 USDC on Base sourced 100% from Arbitrum, no bridge — settle
+  `0xafbc0c37…`, proof `0x4e2cf6aa…`) both completed end-to-end (build→sign→send→mark-paid→proof),
+  independently RPC-verified (status 0x1, merchant credited). Trust Preview stayed the single explicit
+  consent; one tap = one spend. A pre-fix stale-closure crash (`null.transactionId`) was caught here
+  and fixed (commit `98ef609`) before enabling.
 - **owner:** builder
-- **review:** flip to closed after the flag-ON live-verify (record tx hashes)
+- **review:** n/a (closed, live-verified)
 
 ## Security findings (external audit, 2026-06-21)
 

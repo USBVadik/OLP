@@ -66,11 +66,15 @@ agent on a leash. Both are live on Arbitrum + Base; keep amounts tiny.
 1. **Hook:** "You can't hand an AI — or a merchant — your wallet."
 2. Open `/pay/<id>`. **Continue with Google** (Magic) — no seed phrase, no extension, no chain
    selector. Logged in within seconds.
-3. **Trust Preview, before signing:** the card shows the *planned* route — **Base → Arbitrum, no
-   manual bridge**, the network fee paid in USDC — and the exact amount the merchant receives.
-   Consent you can read, not a blind signature (EIP-712 hash behind "Show technical details").
-4. **Confirm.** The Universal Account sources USDC cross-chain and settles to the merchant on
-   Arbitrum in one operation.
+3. **Trust Preview — your single consent:** before you tap, the card shows the *planned* route —
+   **Base → Arbitrum, no manual bridge**, the network fee paid in USDC — and the exact amount the
+   merchant receives. Consent you can read, not a blind signature (EIP-712 hash behind "Show
+   technical details").
+4. **One tap — "Pay".** A single tap orchestrates delegate → build → sign → settle: the Universal
+   Account sources USDC cross-chain and settles to the merchant in one operation. No "build preview"
+   then "confirm" — the Trust Preview above was the only explicit approval; the plumbing signatures
+   are blind (Magic). *(One-tap = `NEXT_PUBLIC_ONE_TAP_CHECKOUT=true`, live-verified same-chain +
+   cross-chain 2026-07-05.)*
 5. **Proof Receipt:** open the public `/receipt/<id>` — "Cross-chain: Base → Arbitrum" badge, the
    animated route, per-chain explorer links, the UniversalX activity link, and the InvoicePaid
    attestation. Verifiable by anyone, no account.
