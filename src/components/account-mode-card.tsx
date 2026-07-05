@@ -277,7 +277,7 @@ function KeyCustodyRow({ magic }: { magic: any }) {
     const res = await openKeyExport(magic);
     if (!res.ok) {
       setNote(
-        "Couldn't open the wallet settings here. You can still take full custody by reverting to a plain wallet above.",
+        "Magic didn't open the key reveal — export may not be enabled for this app. Your funds are still on your own EOA; reverting to a plain wallet above removes the delegation.",
       );
     }
     setBusy(false);
@@ -289,8 +289,8 @@ function KeyCustodyRow({ magic }: { magic: any }) {
       {cap.available ? (
         <>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Your key lives in Magic&rsquo;s secure infrastructure, unlocked by your login. Export it
-            anytime to hold it yourself — it&rsquo;s revealed inside Magic&rsquo;s own screen; OneLink
+            Your key lives in Magic&rsquo;s secure infrastructure, unlocked by your login. Reveal it
+            anytime to hold it yourself — it&rsquo;s shown inside Magic&rsquo;s own screen; OneLink
             never sees it.
           </p>
           <button
@@ -299,13 +299,15 @@ function KeyCustodyRow({ magic }: { magic: any }) {
             disabled={busy}
             className="op-btn-secondary mt-2 px-3 py-1.5 text-xs"
           >
-            {busy ? "Opening…" : "Export key in wallet settings"}
+            {busy ? "Opening…" : "Reveal my private key"}
           </button>
         </>
       ) : (
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          In-app key export isn&rsquo;t available in this build. To take full custody, revert to a
-          plain wallet above — this same address then works in any wallet you control.
+          Key export isn&rsquo;t enabled for this app right now, so moving the key elsewhere
+          isn&rsquo;t available here. Your funds are still on your own EOA — not an account OneLink
+          controls; reverting to a plain wallet above removes the delegation. Full key portability
+          depends on Magic enabling export.
         </p>
       )}
       {note ? (

@@ -332,6 +332,30 @@
 - **owner:** builder
 - **review:** n/a (closed, live-verified)
 
+### R24 — Pro-mode key export depends on Magic dashboard config (not enabled by default)
+
+- **likelihood:** high (a default Magic app config ships with key export OFF)
+- **impact:** low (no funds at risk; the account is still the user's own EOA — only self-serve key
+  portability is gated). Honesty risk: the Pro "Reveal my private key" control must not imply a
+  guaranteed export when Magic hasn't enabled it for the app.
+- **context:** Pro (self-custody) mode (spec `pro-self-custody-mode`) added a key-custody control on
+  `/wallet`. The first impl called `magic.user.showSettings()`, which opens a generic Account
+  Settings modal with NO export control for our app config (observed live 2026-07-05 — empty modal).
+  Magic's actual key export is a dedicated method (`revealEVMPrivateKey` / legacy `revealPrivateKey`)
+  that opens Magic's own reveal UI where only the end user sees the key (neither Magic nor OneLink can).
+- **mitigation:**
+  1. Code now calls the correct reveal method (prefers `revealEVMPrivateKey`), fail-closed; on
+     absence/rejection it shows honest copy — own EOA, undelegate removes the delegation, and full
+     key portability depends on Magic enabling export — never a dead-end button. ✅ shipped
+  2. `getKeyExportCapability` / `openKeyExport` are unit-guarded (5 tests): `showSettings` is NOT
+     treated as export; the key never enters OneLink's JS. ✅
+  3. Ops (to make the reveal actually work): enable **Key Export** for the app in the Magic dashboard
+     (verify plan), then live-verify the reveal on `/wallet` (Pro → "Reveal my private key").
+- **mitigation_status:** in_progress — honest code shipped + gate green; enabling export in the Magic
+  dashboard + a live `/wallet` reveal test is a user/ops step (not doable autonomously).
+- **owner:** builder
+- **review:** after enabling Magic key export + a live `/wallet` reveal test
+
 ## Security findings (external audit, 2026-06-21)
 
 > Surfaced by an external code-level audit and triaged with Kiro. Funds were never at risk in any

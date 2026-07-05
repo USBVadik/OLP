@@ -2,20 +2,31 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getKeyExportCapability } from "./key-export";
 
-// Honesty + security guard: key-export is offered ONLY when Magic exposes its own hosted settings UI
-// (`magic.user.showSettings`), which reveals the key inside Magic's UI — the raw key never enters
-// OneLink's JS. The probe FAILS CLOSED: absent/blocked/non-function -> not available, and the UI then
-// shows the honest undelegate-exit path instead of a fake export.
+// Key export uses Magic's dedicated reveal method (revealEVMPrivateKey / legacy revealPrivateKey),
+// which opens Magic's OWN hosted reveal UI — the key is shown only to the end user; neither Magic nor
+// OneLink can see it (per Magic docs). We do NOT use showSettings: it opens generic account settings
+// with no export control for our app config (observed live). The probe FAILS CLOSED: when no reveal
+// method exists, Pro mode shows the honest undelegate-exit path instead of a dead-end button.
 
-test("capability is available only when magic.user.showSettings is a function", () => {
-  const cap = getKeyExportCapability({ user: { showSettings: () => {} } });
+test("capability prefers revealEVMPrivateKey when present", () => {
+  const cap = getKeyExportCapability({ user: { revealEVMPrivateKey: () => {}, revealPrivateKey: () => {} } });
   assert.equal(cap.available, true);
-  assert.equal(cap.method, "showSettings");
+  assert.equal(cap.method, "revealEVMPrivateKey");
 });
 
-test("capability is unavailable when showSettings is missing", () => {
+test("capability falls back to legacy revealPrivateKey", () => {
+  const cap = getKeyExportCapability({ user: { revealPrivateKey: () => {} } });
+  assert.equal(cap.available, true);
+  assert.equal(cap.method, "revealPrivateKey");
+});
+
+test("showSettings alone is NOT an export capability (it has no reveal control)", () => {
+  assert.equal(getKeyExportCapability({ user: { showSettings: () => {} } }).available, false);
+});
+
+test("capability is unavailable when no reveal method exists / is not a function", () => {
   assert.equal(getKeyExportCapability({ user: {} }).available, false);
-  assert.equal(getKeyExportCapability({ user: { showSettings: "nope" } }).available, false);
+  assert.equal(getKeyExportCapability({ user: { revealPrivateKey: "nope" } }).available, false);
 });
 
 test("capability fails closed for null / undefined / malformed magic", () => {
@@ -23,10 +34,4 @@ test("capability fails closed for null / undefined / malformed magic", () => {
   assert.equal(getKeyExportCapability(undefined).available, false);
   assert.equal(getKeyExportCapability({}).available, false);
   assert.equal(getKeyExportCapability({ user: null }).available, false);
-});
-
-test("we never advertise revealPrivateKey as the export path (no raw key into our JS)", () => {
-  // Even if a build exposes revealPrivateKey, the probe must not select it — only the hosted UI.
-  const cap = getKeyExportCapability({ user: { revealPrivateKey: () => "0xdeadbeef" } });
-  assert.equal(cap.available, false);
 });
