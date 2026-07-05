@@ -35,6 +35,8 @@ import {
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
 import { CrossChainRoute } from "@/components/cross-chain-route";
+import { sponsoredDelegateChain } from "@/lib/particle/delegation";
+import { isSponsoredDelegationEnabled } from "@/lib/particle/sponsored-delegation";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
@@ -133,6 +135,27 @@ async function delegateChain7702(
     }
   }
   logFn?.("ensureDelegated", "submitted but not confirmed in time", { chainId });
+}
+
+// Delegate one chain, preferring the sponsored (relayer-paid) path when the flag is on so a payer
+// with ZERO native gas can delegate; on any sponsor error, fall back to the proven self-paid path
+// (which needs the EOA to hold a little native gas). Flag OFF (default) => identical to before.
+async function delegateOrSponsor(
+  magic: any,
+  ua: any,
+  ownerAddress: string,
+  chainId: number,
+  logFn?: (action: string, result: string, data?: any) => void
+): Promise<void> {
+  if (isSponsoredDelegationEnabled()) {
+    try {
+      await sponsoredDelegateChain(magic, ua, ownerAddress, chainId, logFn);
+      return;
+    } catch (e: any) {
+      logFn?.("sponsoredDelegate", "fallback to self-paid", { chainId, error: e?.message });
+    }
+  }
+  await delegateChain7702(magic, ua, ownerAddress, chainId, logFn);
 }
 
 const ACTIVE_CHAIN = getActivePaymentChain();
@@ -647,7 +670,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
         ) as number[];
         log("createUniversalTransaction(7702)", "routed", { transactionId: tx.transactionId, touchedChains });
         for (const chainId of touchedChains) {
-          await delegateChain7702(magic, ua, address, chainId, log);
+          await delegateOrSponsor(magic, ua, address, chainId, log);
         }
         tx = await build7702Transaction(ua, paymentLink, token);
         log("createUniversalTransaction(7702)", "ok", { transactionId: tx.transactionId });
@@ -714,7 +737,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
   // avoid the AA24 error seen when delegation + transaction are combined in one step).
   const ensureDelegated7702 = useCallback(async () => {
     if (!ua || !magic || !address) throw new Error("Universal Account or wallet not ready");
-    await delegateChain7702(magic, ua, address, ACTIVE_CHAIN.chainId, log);
+    await delegateOrSponsor(magic, ua, address, ACTIVE_CHAIN.chainId, log);
   }, [ua, magic, address]);
 
   // EIP-7702: pre-delegate, sign any inline authorizations the SDK still needs, sign the

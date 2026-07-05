@@ -1,5 +1,7 @@
 "use client";
 
+import { authorizationNonce } from "./sponsored-delegation";
+
 // EIP-7702 delegation helpers (read status + undelegate). These mirror the proven
 // `delegateChain7702` flow in `src/app/pay/[id]/page.tsx` beat-for-beat — the ONLY difference for
 // undelegation is that the 7702 authorization is signed to the ZERO address instead of the
@@ -117,4 +119,78 @@ export async function undelegateChain(
   }
   logFn?.("undelegate", "submitted but not confirmed in time", { chainId });
   return { txHash, confirmed: false };
+}
+
+export interface SponsoredDelegateResult {
+  /** Already delegated on this chain — nothing sent. */
+  alreadyDelegated?: boolean;
+  /** The relayer-submitted Type-4 delegation tx hash. */
+  delegationTxHash?: string;
+  /** Whether the SDK reported the delegation before the poll timed out. */
+  confirmed?: boolean;
+}
+
+/**
+ * Sponsored 7702 delegation on ONE chain: the payer signs the authorization (Magic, gasless) and our
+ * RELAYER submits the Type-4 tx (pays gas) via `/api/delegate/sponsor` — so a payer with ZERO native
+ * gas can still delegate. EIP-7702 nonce: the sponsor case signs the authority's CURRENT nonce (the
+ * relayer's tx doesn't bump the payer's nonce), unlike the self-paid path which signs nonce+1.
+ * Polls until the SDK reports delegated. THROWS on failure so the caller can fall back to self-paid.
+ */
+export async function sponsoredDelegateChain(
+  magic: any,
+  ua: any,
+  ownerAddress: string,
+  chainId: number,
+  logFn?: LogFn,
+): Promise<SponsoredDelegateResult> {
+  const status = await getDelegationStatus(ua, [chainId]);
+  if (status[chainId]?.isDelegated) {
+    logFn?.("sponsoredDelegate", "already delegated", { chainId });
+    return { alreadyDelegated: true };
+  }
+
+  logFn?.("sponsoredDelegate", "delegating (relayer-paid)", { chainId });
+  await magic.evm.switchChain(chainId);
+  const [auth] = await ua.getEIP7702Auth([chainId]);
+  // Sponsor nonce = authority's current nonce (NOT +1): the relayer, not the EOA, sends the tx.
+  const sponsorNonce = Number(authorizationNonce(BigInt(auth.nonce), "sponsor"));
+  const signed = await magic.wallet.sign7702Authorization({
+    contractAddress: auth.address,
+    chainId,
+    nonce: sponsorNonce,
+  });
+  // Normalize the recovery id to yParity (0|1) whether Magic returns v (27/28) or yParity.
+  const yParity =
+    typeof signed.yParity === "number"
+      ? signed.yParity
+      : Number(signed.v) >= 27
+        ? Number(signed.v) - 27
+        : Number(signed.v);
+
+  const res = await fetch("/api/delegate/sponsor", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      payer: ownerAddress,
+      chainId,
+      authorization: { address: auth.address, chainId, nonce: sponsorNonce, r: signed.r, s: signed.s, yParity },
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data?.ok) {
+    throw new Error(data?.error || `Sponsored delegation failed (HTTP ${res.status})`);
+  }
+  logFn?.("sponsoredDelegate", "submitted", { chainId, delegationTxHash: data.delegationTxHash });
+
+  for (let i = 0; i < 15; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const fresh = await getDelegationStatus(ua, [chainId]);
+    if (fresh[chainId]?.isDelegated) {
+      logFn?.("sponsoredDelegate", "confirmed", { chainId });
+      return { delegationTxHash: data.delegationTxHash, confirmed: true };
+    }
+  }
+  logFn?.("sponsoredDelegate", "submitted but not confirmed in time", { chainId });
+  return { delegationTxHash: data.delegationTxHash, confirmed: false };
 }
