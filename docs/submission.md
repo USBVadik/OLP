@@ -12,11 +12,10 @@
 
 Realistic max: **$5,000**.
 
-**Key dates** — per the Encode/UXmaxx workshop hosts (⚠️ unverified — confirm on Discord): mid-hackathon
-checkpoint **Jul 5** (a required submission; Jul 5 2026 is a Sunday, matching the host), final submission
-**Jul 19**, finale + prize-giving **Jul 30**. UX workshop track along the way: ZeroDev chain-abstraction
-Jul 7 · x402 Jul 8 · Magic social-login Jul 22. (An earlier "project outline" milestone ~Jun 29 was noted
-separately — verify whether it still stands or is the same thing as the Jul 5 checkpoint.)
+**Key dates** — mid-hackathon checkpoint **Jul 5** (23:59 GMT+1) **confirmed on the platform 2026-07-05**;
+final submission **Jul 19**, finale + prize-giving **Jul 30** (per the hosts — schedule shows Week 5
+Judging / Week 6 Finale; confirm exact final time on the platform). UX workshop track: ZeroDev
+chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 
 ---
 
@@ -26,7 +25,7 @@ separately — verify whether it still stands or is the same thing as the Jul 5 
 > Give your AI a card, not your wallet. Sign one on-chain mandate; your agent can pay within strict caps but physically can't overspend.
 
 **Short (milestone / outline):**
-> OneLink Pay is an on-chain spending limit for the agent economy. You sign one scoped mandate — per-charge, daily, and total caps, expiry, a single merchant, instant revoke — and your AI agent (or a merchant) can pay USDC but **physically cannot overspend**: over-limit charges revert on-chain at zero gas, and every payment ships a verifiable proof receipt. Built on **Particle Universal Accounts in EIP-7702 mode** (one login, one balance, **cross-chain settlement with no manual bridge**) + **Magic** walletless login, settling on **Arbitrum**, bounding **x402** agent payments.
+> OneLink Pay is an on-chain spending limit for the agent economy. You sign one scoped mandate — per-charge, daily, and total caps, expiry, a single merchant, instant revoke — and your AI agent (or a merchant) can pay USDC but **physically cannot overspend**: over-limit charges revert on-chain at zero gas, and every payment ships a verifiable proof receipt. Built on **Particle Universal Accounts in EIP-7702 mode** + **Magic** walletless login: one balance across chains with **cross-chain settlement (no manual bridge)** and **zero-gas onboarding** (the one-time delegation is relayer-sponsored). Non-custodial — the limit lives on **your own EOA** (export your key, revert anytime), settling on **Arbitrum**, bounding **x402** agent payments.
 
 **Long (final submission):**
 > AI agents can now pay for anything over HTTP (x402) — but nothing stops a buggy or hijacked agent from draining the wallet. OneLink Pay is the missing leash: a **permission firewall for Universal Accounts**.
@@ -35,7 +34,7 @@ separately — verify whether it still stands or is the same thing as the Jul 5 
 >
 > It runs on **Particle Universal Accounts in EIP-7702 mode**: one **Magic** login (email/Google, no seed phrase), one balance across chains, and **cross-chain settlement** — a merchant is paid on **Arbitrum** with USDC sourced from **Base** in one operation, no manual bridge. The agent demo runs the real x402 handshake (`402 → pay within the mandate → 200`), bounded by the on-chain caps.
 >
-> **Differentiator:** most agent-wallet products enforce limits in a custodial server you must trust. OneLink enforces them in an **auditable on-chain contract anyone can re-check** — *policy you can audit, not policy you have to trust.*
+> **Differentiator:** most agent-wallet products enforce limits in a custodial or MPC server you must trust. OneLink enforces them in an **auditable on-chain contract anyone can re-check**, on **your own EOA** (same address) — export your key or revert the delegation anytime, and onboard with **zero native gas** (the one-time delegation is relayer-sponsored, C23). *Policy you can audit, not policy you have to trust.*
 
 ---
 
@@ -110,5 +109,5 @@ separately — verify whether it still stands or is the same thing as the Jul 5 
 
 - x402 is the **pattern** (`onelink-mandate` scheme), not the Coinbase EIP-3009 facilitator — enforcement is real, wire-compat is not claimed.
 - The agent is an **unattended deterministic** loop — **not** LLM-driven; no AI reasoning is claimed.
-- **No gas sponsorship** is claimed; a first-time 7702 delegation needs a little native gas per chain.
+- **No general gas paymaster** is claimed — only the one-time 7702 delegation is sponsored (relayer-paid, C23), so a first-time payer needs **zero native gas**; the settlement fee is paid in USDC.
 - Prod runs the pinned **stable** Particle SDK (`2.0.3`) — real EIP-7702 + cross-chain; same-chain and cross-chain (Arbitrum→Base) settlement live-verified on it, RPC-checked (2026-07-04).

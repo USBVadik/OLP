@@ -40,7 +40,7 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
 ];
 
 const DEMO_BEATS: { t: string; d: string }[] = [
-  { t: "Walletless login", d: "Google or email via Magic — no seed phrase, no extension — into a Particle Universal Account in EIP-7702 mode." },
+  { t: "Walletless, gasless login", d: "Google or email via Magic — no seed phrase, no extension, no gas — into a Particle Universal Account in EIP-7702 mode; the first-time delegation is relayer-sponsored." },
   { t: "Read the card, not a hash", d: "A plain-English mandate: $0.10 / charge, $2 / day, one merchant, expires today, revocable. The EIP-712 hash sits behind a disclosure." },
   { t: "Send the agent", d: "It runs the x402 handshake (402 → pay → 200) and buys within budget; the live Budget HUD drains from on-chain state." },
   { t: "Over-cap is blocked on-chain", d: "The next charge exceeds the cap and reverts (PerChargeExceeded) — no funds move, zero gas. The moment that lands." },
@@ -53,13 +53,15 @@ const PROVEN: string[] = [
   "Cross-chain settlement via Particle Universal Account (EIP-7702) — merchant paid on Arbitrum, USDC sourced from Base, one operation, no manual bridge. Proven live on-chain.",
   "Agent on a leash — the real x402 pattern, bounded by the mandate; within-cap buys succeed, over-cap is refused before any funds move.",
   "Public proof receipts — ReceiptEmitter anchors an InvoicePaid attestation after server-side verification of the on-chain USDC transfer; re-verifiable by anyone.",
+  "Zero-gas onboarding — the one-time per-chain EIP-7702 delegation is submitted by our relayer (relayer pays); a first-time payer needs no native gas. Proven live on Arbitrum (the delegation tx is sent by the relayer, not the payer).",
+  "Self-custody — the limit lives on your own EOA (same address), not a custodial or MPC wallet; export your key via Magic's own reveal (OneLink never sees it) or revert the delegation anytime.",
 ];
 
 const NOT_CLAIMED: React.ReactNode[] = [
   <>x402 is the <span className="font-medium text-ink">pattern</span> (our <span className="font-mono text-xs">onelink-mandate</span> scheme), not the Coinbase facilitator.</>,
   <>The agent is an <span className="font-medium text-ink">unattended deterministic</span> loop — not an LLM. No AI reasoning is claimed.</>,
-  <>No gas sponsorship — a first-time EIP-7702 delegation needs a little native gas per chain.</>,
-  <>Prod runs a pinned <span className="font-medium text-ink">beta</span> Particle SDK (<span className="font-mono text-xs">2.0.0-beta.3</span>) — the build that ships real 7702 + cross-chain.</>,
+  <>No <span className="font-medium text-ink">general</span> gas paymaster — only the one-time 7702 delegation is sponsored (relayer-paid); the settlement fee is paid in USDC.</>,
+  <>Prod runs the pinned <span className="font-medium text-ink">stable</span> Particle SDK (<span className="font-mono text-xs">2.0.3</span>) — real 7702 + cross-chain, live-verified.</>,
 ];
 
 export default function PitchPage() {
@@ -151,8 +153,9 @@ export default function PitchPage() {
           </ol>
           <p className="mt-2 max-w-2xl rounded-2xl border border-gold/25 bg-gold-soft/40 px-4 py-3 text-sm font-medium text-ink">
             Built on Particle Universal Accounts in EIP-7702 mode + Magic walletless login: one
-            balance across chains, cross-chain settlement with no manual bridge, bounding x402 agent
-            payments.
+            balance across chains, cross-chain settlement with no manual bridge, and zero-gas
+            onboarding (the one-time delegation is relayer-sponsored) — bounding x402 agent payments,
+            non-custodial on your own EOA.
           </p>
         </section>
 
