@@ -360,6 +360,25 @@
 - **owner:** builder
 - **review:** re-verify if the Magic plan / dashboard export setting changes
 
+### R25 — Sponsored-delegation relayer route spends relayer gas (public endpoint)
+
+- **likelihood:** low–med (public `/api/delegate/sponsor`, only active when the flag is on)
+- **impact:** low (funds safe — no value transfer, no mandate; exposure is relayer native gas only,
+  and only the caller's OWN EOA gets delegated)
+- **context:** Spec `sponsored-delegation` (claim C23). When `NEXT_PUBLIC_SPONSORED_DELEGATION` is on,
+  the route submits a type-4 delegation tx paying relayer gas so a zero-native-gas payer can delegate.
+- **mitigation:**
+  1. Server flag-gate (403/inert when off) + `validateSponsorRequest` (rejects malformed input before
+     any gas is spent).
+  2. Reuses the R16 rolling-window gas guard (`RELAYER_MAX_DELEGATIONS_PER_WINDOW`, default 20) —
+     bounds any drain to the relayer's small balance on the sponsored chain (tiny blast radius).
+  3. The authorization is the caller's own (scoped to the delegate contract); worst case an attacker
+     burns a little relayer gas delegating their own EOAs. Production needs per-caller rate-limit/auth.
+- **mitigation_status:** accepted for the demo (guards in place + live-verified C23 on Arbitrum). A
+  shared limiter + per-caller auth remain for a non-demo multi-instance public deploy (same as R16).
+- **owner:** builder
+- **review:** before any non-demo public deploy; keep the relayer funded on sponsored chains
+
 ## Security findings (external audit, 2026-06-21)
 
 > Surfaced by an external code-level audit and triaged with Kiro. Funds were never at risk in any

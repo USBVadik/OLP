@@ -32,12 +32,16 @@
 ## Phase 4 — verify + live spike + claim
 
 - [x] **T6. Gate:** typecheck 0, lint 0, test:unit 147 (incl. the 9 core guards), build clean.
-- [ ] **T7. Live spike (user-run):** a payer with **0 native gas** on a chain delegates it via the
-  relayer (relayer pays); RPC-verify `eth_getCode(payer)` == `0xef0100 || <delegate>`; then a payment
-  completes end-to-end. Keep the relayer funded on the sponsored chain.
-- [ ] **T8.** Only after T7: flip `NEXT_PUBLIC_SPONSORED_DELEGATION=true` on prod, add a ledger claim
-  ("first-time payer delegates with zero native gas — relayer-sponsored 7702"), move gas sponsorship
-  off the denylist (scoped to the delegation), add a risk-register entry for the relayer gas surface.
+- [x] **T7. Live spike — PASSED (2026-07-05).** Zero-native-gas payer delegated Arbitrum via the
+  relayer: delegation tx `0x74ae6ad6…82615e8`, sender = relayer `0x0AC0…9f41` (RPC-verified ≠ payer,
+  type 4, status 1), payer then delegated (`eth_getCode` = `0xef0100‖13E00E08…`); payment settled
+  (invoice `03feedba`, Arbitrum `0x3ee25d54…`, Base proof `0x0242c24f…`). Two prior runs caught a
+  client-inline bug (flag read via an aliased helper → Next doesn't inline it client-side) — fixed to
+  a literal `process.env` read (commit `2e5f49f`).
+- [x] **T8.** Flag `NEXT_PUBLIC_SPONSORED_DELEGATION` enabled on prod; ledger claim **C23** added; gas
+  sponsorship now claimable scoped to the delegation step only; risk-register **R25** (relayer gas
+  surface). NOTE: the prod env var is currently Sensitive (not inlined at build) so this deploy used
+  `--build-env`; make it non-sensitive so normal deploys keep the client flag on.
 
 ## Acceptance
 
@@ -50,8 +54,7 @@ after T7 (T8).
 
 - (Phase 1 in progress)
 
-## Status: Phases 1–3 built (pure TDD core + relayer route + flag-gated wiring), gate green (147 unit).
-Flag OFF by default → ships as a no-op. Next: **T7 live spike** (user-run, local flag ON in `.env.local`:
-a 0-native-gas payer delegates a chain via the relayer, RPC-verify `eth_getCode`). Only after T7: flip
-the prod flag + add the ledger claim (T8). Commit done incrementally; prod deploy of the flag-OFF code
-awaits "го".
+## Status: SHIPPED + PROVEN LIVE (2026-07-05). Sponsored 7702 delegation works end-to-end on prod —
+zero-gas payer, relayer-paid delegation (C23, RPC-verified). Flag-gated + self-paid fallback.
+Follow-up (non-blocking): make the prod env var non-sensitive (so normal deploys keep the client flag
+without `--build-env`); shared relayer gas limiter for non-demo prod (R25/R16).
