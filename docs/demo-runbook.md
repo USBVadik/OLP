@@ -1,6 +1,6 @@
 # OneLink Pay — Demo Runbook
 
-Last updated: 2026-06-26
+Last updated: 2026-07-05
 
 The definitive "what to show and say" for judges. Reflects the current build — Arbitrum-first, with
 cross-chain settlement via the Particle Universal Account (prod mode `universal_7702_transfer`),
@@ -11,20 +11,23 @@ deployed live at onelink-pay.vercel.app.
 **Hook (10s):** "You can't hand an AI your wallet. OneLink Pay gives it a *card* instead — a spending limit enforced on-chain, not on trust."
 
 **90-second beats:**
-1. Magic login (no seed phrase) → Particle Universal Account in EIP-7702 mode.
+1. Magic login (no seed phrase, **no gas**) → Particle Universal Account in EIP-7702 mode.
 2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable.
 3. **Send the agent** → it buys within budget (`402 → pay → 200`); the Budget HUD drains.
 4. It tries an over-cap buy → **BLOCKED on-chain**: "no funds moved, zero gas."
 5. Cross-chain: the merchant is paid on Arbitrum with USDC sourced from Base — no manual bridge.
 6. Open the public proof receipt → anyone verifies on a block explorer. **Revoke** → agent disarmed.
+7. **It's your wallet, not ours:** same-address EOA — the first payment's delegation is sponsored (you pay zero gas), and you can export your key or revert the delegation anytime. Non-custodial by construction.
 
-**Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC, no destination-chain gas) but **no gas sponsorship** is claimed (a first-time 7702 delegation needs a little native gas).
+**Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC) and the **one-time 7702 delegation is now sponsored** — the relayer pays it (proven on-chain, C23), so a first-time payer needs **zero native gas**. (Scoped to the delegation step; the settlement fee is still paid in USDC — we do **not** claim a general paymaster.)
 
 **Skeptic Q&A (rehearse):**
 - *"Is this really x402?"* → "The pattern — 402 → pay → retry-with-proof — settled by our on-chain mandate, not the Coinbase facilitator. Enforcement is real; wire-compat isn't claimed."
 - *"Is the agent autonomous?"* → "Unattended, one click — but deterministic, not an LLM. We don't claim AI reasoning; the on-chain limit is fully real."
 - *"What does 'zero gas' mean?"* → "Over-cap charges revert in simulation, before broadcast — no funds move and no gas is spent on the blocked attempt."
-- *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. A first-time payer needs a little native gas per chain for the one-time delegation."
+- *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. And the payer needs **zero native gas**: the one-time delegation is relayer-sponsored (C23)."
+- *"Does the user need any gas / ETH?"* → "No. The one-time 7702 delegation is **sponsored by our relayer** — proven on-chain (the delegation tx's sender is the relayer, not the user — C23). The settlement fee is paid in USDC. Zero native gas for the payer. We don't claim a general paymaster — just this delegation step."
+- *"Is it custodial — do you hold the wallet?"* → "No. It's your **own EOA**, upgraded in place via EIP-7702 (same address). In Pro mode you can **export your key** through Magic's own reveal UI (we never see it — C22) and **revert the delegation** to a plain wallet anytime. Non-custodial, vs the MPC / vendor-wallet approaches."
 - *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / ERC-7715 already do this."* → "The primitive isn't new — and we say so. Our wedge is the packaging none of them combine: the limit lives on your **own EOA via EIP-7702** (same address, no vendor wallet), **chain-abstracted across EVM + Solana** via Particle, with a **public proof receipt** per payment and our **own auditable SpendPolicy** — not a setting in a vendor dashboard."
 
 ## One-liner
@@ -54,6 +57,8 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 - **Autonomous agent on a leash.** One-click unattended run buys within the mandate and is halted by the firewall on the over-cap call (deterministic — not LLM-driven).
 - **Proof Receipt.** A verified -> matched -> recorded trail, shareable at `/receipt/[id]`; anyone can verify on a block explorer.
 - **InvoicePaid proof** anchored on Base via `ReceiptEmitter`.
+- **Zero-gas onboarding — sponsored 7702 delegation (C23).** The one-time per-chain delegation is submitted by our relayer (relayer pays the gas); the payer signs only the authorization (gasless, via Magic). Proven live on Arbitrum — the delegation tx's sender is the relayer, not the payer. Flag-gated with a self-paid fallback; scoped to the delegation step (not a general paymaster).
+- **Self-custody / Pro mode (C22).** Opt-in expert overlay on `/wallet`: your own EOA + delegate contract shown, **key export** via Magic's own reveal UI (OneLink never sees the key), reversible undelegate, and custom mandate caps — the "provably yours" story vs custodial / MPC agent wallets.
 - **Where we fit + the trust gap (`/trust`).** A 2026-stack map (OneLink = the enforcement & proof layer on top of AP2 / x402 / cards), third-party trust data (~¾ won't let AI pay even with limits set; only ~14% trust an agent to buy — each sourced + linked), and a fair "vs the giants" comparison (Visa/OpenAI, Coinbase Agentic Wallets, Circle/Catena, AP2). The "why us, not them" evidence, in-app.
 
 ## Live demo (~2 minutes, two acts)
@@ -73,8 +78,9 @@ agent on a leash. Both are live on Arbitrum + Base; keep amounts tiny.
 4. **One tap — "Pay".** A single tap orchestrates delegate → build → sign → settle: the Universal
    Account sources USDC cross-chain and settles to the merchant in one operation. No "build preview"
    then "confirm" — the Trust Preview above was the only explicit approval; the plumbing signatures
-   are blind (Magic). *(One-tap = `NEXT_PUBLIC_ONE_TAP_CHECKOUT=true`, live-verified same-chain +
-   cross-chain 2026-07-05.)*
+   are blind (Magic). **You pay zero native gas** — the first-time 7702 delegation is submitted by our
+   relayer (C23), and the settlement fee is paid in USDC. *(One-tap = `NEXT_PUBLIC_ONE_TAP_CHECKOUT=true`;
+   sponsored delegation = `NEXT_PUBLIC_SPONSORED_DELEGATION=true`; both live-verified 2026-07-05.)*
 5. **Proof Receipt:** open the public `/receipt/<id>` — "Cross-chain: Base → Arbitrum" badge, the
    animated route, per-chain explorer links, the UniversalX activity link, and the InvoicePaid
    attestation. Verifiable by anyone, no account.
@@ -109,12 +115,23 @@ prompt-injected agent physically cannot exceed what you signed."
 **Honesty lines (say them):** the agent is a real **unattended deterministic** loop — **not**
 LLM-driven, so no AI reasoning is claimed. The x402 flow is the *pattern* settled by our
 `onelink-mandate` scheme — **not** the Coinbase facilitator. **Gas abstraction** is real — the
-network fee is paid in USDC from the UA, no destination-chain gas to hold. **No gas *sponsorship***
-is claimed (the account is paymaster-compatible, but no paymaster covers the fee); a first-time
-7702 delegation needs a little native gas per chain (we pre-delegate before the demo).
+network fee is paid in USDC from the UA. The one-time 7702 delegation is now **relayer-sponsored**
+(C23) — a first-time payer needs **zero native gas**; this is scoped to the delegation step, **not**
+a general paymaster (we don't sponsor the settlement fee, which is paid in USDC).
 
 *(Alternative scripted version of the same beat lives at `/firewall` — preset scenarios instead of
 the one-click autonomous run.)*
+
+### Closer — "it's your wallet, not ours" (optional, ~15s) — `/wallet`
+
+The mic-drop for the non-custodial thesis. Flip on **Pro** in the Account panel:
+- **Your own EOA** — the same address, upgraded in place (7702). Not a wallet we hold, not an MPC share.
+- **Export your key** — "Reveal my private key" opens Magic's own screen; neither Magic nor OneLink ever sees it (C22).
+- **Revert anytime** — "Revert to a plain wallet" clears the delegation on-chain; you're never locked in.
+- **Zero-gas onboarding** — the first payment's delegation was relayer-sponsored (C23), so the user never needed native gas.
+
+Talk track: "Competitors hand the agent a custodial or MPC wallet. OneLink's limit lives on *your own*
+account — you can export the key and walk, or revert the delegation, anytime. It's provably yours."
 
 ## On-chain proofs (copy-paste)
 
@@ -140,6 +157,12 @@ Cross-chain (C21 — Base -> Arbitrum, no manual bridge):
 - Product receipt (invoice `40027dcf`): `/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3` (Arbitrum settle `0x8163be21…f966464`, Base proof `0x2fba4854…63fd7055`)
 - Full evidence: `docs/proof-pack.md`
 
+Sponsored 7702 delegation (C23 — relayer pays gas, payer needs zero native gas):
+
+- Sponsored delegation (Arbitrum): `0x74ae6ad67438506d71c39d88a9e0681d99f3748d710efd25a4e0359ea82615e8` (sender = relayer `0x0AC0…9f41`, NOT the payer; type 4; status 1)
+- Payment settled (invoice `03feedba`): Arbitrum `0x3ee25d5417156d7a32b2c6b2c23dd5c5872051a382d4e3d709dab4c39ebbccca`, Base InvoicePaid `0x0242c24fc56444fc6d89332408b5b6e95c61e064471f3782c337d8e0a44db05a`
+- Relayer (sponsor): `0x0AC0183580bd50858702Bc803a8667d6EF629f41`
+
 Accounts:
 
 - Payer / UA owner: `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`
@@ -147,7 +170,7 @@ Accounts:
 
 ## Judging-criteria map
 
-- **UX excellence (40%):** email onboarding; legible consent vs blind signature; live agent budget; visceral "overcharge blocked"; one-tap revoke; shareable proof receipt.
+- **UX excellence (40%):** email onboarding; **zero-gas first payment** (sponsored delegation); legible consent vs blind signature; live agent budget; visceral "overcharge blocked"; one-tap revoke; shareable proof receipt; **self-custody** (own EOA + key export + reversible delegation).
 - **Universal Accounts + EIP-7702 (30%):** UA in 7702 mode; same address delegated across 3 chains; account-level mandate enforcement; directly addresses the documented 7702 drainer risk.
 - **Adoption potential (20%):** plugs into the real agentic economy (x402 + AWS, AP2 + Google/FIDO); concrete markets in subscriptions and AI-agent spending.
 - **Technical quality / polish (10%):** SpendPolicy covered by 22 passing tests; typed end to end; EIP-712 mandate byte-identical between contract and frontend.
@@ -158,11 +181,13 @@ Accounts:
   total / expiry / merchant / revoke); the **autonomous agent on a leash**; on-chain proof receipts;
   **gas abstraction** (the network fee is paid in USDC, no destination-chain gas to hold); and
   **cross-chain value movement via the Universal Account (C21)** — a merchant paid on Arbitrum
-  with USDC sourced from Base in one operation, no manual bridge (proven live + deployed).
+  with USDC sourced from Base in one operation, no manual bridge (proven live + deployed); the
+  **one-time 7702 delegation is relayer-sponsored** so a first-time payer needs **zero native gas**
+  (C23); and **self-custody** — your own EOA with key export + reversible undelegate (C22).
 - **Honest framing:** the x402 flow is the *pattern* (`onelink-mandate` scheme, not the Coinbase
   facilitator); the agent is an *unattended deterministic* loop (not LLM-driven); prod runs the
   pinned **stable** Particle SDK (`2.0.3`) — same-chain + cross-chain settlement live-verified on it (2026-07-04).
-- **Not claimed:** gas sponsorship; AI/LLM agent reasoning; Circle / ZeroDev / Openfort integration.
+- **Not claimed:** a general gas paymaster (only the one-time 7702 delegation is sponsored — the settlement fee is paid in USDC); AI/LLM agent reasoning; Circle / ZeroDev / Openfort integration.
 
 ## Run locally
 
@@ -189,7 +214,7 @@ Accounts:
 - [ ] Clean Chrome profile, no ad-block / extensions (R7).
 - [ ] Demo machine on the latest pushed commit: `git rev-parse --short HEAD` ≥ `15df7c1`.
 - [ ] `.env.local` populated: Magic key, Particle project/client/app ids, `NEXT_PUBLIC_SPEND_POLICY_ADDRESS_ARBITRUM`, `RECEIPT_EMITTER_OWNER_PRIVATE_KEY`, Arbitrum RPC.
-- [ ] Demo wallet `0x53Bd…206a` funded: a little USDC on **Arbitrum** + a little ETH on Arbitrum (relayer/owner gas) and on Base (proof gas).
+- [ ] Demo wallet `0x53Bd…206a` funded with a little USDC on **Arbitrum** — the **payer needs no native gas** (the one-time delegation is relayer-sponsored, C23). Relayer `0x0AC0…9f41` funded with a little ETH on **Arbitrum** (sponsors the delegation + agent charges); owner `0x8C54…Fb7` funded with a little ETH on **Base** (proof registration). *(If `NEXT_PUBLIC_SPONSORED_DELEGATION` is off, the payer falls back to self-paid delegation and then does need a little Arbitrum ETH.)*
 - [ ] If serving a **deployed** build (not localhost): that build was built with `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` (R18). Confirm `/debug/*` shows the "disabled" stub.
 - [ ] `corepack pnpm dev` up; `/`, `/pay/<id>`, `/firewall`, `/agent`, `/dashboard` load with no console errors.
 
