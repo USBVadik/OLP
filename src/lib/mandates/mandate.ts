@@ -159,3 +159,38 @@ export function deriveMandate(input: DeriveMandateInput): PaymentMandate {
     nonce: randomNonce(),
   };
 }
+
+export interface CustomMandateInput {
+  payer: Address;
+  merchant: Address;
+  token: Address;
+  chainId: number;
+  /** Atomic caps (USDC = 6 decimals). maxPerDay = 0 means no daily limit. */
+  maxPerCharge: bigint;
+  maxPerDay: bigint;
+  totalCap: bigint;
+  /** Unix seconds. */
+  expiry: number;
+  /** Deterministic nonce override (tests); a fresh 32-byte salt is rolled otherwise. */
+  nonce?: Hex;
+}
+
+/**
+ * Pro-mode "advanced limits": build a mandate from user-chosen caps instead of a preset. It produces
+ * the SAME `PaymentMandate` shape as `deriveMandate`, so it flows through the identical EIP-712
+ * struct/domain and on-chain SpendPolicy verification — only the numbers differ. Validation
+ * (positive, ordered caps) lives in the UI; the contract enforces the caps regardless.
+ */
+export function mandateFromCustomCaps(input: CustomMandateInput): PaymentMandate {
+  return {
+    payer: input.payer,
+    merchant: input.merchant,
+    token: input.token,
+    chainId: input.chainId,
+    maxPerCharge: input.maxPerCharge,
+    maxPerDay: input.maxPerDay,
+    totalCap: input.totalCap,
+    expiry: input.expiry,
+    nonce: input.nonce ?? randomNonce(),
+  };
+}

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { formatUnits, type Address } from "viem";
-import { computeMandateId, deriveMandate } from "@/lib/mandates/mandate";
+import { formatUnits, parseUnits, type Address } from "viem";
+import { computeMandateId, deriveMandate, mandateFromCustomCaps } from "@/lib/mandates/mandate";
 import { type MandatePreset, type PaymentMandate } from "@/lib/mandates/types";
+import { useProMode } from "@/hooks/use-pro-mode";
 import { Chip, ConceptTag, Dot, IconBan, IconBolt, IconCheck, IconShield } from "@/components/ui";
 
 const ZERO: Address = "0x0000000000000000000000000000000000000000";
@@ -52,8 +53,15 @@ export function PermissionFirewall({
   conceptMode?: boolean;
 }) {
   const [preset, setPreset] = useState<MandatePreset>("agent_budget");
+  const [pro] = useProMode();
+  const proCustom = pro && !conceptMode; // advanced limits only in the real arming flow, never in checkout concept preview
+  const [customOn, setCustomOn] = useState(false);
+  const [perChargeStr, setPerChargeStr] = useState("");
+  const [dailyStr, setDailyStr] = useState("");
+  const [totalStr, setTotalStr] = useState("");
+  const [expiryDaysStr, setExpiryDaysStr] = useState("7");
 
-  const mandate = useMemo(
+  const presetMandate = useMemo(
     () =>
       deriveMandate({
         payer: (payerAddress as Address | null) ?? ZERO,
@@ -66,6 +74,47 @@ export function PermissionFirewall({
     // nonce/now are intentionally re-rolled only when these inputs change
     [payerAddress, merchantAddress, tokenAddress, chainId, amountAtomic, preset]
   );
+
+  // Pro "advanced limits": user-chosen caps flow through the SAME mandate struct
+  // (mandateFromCustomCaps → identical EIP-712 envelope). Returns null when inputs are invalid, so we
+  // fall back to the preset mandate and arming still works.
+  const customMandate = useMemo(() => {
+    if (!proCustom || !customOn) return null;
+    try {
+      const perCharge = parseUnits((perChargeStr || "0").trim(), decimals);
+      const daily = parseUnits((dailyStr || "0").trim(), decimals);
+      const total = parseUnits((totalStr || "0").trim(), decimals);
+      const days = Number(expiryDaysStr);
+      if (perCharge <= 0n || total <= 0n || perCharge > total) return null;
+      if (daily < 0n || daily > total) return null;
+      if (!Number.isFinite(days) || days <= 0 || days > 365) return null;
+      return mandateFromCustomCaps({
+        payer: (payerAddress as Address | null) ?? ZERO,
+        merchant: merchantAddress as Address,
+        token: tokenAddress,
+        chainId,
+        maxPerCharge: perCharge,
+        maxPerDay: daily,
+        totalCap: total,
+        expiry: Math.floor(Date.now() / 1000) + Math.floor(days) * 86_400,
+      });
+    } catch {
+      return null;
+    }
+  }, [proCustom, customOn, perChargeStr, dailyStr, totalStr, expiryDaysStr, payerAddress, merchantAddress, tokenAddress, chainId, decimals]);
+
+  const customInvalid = proCustom && customOn && customMandate === null;
+  const mandate = customMandate ?? presetMandate;
+
+  // Seed the custom inputs from the current preset so the user starts from a valid, sensible mandate.
+  function enableCustom() {
+    setPerChargeStr(formatUnits(presetMandate.maxPerCharge, decimals));
+    setDailyStr(presetMandate.maxPerDay > BigInt(0) ? formatUnits(presetMandate.maxPerDay, decimals) : "0");
+    setTotalStr(formatUnits(presetMandate.totalCap, decimals));
+    const days = Math.max(1, Math.round((presetMandate.expiry - Math.floor(Date.now() / 1000)) / 86_400));
+    setExpiryDaysStr(String(days));
+    setCustomOn(true);
+  }
 
   const onChangeRef = useRef(onMandateChange);
   useEffect(() => {
@@ -111,8 +160,9 @@ export function PermissionFirewall({
               type="button"
               onClick={() => setPreset(p.id)}
               aria-pressed={active}
+              disabled={customOn}
               className={[
-                "rounded-xl border px-2.5 py-2 text-center transition-colors",
+                "rounded-xl border px-2.5 py-2 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                 active
                   ? "border-gold/50 bg-gold-soft/60 text-ink"
                   : "border-line bg-paper2 text-muted hover:border-gold/30",
@@ -127,6 +177,55 @@ export function PermissionFirewall({
         })}
       </div>
       <p className="px-5 pt-1.5 text-xs text-faint">{PRESETS.find((p) => p.id === preset)?.blurb}</p>
+
+      {proCustom ? (
+        <div className="mx-5 mt-3 rounded-xl border border-line2 bg-paper2 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="op-eyebrow inline-flex items-center gap-1.5">
+              Advanced limits <ConceptTag>Pro</ConceptTag>
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={customOn}
+              aria-label="Set custom limits"
+              onClick={() => (customOn ? setCustomOn(false) : enableCustom())}
+              className={[
+                "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper",
+                customOn ? "border-gold/40 bg-gold" : "border-line2 bg-paper",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "inline-block h-3.5 w-3.5 rounded-full bg-cream shadow-sm transition-transform",
+                  customOn ? "translate-x-[18px]" : "translate-x-[3px]",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+          {customOn ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <CapInput label={`Max per charge (${symbol})`} value={perChargeStr} onChange={setPerChargeStr} />
+                <CapInput label={`Daily (${symbol}, 0 = none)`} value={dailyStr} onChange={setDailyStr} />
+                <CapInput label={`Total cap (${symbol})`} value={totalStr} onChange={setTotalStr} />
+                <CapInput label="Expires (days)" value={expiryDaysStr} onChange={setExpiryDaysStr} />
+              </div>
+              {customInvalid ? (
+                <p role="alert" className="mt-2 text-xs text-danger">
+                  Enter positive limits with per-charge &le; total, daily &le; total, and 1&ndash;365 days.
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-faint">Signed as the same on-chain mandate — only the numbers change.</p>
+              )}
+            </>
+          ) : (
+            <p className="mt-1 text-xs text-muted">Set your own caps + expiry instead of a preset.</p>
+          )}
+        </div>
+      ) : null}
 
       {/* Allowed scope */}
       <dl className="mt-3 divide-y divide-line px-5">
@@ -155,6 +254,21 @@ export function PermissionFirewall({
         <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
       </div>
     </section>
+  );
+}
+
+function CapInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-medium text-muted">{label}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="op-input"
+      />
+    </label>
   );
 }
 
