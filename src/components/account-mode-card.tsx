@@ -247,6 +247,12 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
                 the same address. You&rsquo;re never locked in: revert to a plain wallet above, or
                 export your key to hold it yourself.
               </p>
+              <p>
+                Honest tradeoff: the key is held in Magic&rsquo;s secure infrastructure and unlocked
+                by your login, so the residual risk is your <strong>account recovery</strong> —
+                whoever can reach your email/login can reach this wallet. Secure that (e.g. 2FA on
+                your email), or export the key / revert to remove the dependency.
+              </p>
             </div>
           </Disclosure>
         </div>
