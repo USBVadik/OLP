@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl, type ChainPaymentConfig } from "@/lib/config/payment";
 import { getDelegationStatus, undelegateChain, type ChainDelegation } from "@/lib/particle/delegation";
-import { Chip, Dot, IconArrowUpRight, IconCheck, IconShield } from "@/components/ui";
+import { getKeyExportCapability, openKeyExport } from "@/lib/magic/key-export";
+import { useProMode } from "@/hooks/use-pro-mode";
+import { ProModeToggle } from "@/components/pro-mode-toggle";
+import { Chip, Disclosure, Dot, IconArrowUpRight, IconCheck, IconShield } from "@/components/ui";
 
 // Chains where OneLink delegates the EOA (Base + Arbitrum). The helper is chain-generic; this
 // panel intentionally scopes to the two we use.
@@ -49,6 +52,17 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
   const [busyChainId, setBusyChainId] = useState<number | null>(null);
   const [results, setResults] = useState<Record<number, { txHash: string; href: string }>>({});
   const [error, setError] = useState<string | null>(null);
+  const [pro] = useProMode();
+  const [copied, setCopied] = useState(false);
+  const copyAddress = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — the address is still shown in full for manual copy */
+    }
+  }, [address]);
 
   const refresh = useCallback(async (uaInstance: any) => {
     const s = await getDelegationStatus(uaInstance, CHAINS.map((c) => c.chainId));
@@ -106,16 +120,36 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
 
   return (
     <section className="op-card-quiet p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="op-eyebrow inline-flex items-center gap-1.5">
           <IconShield className="h-3.5 w-3.5 text-gold" /> Account
         </span>
-        <Chip>your own EOA</Chip>
+        <div className="flex items-center gap-2">
+          <Chip>your own EOA</Chip>
+          <ProModeToggle />
+        </div>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         This is your own wallet address, upgraded in place with EIP-7702 — not a wallet we hold. You
         can revert it to a plain wallet anytime.
       </p>
+
+      {pro ? (
+        <div className="mt-3 rounded-xl border border-line bg-paper p-3">
+          <p className="op-eyebrow">Your address (EOA)</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <code className="min-w-0 flex-1 break-all font-mono text-xs text-ink2">{address}</code>
+            <button
+              type="button"
+              onClick={copyAddress}
+              className="op-btn-ghost shrink-0 px-2.5 py-1 text-xs"
+              aria-label="Copy your address"
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <dl className="mt-4 divide-y divide-line" aria-live="polite">
         {CHAINS.map((chain) => {
@@ -140,6 +174,12 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
                   </span>
                 )}
               </div>
+
+              {pro && delegated && st?.delegate ? (
+                <p className="mt-1 break-all font-mono text-[11px] text-faint">
+                  delegate {st.delegate}
+                </p>
+              ) : null}
 
               {delegated && !busy && !confirming ? (
                 <button
@@ -191,11 +231,88 @@ export function AccountModeCard({ magic, address }: { magic: any; address: strin
         })}
       </dl>
 
+      {pro ? <KeyCustodyRow magic={magic} /> : null}
+
+      {pro ? (
+        <div className="mt-3">
+          <Disclosure summary="Why an embedded wallet (and not MetaMask)?">
+            <div className="space-y-2 text-xs leading-relaxed text-ink2">
+              <p>
+                Upgrading your account in place uses an EIP-7702 authorization. Browser-extension
+                wallets (MetaMask, OKX) don&rsquo;t expose that signing method yet, so they can&rsquo;t
+                arm this kind of account.
+              </p>
+              <p>
+                Magic&rsquo;s embedded wallet can sign it — while the account stays your own EOA at
+                the same address. You&rsquo;re never locked in: revert to a plain wallet above, or
+                export your key to hold it yourself.
+              </p>
+            </div>
+          </Disclosure>
+        </div>
+      ) : null}
+
       {error ? (
         <div role="alert" className="mt-3 rounded-xl border border-danger/25 bg-danger-soft p-3 text-xs text-danger">
           {error}
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Pro-mode key-custody row. Offers Magic's HOSTED key export only if the SDK exposes it (probed,
+ * fail-closed); otherwise shows the honest exit path (revert to a plain wallet). OneLink never
+ * handles, stores, or logs the private key — any reveal happens entirely inside Magic's own UI.
+ */
+function KeyCustodyRow({ magic }: { magic: any }) {
+  const cap = getKeyExportCapability(magic);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const onExport = useCallback(async () => {
+    setBusy(true);
+    setNote(null);
+    const res = await openKeyExport(magic);
+    if (!res.ok) {
+      setNote(
+        "Couldn't open the wallet settings here. You can still take full custody by reverting to a plain wallet above.",
+      );
+    }
+    setBusy(false);
+  }, [magic]);
+
+  return (
+    <div className="mt-4 rounded-xl border border-line bg-paper2 p-3">
+      <p className="op-eyebrow">Key custody</p>
+      {cap.available ? (
+        <>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            Your key lives in Magic&rsquo;s secure infrastructure, unlocked by your login. Export it
+            anytime to hold it yourself — it&rsquo;s revealed inside Magic&rsquo;s own screen; OneLink
+            never sees it.
+          </p>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={busy}
+            className="op-btn-secondary mt-2 px-3 py-1.5 text-xs"
+          >
+            {busy ? "Opening…" : "Export key in wallet settings"}
+          </button>
+        </>
+      ) : (
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          In-app key export isn&rsquo;t available in this build. To take full custody, revert to a
+          plain wallet above — this same address then works in any wallet you control.
+        </p>
+      )}
+      {note ? (
+        <p role="alert" className="mt-1.5 text-xs text-danger">
+          {note}
+        </p>
+      ) : null}
+    </div>
   );
 }
