@@ -36,7 +36,6 @@ import { PermissionFirewall } from "@/components/permission-firewall";
 import { ProofReceiptCard } from "@/components/proof-receipt";
 import { CrossChainRoute } from "@/components/cross-chain-route";
 import { sponsoredDelegateChain } from "@/lib/particle/delegation";
-import { isSponsoredDelegationEnabled } from "@/lib/particle/sponsored-delegation";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 
 // Dynamic imports for browser-only SDKs
@@ -147,7 +146,7 @@ async function delegateOrSponsor(
   chainId: number,
   logFn?: (action: string, result: string, data?: any) => void
 ): Promise<void> {
-  if (isSponsoredDelegationEnabled()) {
+  if (SPONSORED_DELEGATION) {
     try {
       await sponsoredDelegateChain(magic, ua, ownerAddress, chainId, logFn);
       return;
@@ -166,6 +165,10 @@ const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
 // single "Pay" after the Trust Preview. Default OFF — the two-step flow stays the shipped default
 // until this is live-verified. Flip via the Vercel env var; no logic redeploy needed.
 const ONE_TAP_CHECKOUT = process.env.NEXT_PUBLIC_ONE_TAP_CHECKOUT === "true";
+// Sponsored 7702 delegation flag. Read as a LITERAL `process.env.NEXT_PUBLIC_*` here (like ONE_TAP)
+// so Next inlines it into the CLIENT bundle at build — aliasing it through a helper param does NOT
+// inline on the client (known Next.js gotcha). The server route can still use the helper (runtime).
+const SPONSORED_DELEGATION = process.env.NEXT_PUBLIC_SPONSORED_DELEGATION === "true";
 
 interface PaymentLink {
   id: string;
