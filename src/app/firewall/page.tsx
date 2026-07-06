@@ -17,6 +17,7 @@ import { PermissionFirewall } from "@/components/permission-firewall";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 import { MandateCard } from "@/components/mandate-card";
 import { BudgetHud } from "@/components/budget-hud";
+import { AccountSpine } from "@/components/account-spine";
 import { AgentTerminal } from "@/components/agent-terminal";
 import { buildAgentScenarios, type AgentScenario } from "@/lib/agent/scenarios";
 import {
@@ -360,6 +361,7 @@ export default function FirewallPage() {
           ) : (
             <ArmedPanel
               mandate={armed.mandate}
+              address={address}
               chainId={CHAIN.chainId}
               revoked={revoked}
               busy={busy}
@@ -385,6 +387,7 @@ export default function FirewallPage() {
 
 function ArmedPanel({
   mandate,
+  address,
   chainId,
   revoked,
   busy,
@@ -396,6 +399,7 @@ function ArmedPanel({
   refreshSignal,
 }: {
   mandate: PaymentMandate;
+  address: string | null;
   chainId: number;
   revoked: boolean;
   busy: string | null;
@@ -425,6 +429,8 @@ function ArmedPanel({
           </dl>
           <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
         </div>
+
+        <AccountSpine address={address} protectedPulse={protectedPulse} />
 
         <BudgetHud chainId={chainId} mandate={mandate} protectedPulse={protectedPulse} refreshSignal={refreshSignal} />
 

@@ -1,0 +1,55 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  ENFORCEMENT_CHAINS,
+  enforcementChainsLabel,
+  shortAddress,
+  accountSpineFacts,
+  blockHeldOnAccountLine,
+} from "./account-spine";
+
+test("enforcement chains are exactly the live SpendPolicy chains (Base + Arbitrum)", () => {
+  assert.deepEqual([...ENFORCEMENT_CHAINS], ["Base", "Arbitrum"]);
+  assert.equal(enforcementChainsLabel(), "Base + Arbitrum");
+});
+
+test("honesty guard: no Solana / Optimism anywhere in the chains label", () => {
+  const label = enforcementChainsLabel().toLowerCase();
+  assert.ok(!label.includes("solana"), "must not claim Solana");
+  assert.ok(!label.includes("optimism"), "must not claim Optimism (experimental, not live)");
+});
+
+test("shortAddress formats a full EOA and passes through short input", () => {
+  assert.equal(
+    shortAddress("0x53Bd615635Af778e5E460d5EEC2d6b234693206a"),
+    "0x53Bd…206a",
+  );
+  assert.equal(shortAddress(""), "");
+  assert.equal(shortAddress(null), "");
+  assert.equal(shortAddress("0x123"), "0x123");
+});
+
+test("account spine facts: three account-level differentiators, chains correct", () => {
+  const facts = accountSpineFacts();
+  assert.equal(facts.length, 3);
+  const ua = facts.find((f) => f.label === "Universal Account");
+  assert.ok(ua && ua.value.includes("Base + Arbitrum"));
+});
+
+test("honesty guard: block-moment copy never implies cross-chain / bridge / Solana", () => {
+  // The /firewall charge is same-chain (Arbitrum); the spine must not imply the blocked charge
+  // was cross-chain-sourced or bridged, nor claim Solana.
+  const blob = [
+    ...accountSpineFacts().map((f) => `${f.label} ${f.value}`),
+    blockHeldOnAccountLine(),
+  ]
+    .join(" ")
+    .toLowerCase();
+  for (const forbidden of ["cross-chain", "bridge", "solana", "sourced from"]) {
+    assert.ok(!blob.includes(forbidden), `spine copy must not contain "${forbidden}"`);
+  }
+});
+
+test("block line ties the held firewall to the user's own account", () => {
+  assert.match(blockHeldOnAccountLine(), /your own account/i);
+});
