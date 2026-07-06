@@ -17,6 +17,7 @@ import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
 import { AccountSpine } from "@/components/account-spine";
 import { MandateCard } from "@/components/mandate-card";
+import { PermissionReceipt } from "@/components/permission-receipt";
 import {
   firewallResultLine,
   type LogEntry,
@@ -500,6 +501,7 @@ export default function AgentPage() {
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-4">
+                <PermissionReceipt mandate={armed.mandate} />
                 <UniversalBalanceCard
                   summary={balanceSummary}
                   loading={balanceLoading}
