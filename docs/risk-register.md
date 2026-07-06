@@ -576,21 +576,25 @@
        client-originated (built in-browser) → NOT a server-authoritative substitute; only this direct
        server→Particle query counts. VENDOR-verified (Particle backend), NOT on-chain — safe to label
        "verified by Particle activity", never "on-chain proven" (that is L3).
-     - **L2 (unblocked — L0 green; READ-TIME design to protect the settlement path):** do NOT touch
-       `mark-paid` or add DB columns. Enrich at READ time on `/receipt/[id]` (server component): call
-       `getTransaction(ua_transaction_id)`, validate `sender==payer` && `receiver==merchant` &&
-       `status==FINISHED`, derive the source-chain ARRAY from `fromChains`, and upgrade the caption
-       "reported" → "verified by Particle activity". Non-blocking: any miss/slowness/mismatch falls
-       back to today's "reported" label. Free backfill (every past payment with a `ua_transaction_id`).
+     - **L2 — ✅ SHIPPED + live-verified (2026-07-06, commit `5b042ce`; READ-TIME, off the settlement
+       path):** `/receipt/[id]` verifies the route at render via `getTransaction(ua_transaction_id)`,
+       validates `status==FINISHED` && `sender==payer` && `receiver==merchant`, derives the
+       source-chain ARRAY from `fromChains`, and upgrades the caption "reported" → "verified by
+       Particle activity"; any miss/slowness/mismatch falls back to the "reported" label (fail-closed,
+       2.5s timeout, never throws). `mark-paid` / DB untouched. Pure `deriveFundingRoute()` + 8 unit
+       tests (fixture from `fc5adc83`); E2E-verified locally (fc5adc83 → particle_verified/source Base;
+       merchant mismatch → client_reported) and on prod (`/receipt/fc5adc83…` renders "verified by
+       Particle activity", 0× "reported"). Free backfill (any past payment with a `ua_transaction_id`).
        Spec: `.kiro/specs/verified-funding-route/`.
      - **L3 (ideal, only if Particle returns source-leg tx hashes):** verify the source-chain USDC
        debit on-chain and link it — the only fully-trustless version.
      Already shipped + human-verifiable today: the receipt links UniversalX activity by
      `ua_transaction_id` (a vendor/activity view of the legs — NOT an on-chain proof).
 - **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green). 2026-07-06 — item 2
-  L0 spike DONE + GREEN (server `getTransaction` returns authoritative `fromChains`; verified on
-  `fc5adc83`); L2 designed as a READ-TIME receipt enrichment (spec `.kiro/specs/verified-funding-route/`),
-  NOT touching `mark-paid`. Still OPTIONAL — the honesty risk stays CLOSED via item 1; strength upgrade only.
+  L0 spike GREEN + **L2 SHIPPED & live-verified** (commit `5b042ce`): the receipt now server-verifies
+  the funding route via Particle `getTransaction` and labels it "verified by Particle activity"
+  (read-time; `mark-paid` / DB untouched; fail-closed to "reported"). Still VENDOR-verified, not
+  on-chain — L3 (source-leg tx on-chain) remains the only open, optional step.
 - **owner:** builder
 - **review:** next live `/pay` cross-chain completion
 
