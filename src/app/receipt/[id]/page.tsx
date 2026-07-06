@@ -86,7 +86,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
         merchant: link.merchant_address,
         settlementChainId: settlementChain.chainId,
       })
-    : { status: "client_reported" as const, sourceChainIds: [] as number[], crossChain: false };
+    : { status: "client_reported" as const, sourceChainIds: [] as number[], crossChain: false, sourceLegs: [] };
 
   const crossChain =
     funding.status === "particle_verified" && funding.crossChain
@@ -94,6 +94,10 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
           fromNames: funding.sourceChainIds.map((id) => chainFor(id).name),
           toName: settlementChain.name,
           verified: true,
+          sourceLegs: funding.sourceLegs.map((leg) => ({
+            name: chainFor(leg.chainId).name,
+            href: getExplorerTxUrl(chainFor(leg.chainId), leg.txHash),
+          })),
         }
       : sourceChainId != null && sourceChainId !== settlementChain.chainId
         ? { fromNames: [chainFor(sourceChainId).name], toName: settlementChain.name, verified: false }

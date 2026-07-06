@@ -36,6 +36,8 @@ export interface CrossChainRouteProps {
   activityHref?: string | null;
   /** Settled state: true when the funding route was server-verified via Particle activity (R22 #3 L2). */
   verified?: boolean;
+  /** Settled state: on-chain source-leg debit links (chain name + explorer href) for L3 verification. */
+  sourceLegs?: { name: string; href: string }[];
   className?: string;
 }
 
@@ -86,6 +88,7 @@ export function CrossChainRoute({
   phaseLabel,
   activityHref,
   verified = false,
+  sourceLegs,
   className = "",
 }: CrossChainRouteProps) {
   const routing = status === "routing";
@@ -208,6 +211,23 @@ export function CrossChainRoute({
           </>
         )}
       </p>
+
+      {settled && verified && sourceLegs && sourceLegs.length ? (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {sourceLegs.map((leg) => (
+            <a
+              key={leg.href}
+              href={leg.href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-verify transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verify/40"
+            >
+              {leg.name} debit on-chain
+              <IconArrowUpRight className="h-3.5 w-3.5" />
+            </a>
+          ))}
+        </div>
+      ) : null}
 
       {settled && activityHref ? (
         <a

@@ -9,11 +9,16 @@ const BASE = 8453;
 
 // Captured shape of a real Particle getTransaction() response — invoice fc5adc83, the canonical
 // cross-chain payment (Base+Arbitrum -> Arbitrum). Only the fields the mapper reads are kept.
+const BASE_DEBIT = "0x943ccd1b71c0469b3ef9e14193395b13aa2f081944d96822f1c478312f5c687f";
+const ARB_SETTLE = "0x65ef93082bc8bfabcd16d5034e95f45e60ad80e17bbf8c12f0494606cffcf72d";
+
 const FC5ADC83: UaActivityLike = {
   status: 7, // FINISHED
   sender: PAYER,
   receiver: MERCHANT,
   tokenChanges: { fromChains: [ARBITRUM, BASE] },
+  depositUserOperations: [{ chainId: BASE, txHash: BASE_DEBIT, status: 3 }], // source leg (Base)
+  lendingUserOperations: [{ chainId: ARBITRUM, txHash: ARB_SETTLE, status: 3 }], // settlement chain
 };
 
 const ctx = { payer: PAYER, merchant: MERCHANT, settlementChainId: ARBITRUM };
@@ -23,6 +28,7 @@ test("deriveFundingRoute: real fc5adc83 activity → verified cross-chain, sourc
   assert.equal(r.verified, true);
   assert.equal(r.crossChain, true);
   assert.deepEqual(r.sourceChainIds, [BASE]); // Arbitrum (settlement) filtered out
+  assert.deepEqual(r.sourceLegs, [{ chainId: BASE, txHash: BASE_DEBIT }]); // on-chain Base debit; Arbitrum(settlement) excluded
   assert.equal(r.reason, "ok");
 });
 
@@ -71,4 +77,30 @@ test("deriveFundingRoute: dedupes + drops non-numbers and the settlement chain",
 test("deriveFundingRoute: case-insensitive address match", () => {
   const r = deriveFundingRoute({ ...FC5ADC83, sender: PAYER.toLowerCase(), receiver: MERCHANT.toUpperCase() }, ctx);
   assert.equal(r.verified, true);
+});
+
+test("deriveFundingRoute: sourceLegs = on-chain debits on non-settlement chains only (dedupe + drop invalid)", () => {
+  const r = deriveFundingRoute(
+    {
+      ...FC5ADC83,
+      depositUserOperations: [
+        { chainId: BASE, txHash: "0x" + "aa".repeat(32), status: 3 },
+        { chainId: BASE, txHash: "0x" + "aa".repeat(32), status: 3 }, // duplicate → collapsed
+        { chainId: ARBITRUM, txHash: "0x" + "bb".repeat(32) }, // settlement chain → excluded
+        { chainId: 10, txHash: "not-a-hash" }, // malformed hash → excluded
+        { chainId: 10, txHash: "0x" + "cc".repeat(32) }, // extra valid source leg
+      ],
+      lendingUserOperations: undefined,
+    },
+    ctx,
+  );
+  assert.deepEqual(r.sourceLegs, [
+    { chainId: BASE, txHash: "0x" + "aa".repeat(32) },
+    { chainId: 10, txHash: "0x" + "cc".repeat(32) },
+  ]);
+});
+
+test("deriveFundingRoute: not-verified activity yields no sourceLegs", () => {
+  assert.deepEqual(deriveFundingRoute({ ...FC5ADC83, status: 5 }, ctx).sourceLegs, []);
+  assert.deepEqual(deriveFundingRoute(null, ctx).sourceLegs, []);
 });

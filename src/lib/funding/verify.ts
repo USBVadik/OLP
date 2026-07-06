@@ -1,4 +1,4 @@
-import { deriveFundingRoute, type FundingRouteContext, type UaActivityLike } from "./route";
+import { deriveFundingRoute, type FundingRouteContext, type SourceLeg, type UaActivityLike } from "./route";
 
 // Server-side funding-route verification (R22 #3 → L2). READ-ONLY and OFF the settlement path:
 // called at receipt render time only. Fail-closed — any missing id / import error / network error /
@@ -11,12 +11,14 @@ export interface VerifiedFundingRoute {
   status: FundingRouteStatus;
   sourceChainIds: number[];
   crossChain: boolean;
+  sourceLegs: SourceLeg[];
 }
 
 const CLIENT_REPORTED: VerifiedFundingRoute = {
   status: "client_reported",
   sourceChainIds: [],
   crossChain: false,
+  sourceLegs: [],
 };
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -65,6 +67,7 @@ export async function verifyFundingRoute(
         status: "particle_verified",
         sourceChainIds: route.sourceChainIds,
         crossChain: route.crossChain,
+        sourceLegs: route.sourceLegs,
       };
     }
     return CLIENT_REPORTED;

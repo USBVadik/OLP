@@ -9,11 +9,21 @@
 export const UA_STATUS_FINISHED = 7;
 
 /** The subset of a Particle activity we read. `any`-ish because `getTransaction` returns `Promise<any>`. */
+/** A single per-chain user-operation leg from `getTransaction` (deposit / lending / settlement). */
+export interface UaUserOpLike {
+  chainId?: number;
+  txHash?: string;
+  status?: number;
+}
+
 export interface UaActivityLike {
   status?: number;
   sender?: string;
   receiver?: string;
   tokenChanges?: { fromChains?: unknown } | null;
+  depositUserOperations?: unknown;
+  lendingUserOperations?: unknown;
+  settlementUserOperations?: unknown;
 }
 
 export interface FundingRouteContext {
@@ -25,6 +35,12 @@ export interface FundingRouteContext {
   settlementChainId: number;
 }
 
+/** An on-chain source-leg debit: a real tx on a chain OTHER than the settlement chain. */
+export interface SourceLeg {
+  chainId: number;
+  txHash: string;
+}
+
 export interface FundingRoute {
   /** True only when the activity is FINISHED and its sender/receiver match this payment. */
   verified: boolean;
@@ -32,6 +48,8 @@ export interface FundingRoute {
   crossChain: boolean;
   /** Unique source chain ids (funding legs) excluding the settlement chain. */
   sourceChainIds: number[];
+  /** On-chain source-leg debits (chainId != settlement, real 0x tx hash) — for explorer links (L3). */
+  sourceLegs: SourceLeg[];
   /** Machine-readable outcome, for logs/tests. */
   reason: string;
 }
@@ -44,8 +62,42 @@ const NOT_VERIFIED = (reason: string): FundingRoute => ({
   verified: false,
   crossChain: false,
   sourceChainIds: [],
+  sourceLegs: [],
   reason,
 });
+
+const TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+
+/** Collect on-chain source-leg debits: ops on a chain != settlement, with a real tx hash. Deduped. */
+function collectSourceLegs(activity: UaActivityLike, settlementChainId: number): SourceLeg[] {
+  const arrays = [
+    activity.depositUserOperations,
+    activity.lendingUserOperations,
+    activity.settlementUserOperations,
+  ];
+  const legs: SourceLeg[] = [];
+  const seen = new Set<string>();
+  for (const arr of arrays) {
+    if (!Array.isArray(arr)) continue;
+    for (const op of arr as UaUserOpLike[]) {
+      const chainId = op?.chainId;
+      const txHash = op?.txHash;
+      if (
+        typeof chainId === "number" &&
+        chainId !== settlementChainId &&
+        typeof txHash === "string" &&
+        TX_HASH_RE.test(txHash)
+      ) {
+        const key = `${chainId}:${txHash.toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          legs.push({ chainId, txHash });
+        }
+      }
+    }
+  }
+  return legs;
+}
 
 /**
  * Derive a server-verified funding route from a Particle activity. Fail-closed: any missing/mismatched
@@ -74,6 +126,7 @@ export function deriveFundingRoute(
     verified: true,
     crossChain: sourceChainIds.length > 0,
     sourceChainIds,
+    sourceLegs: collectSourceLegs(activity, ctx.settlementChainId),
     reason: "ok",
   };
 }
