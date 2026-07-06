@@ -188,9 +188,11 @@ OneLink-Pay/
   `SpendPolicy` contract (the differentiator). Session keys are the production primitive we'd
   adopt to *arm* unattended / recurring pulls (see `docs/risk-register.md` R6).
 - Circle Gateway — not built; cross-chain is proven via Particle UA (no second rail as primary).
-- Gas *sponsorship* / paymaster — not claimed. (Gas *abstraction* — the network fee is paid in
-  USDC from the UA, no destination-chain gas to hold — IS live; sponsorship, where a paymaster
-  covers the fee, is the deliberately-deferred part. The account is paymaster-compatible.)
+- General gas *paymaster* (covering the settlement fee) — not claimed. Two related things ARE
+  live: gas *abstraction* (the network fee is paid in USDC from the UA, no destination-chain gas
+  to hold) and *sponsored delegation* (the one-time EIP-7702 delegation is relayer-paid, so
+  onboarding needs zero native gas — C23). A general paymaster covering the settlement fee is the
+  deliberately-deferred part; the account is paymaster-compatible.
 - A fully autonomous LLM agent loop — the demo is agent-initiated over the real firewall.
 
 ## Key decisions
@@ -207,8 +209,8 @@ OneLink-Pay/
 
 ## SDK / deployment notes
 
-- Particle UA SDK pinned **exact** at `2.0.0-beta.3` (real EIP-7702 + cross-chain). Beta API can
-  drift; pinned exact so prod cannot float unreviewed (R19).
+- Particle UA SDK pinned **exact** at `2.0.3` (stable — real EIP-7702 + cross-chain); pinned
+  exact so prod cannot float to an unreviewed release (R19 closed on stable, 2026-07-04).
 - Prod deploys via the Vercel CLI; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` enables the
   cross-chain UA checkout. `NEXT_PUBLIC_ENABLE_DEBUG_PROBES` MUST be off in any deployed build.
 - Contract addresses + proof tx hashes live in `README.md` and the honest-claim ledger.

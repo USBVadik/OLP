@@ -60,7 +60,7 @@ Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, s
 
 - EIP-7702 V2 delegate: `0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`
 - Recipe: `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation + single-shot build/sign/send.
-- SDK: `@particle-network/universal-account-sdk@2.0.0-beta.3` (pinned exact). Wallet/auth: Magic.
+- SDK: `@particle-network/universal-account-sdk@2.0.3` (pinned exact, stable). Wallet/auth: Magic.
 
 ---
 
@@ -83,8 +83,9 @@ Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, s
 | Walletless login (Magic email/Google) | **Real, live** |
 | x402 agent loop (402 → pay → 200; over-cap blocked) | **Real — x402 *pattern*, `onelink-mandate` settled (NOT Coinbase facilitator-compatible)** |
 | The "agent" | **Real unattended deterministic loop** — one click; it works through the x402 APIs within budget and is halted by the firewall on the over-cap call. NOT LLM-driven (no AI decision-making claimed); on-chain enforcement is real |
-| Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — a first-time 7702 delegation per chain needs a little native gas |
-| Gas sponsorship / paymaster | **Not claimed** — paymaster-compatible, deliberately deferred |
+| Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — and the one-time 7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas |
+| Zero-gas onboarding (one-time 7702 delegation relayer-sponsored) | **Real, live (C23)** — payer needs zero native gas; scoped to the delegation step |
+| General gas paymaster (settlement fees) | **Not claimed** — settlement fee paid in USDC by the UA; account is paymaster-compatible |
 | Circle Gateway / ZeroDev / Openfort | **Not integrated** — narrative / prior-art. Session keys (ZeroDev) are the production primitive we'd adopt to *arm* unattended automation |
 
 ---

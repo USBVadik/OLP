@@ -113,9 +113,8 @@ export default function DemoReplayPage() {
         </section>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          Honest scope: this replay shows a real, same-chain payment and its on-chain proof — no
-          cross-chain routing or gas sponsorship is claimed here. The Permission Firewall above is
-          live and enforced on-chain.
+          Honest scope: this replay shows a real, same-chain payment and its on-chain proof. The
+          Permission Firewall above is live and enforced on-chain.
         </p>
       </div>
     </main>

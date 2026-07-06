@@ -28,7 +28,7 @@ deployed live at onelink-pay.vercel.app.
 - *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. And the payer needs **zero native gas**: the one-time delegation is relayer-sponsored (C23)."
 - *"Does the user need any gas / ETH?"* → "No. The one-time 7702 delegation is **sponsored by our relayer** — proven on-chain (the delegation tx's sender is the relayer, not the user — C23). The settlement fee is paid in USDC. Zero native gas for the payer. We don't claim a general paymaster — just this delegation step."
 - *"Is it custodial — do you hold the wallet?"* → "No. It's your **own EOA**, upgraded in place via EIP-7702 (same address). In Pro mode you can **export your key** through Magic's own reveal UI (we never see it — C22) and **revert the delegation** to a plain wallet anytime. Non-custodial, vs the MPC / vendor-wallet approaches."
-- *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / ERC-7715 already do this."* → "The primitive isn't new — and we say so. Our wedge is the packaging none of them combine: the limit lives on your **own EOA via EIP-7702** (same address, no vendor wallet), **chain-abstracted across EVM + Solana** via Particle, with a **public proof receipt** per payment and our **own auditable SpendPolicy** — not a setting in a vendor dashboard."
+- *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / ERC-7715 already do this."* → "The primitive isn't new — and we say so. Our wedge is the packaging none of them combine: the limit lives on your **own EOA via EIP-7702** (same address, no vendor wallet), **chain-abstracted across EVM chains** via Particle, with a **public proof receipt** per payment and our **own auditable SpendPolicy** — not a setting in a vendor dashboard."
 
 ## One-liner
 
@@ -85,13 +85,13 @@ agent on a leash. Both are live on Arbitrum + Base; keep amounts tiny.
    animated route, per-chain explorer links, the UniversalX activity link, and the InvoicePaid
    attestation. Verifiable by anyone, no account.
 
-Talk track: "Particle's Universal Account is one balance across 15 chains — the user never bridges,
+Talk track: "Particle's Universal Account is one balance across the EVM chains you hold USDC on — the user never bridges,
 never picks a network, never holds gas on the settlement chain. We make that visible and provable."
 
 ### Act 2 — The agent on a leash (the thesis) — `/agent`
 
-6. (Still signed in.) The **Universal Account balance** shows one balance across 15 named chains
-   (Base, Arbitrum, Solana, BNB Chain, Avalanche, …) — Particle's superpower, made visible.
+6. (Still signed in.) The **Universal Account balance** shows one balance across the EVM chains you
+   hold USDC on (Base, Arbitrum, …) — Particle's superpower, made visible.
 7. **Mandate Card** — read it aloud: `$0.10 / charge`, `$2 / day`, `$10 total`, **one merchant**,
    **expires today**, **revocable anytime**. "If a charge breaks any limit it reverts on-chain —
    you pay nothing." **Arm** it (one signature + one approve). The Budget HUD lights up
@@ -242,7 +242,7 @@ Accounts:
 
 ### 4. Act 2 — `/agent` autonomous run (verifies C16 / C17)
 
-- [ ] Login + Arm; the Universal Account balance shows one balance across **15 named chains** (Base, Arbitrum, Solana, …) — or "Balance unavailable … Retry" (R12). Demo proceeds either way.
+- [ ] Login + Arm; the Universal Account balance shows one balance across the EVM chains held (Base, Arbitrum, …) — or "Balance unavailable … Retry" (R12). Demo proceeds either way.
 - [ ] Click **Send the agent (autonomous run)** → it buys Market insight ($0.05) then Live sentiment ($0.08) (`402 → Paying… → 200 OK`), HUD drains 2.00 → 1.87.
 - [ ] It reaches Premium dataset ($0.20, over cap) → `BLOCKED: over the per-charge cap. No funds moved, zero gas.` → agent halts; **no new tx** on arbiscan for that attempt.
 - [ ] (optional) Revoke on `/firewall` → re-run → `MandateIsRevoked`.

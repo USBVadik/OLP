@@ -41,12 +41,12 @@ const ROWS: { claim: string; status: Status; note: string }[] = [
   {
     claim: "Gas abstraction — network fee paid in USDC, no destination-chain gas to hold",
     status: "real",
-    note: "Particle deducts the routing/network fee in USDC from your Universal Account, so you never top up native gas on the destination chain. One exception: a first-time EIP-7702 delegation per chain needs a little native gas (we pre-delegate before the demo).",
+    note: "Particle deducts the routing/network fee in USDC from your Universal Account, so you never top up native gas on the destination chain. And the one-time EIP-7702 delegation per chain is relayer-sponsored (C23), so a first-time payer needs zero native gas too.",
   },
   {
-    claim: "Gas sponsorship / paymaster",
-    status: "future",
-    note: "Not claimed. The account is paymaster-compatible, but no paymaster covers fees in this build — a deliberate scope choice, not a missing capability.",
+    claim: "Zero-gas onboarding — the one-time EIP-7702 delegation is relayer-sponsored",
+    status: "real",
+    note: "The payer signs the authorization (gasless, via Magic); our relayer submits the type-4 delegation tx and pays the gas. Proven live on Arbitrum (C23). Scoped to the one-time delegation only — a general settlement paymaster is still NOT claimed (the settlement fee is paid in USDC by the Universal Account).",
   },
   {
     claim: "Circle Gateway · ZeroDev · Openfort",
@@ -143,7 +143,7 @@ export default function TrustPage() {
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
           The agent runs unattended once started (deterministic, not an LLM), the x402 scheme is our own (not facilitator-compatible),
-          and no gas sponsorship is claimed. Saying so plainly is the point.
+          and the one-time delegation is relayer-sponsored (zero-gas onboarding) while no general settlement paymaster is claimed. Saying so plainly is the point.
         </p>
       </div>
     </main>

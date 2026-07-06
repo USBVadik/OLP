@@ -37,13 +37,13 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 
 - ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
 - ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
-- ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.0-beta.3`: a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
-- ❌ No gas sponsorship is claimed. Particle AuthKit is installed but not on the live path.
+- ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.3` (stable): a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
+- ✅ Zero-gas onboarding is live: the one-time EIP-7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas — scoped to the delegation step only (no general settlement paymaster; the settlement fee is paid in USDC). Particle AuthKit is installed but not on the live path.
 
 **Honesty caveats:**
 
-- The cross-chain proof was made with the identical prod code and independently verified on-chain; a fresh payment through the prod `/pay` UI has not been re-run since, and a first-time payer needs a little native gas on each touched chain for the one-time 7702 delegation.
-- Prod runs a **beta** Particle SDK (`2.0.0-beta.3`, pinned exact) — the build Particle confirmed real EIP-7702 + cross-chain requires; the beta API surface can shift between releases.
+- The cross-chain settlement is independently verified on-chain and was re-run live through the prod `/pay` on the stable `2.0.3` build (2026-07-04); a first-time payer needs zero native gas — the one-time 7702 delegation is relayer-sponsored (C23).
+- Prod runs the pinned **stable** Particle SDK (`2.0.3`) — real EIP-7702 + cross-chain, with same-chain and cross-chain settlement live-verified on it (RPC-checked, 2026-07-04).
 - `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" runs a real **unattended deterministic** loop over the same firewall (one click, then no human per-step) — not an LLM that reasons, so no AI decision-making is claimed.
 - `@particle-network/authkit` is installed but is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
 
@@ -133,11 +133,11 @@ This is the same hex address as the previous Base mainnet v1 deployment, but it 
 
 ## SDK Versions
 
-Pinned to what's installed (verified against the lockfile). The Universal Account SDK is intentionally on a pinned **beta** (`2.0.0-beta.3`) — the build Particle confirmed real EIP-7702 + cross-chain requires; the other crypto SDKs are on their latest releases.
+Pinned to what's installed (verified against the lockfile). The Universal Account SDK is on the pinned **stable** release (`2.0.3`) — real EIP-7702 + cross-chain; the other crypto SDKs are on their latest releases.
 
-- `@particle-network/universal-account-sdk`: `2.0.0-beta.3` (pinned exact; beta — real EIP-7702 + cross-chain)
+- `@particle-network/universal-account-sdk`: `2.0.3` (pinned exact; stable — real EIP-7702 + cross-chain)
 - `@particle-network/chains`: `1.8.3` (latest)
-- `magic-sdk`: `33.7.1` (latest)
+- `magic-sdk`: `33.7.1` (pinned; latest 33.9.0, upgrade deferred until after submission)
 - `@magic-ext/evm`: `1.5.1` (latest)
 - `@magic-ext/oauth2`: `15.8.0` (latest) — Google OAuth
 - `viem`: `2.53.1`
@@ -148,4 +148,4 @@ Pinned to what's installed (verified against the lockfile). The Universal Accoun
 
 Intentionally held back (major upgrades require code changes; out of scope mid-hackathon): `next` 14 → 16, `zod` 3 → 4, `hardhat` 2 → 3.
 
-Known risk: prod runs a pinned **beta** Particle SDK (`2.0.0-beta.3`) for real EIP-7702 + cross-chain. The earlier `-32801`/`-32613` maintenance errors on custom universal calls are resolved on this build (cross-chain payment proven live); the residual risk is beta API drift — the version is pinned exact, so prod cannot float to a newer beta unreviewed.
+SDK note: prod runs the pinned **stable** Particle SDK (`2.0.3`) for real EIP-7702 + cross-chain. The earlier `-32801`/`-32613` maintenance errors on custom universal calls are resolved (cross-chain payment proven live on stable); the version is pinned exact, so prod cannot float to a new release unreviewed.

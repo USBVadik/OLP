@@ -60,14 +60,19 @@ consent / permission-safety pieces are concept-mode — keep claim discipline be
 
 ## Claim discipline
 
-- Do not claim live cross-chain value movement unless proven.
-- Do not claim real session keys.
-- Do not claim automated future payments.
-- Do not claim gas sponsorship.
-- Spend Caps are Concept Mode only.
-- Universal Deposit is not live.
-- Arbitrum is exploratory only.
-- Particle AuthKit is inactive.
+> Source of truth: `docs/honest-claim-ledger.md` (C1–C23) + `docs/risk-register.md`. This list is a
+> quick guardrail; the ledger wins on any conflict. (Updated 2026-07-06 — the pre-2026-06-21 notes
+> here were stale.)
+
+- Cross-chain value movement via UA is **proven live** (C21) — claim it with the tx proof.
+- Zero-gas onboarding is **live** — the one-time 7702 delegation is relayer-sponsored (C23). Do NOT
+  claim a general gas paymaster (the settlement fee is paid in USDC).
+- On-chain spend caps (SpendPolicy) are **live** on Base + Arbitrum (C1–C6) — not Concept Mode.
+- Arbitrum is a **primary settlement chain** (live), not exploratory.
+- Do not claim real session keys or automated future (unattended-recurring) payments.
+- The x402 flow is the **pattern** (`onelink-mandate` scheme), not Coinbase-facilitator-compatible.
+- The agent is an **unattended deterministic** loop — never claim an LLM / AI-reasoning agent.
+- Particle AuthKit is installed but **inactive** — not on the live path.
 
 ## Constraints
 

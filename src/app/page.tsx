@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
-import { getActivePaymentChain, getConfiguredPaymentMode } from "@/lib/config/payment";
+import { getConfiguredPaymentMode, getPaymentModeLabel } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import {
   Wordmark,
@@ -20,8 +20,8 @@ import { Reveal } from "@/components/reveal";
 import { ScrollNarrative } from "@/components/scroll-narrative";
 import { CrossChainRoute } from "@/components/cross-chain-route";
 
-const ACTIVE_CHAIN = getActivePaymentChain();
 const PAYMENT_MODE = getConfiguredPaymentMode();
+const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 
 function demoAmountLabel() {
   const token = resolvePaymentToken(
@@ -242,10 +242,10 @@ export default function HomePage() {
             <h2 className="font-display text-2xl font-semibold text-ink">How a payment flows</h2>
             <div className="flex flex-wrap gap-2">
               <Chip>
-                mode <span className="ml-1 font-mono text-ink">{PAYMENT_MODE}</span>
+                mode <span className="ml-1 font-medium text-ink">{PAYMENT_MODE_LABEL}</span>
               </Chip>
               <Chip>
-                chain <span className="ml-1 font-mono text-ink">{ACTIVE_CHAIN.name}</span>
+                settles on <span className="ml-1 font-medium text-ink">Arbitrum + Base</span>
               </Chip>
             </div>
           </div>
@@ -293,7 +293,8 @@ export default function HomePage() {
               Honest scope: the on-chain firewall (SpendPolicy) is live on Base + Arbitrum and
               tested (22 contract tests). Same-chain checkout is proven end-to-end, and cross-chain
               value movement via Universal Accounts is proven live — no manual bridge. The x402 flow
-              is the pattern (mandate-settled), and no gas sponsorship is claimed.
+              is the pattern (mandate-settled); the one-time 7702 delegation is relayer-sponsored
+              (zero-gas onboarding), while no general settlement paymaster is claimed.
             </p>
             <Link
               href="/trust"
@@ -386,7 +387,7 @@ const PRIOR_ART: { name: string; what: string; edge: string }[] = [
   {
     name: "Coinbase Agentic Wallets",
     what: "Vendor MPC agent wallet on Base — bundles an x402 client + programmable spend limits.",
-    edge: "No vendor wallet: the limit lives on your own EOA via EIP-7702 (same address), chain-abstracted across EVM + Solana, with a public proof receipt.",
+    edge: "No vendor wallet: the limit lives on your own EOA via EIP-7702 (same address), chain-abstracted across EVM chains (Base + Arbitrum), with a public proof receipt.",
   },
   {
     name: "Coinbase Spend Permissions",

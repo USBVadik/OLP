@@ -45,11 +45,11 @@ export function ReceiveCard({ address }: { address: string }) {
     <div className="op-card p-5">
       <div className="flex items-center justify-between gap-2">
         <span className="op-eyebrow">Receive</span>
-        <Chip tone="gold">any chain &rarr; one balance</Chip>
+        <Chip tone="gold">any EVM chain &rarr; one balance</Chip>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Send USDC to this address on any supported chain — it lands as one Universal Account balance,
-        with no bridging and no chain to pick.
+        Send USDC to this address on any supported EVM chain — it lands as one Universal Account
+        balance, with no bridging and no chain to pick.
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
@@ -81,8 +81,8 @@ export function ReceiveCard({ address }: { address: string }) {
       </div>
 
       <p className="mt-4 text-[11px] leading-relaxed text-faint">
-        Supported via Particle: Base, Arbitrum, Optimism, Ethereum, Polygon, BNB Chain, Avalanche,
-        Solana, and more — 15 chains, one balance.
+        Supported via Particle across EVM chains — Base, Arbitrum, Optimism, Ethereum, Polygon, BNB
+        Chain, Avalanche, and more — one balance, no bridging.
       </p>
     </div>
   );

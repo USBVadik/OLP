@@ -59,7 +59,7 @@ export const TRUST_STATS: TrustStat[] = [
     asOf: "2026-06",
   },
   {
-    stat: "Only ~14% would trust an AI agent to complete a purchase on their behalf.",
+    stat: "Only 13.9% would trust an AI agent to complete a purchase on their behalf.",
     source: "Ecommpay / The Paypers",
     url: "https://thepaypers.com/payments/thought-leader-insights/ecommpay-report-key-takeaways-trust-and-control-in-agentic-commerce",
     asOf: "2026-06",
@@ -160,8 +160,8 @@ export const STANDARDS: Standard[] = [
   {
     name: "ERC-8226 · Regulated Agent Mandate",
     status: "Draft EIP",
-    what: "Scoped, time-bounded, financially capped delegation to an on-chain agent, checked before each transfer.",
-    ours: "OneLink already enforces scoped, capped, expiring, revocable mandates on-chain today (SpendPolicy — C1–C6, C16).",
+    what: "A compliance-layer mandate for regulated tokenized assets: a verified principal delegates scoped, time-bounded, financially capped authority to an on-chain agent, checked before each transfer.",
+    ours: "Same mandate shape (scoped / capped / expiring / revocable), a different domain — 8226 targets regulated tokenized assets, while OneLink applies the pattern to general USDC agent spend on-chain today (SpendPolicy — C1–C6, C16).",
     relation: "aligned",
     source: "Ethereum Improvement Proposals",
     url: "https://eips.ethereum.org/EIPS/eip-8226",

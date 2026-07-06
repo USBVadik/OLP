@@ -1,4 +1,4 @@
-// Workaround for @particle-network/universal-account-sdk@2.0.0-beta.3.
+// Workaround for @particle-network/universal-account-sdk@2.0.3.
 //
 // The package ships real types at dist/index.d.ts, but its package.json "exports"
 // map doesn't expose them under the import condition, so TypeScript can't resolve

@@ -2,8 +2,8 @@
 
 > For the UXmaxx submission + live demo. Every claim here is honest and traceable to
 > `docs/honest-claim-ledger.md` and `docs/risk-register.md`. Primary track: Universal Accounts.
-> Stacked: Arbitrum bounty + Magic bonus. Cross-chain via UA is stated as **in progress** — never
-> as done (R1) — to protect against a false-eligibility DQ.
+> Stacked: Arbitrum bounty + Magic bonus. Cross-chain value movement via UA is **proven live** (C21);
+> zero-gas onboarding via sponsored 7702 delegation is live (C23).
 
 ## One-liner
 
@@ -60,7 +60,7 @@ then a $0.20 one gets blocked. "x402 gives agents a wallet; we give them a leash
   across Base/Arbitrum/Optimism); account-level mandate enforcement (`SpendPolicy`, 22 passing tests,
   deployed on Base + Arbitrum); one unified balance across chains via Particle `getPrimaryAssets`;
   directly answers the documented 7702 drainer risk with a scoped, revocable delegation.
-  *(Cross-chain value movement via UA: in progress — Particle V2.)*
+  *(Cross-chain value movement via UA: proven live — C21.)*
 - **Adoption potential (20%)** — plugs into the real agent economy: x402 (Coinbase + AWS) and AP2
   (Google/FIDO); concrete markets in subscriptions and autonomous-agent spend; an x402-pattern
   gateway already shipped, settled by the on-chain mandate.
@@ -72,8 +72,8 @@ then a $0.20 one gets blocked. "x402 gives agents a wallet; we give them a leash
 
 - **Universal Accounts Track (primary):** prominently uses Particle Universal Accounts in EIP-7702
   mode with Magic, for a chain-agnostic UX (meets the track requirement as written) + legible
-  consent + on-chain enforcement + proof. Cross-chain value movement via UA is **in progress** (R1)
-  — roadmap upside, not claimed as live.
+  consent + on-chain enforcement + proof. Cross-chain value movement via UA is **proven live** (C21)
+  — a merchant paid on Arbitrum with USDC sourced from Base, no manual bridge.
 - **Arbitrum "Road to Open House London" Bounty:** SpendPolicy + ReceiptEmitter live on Arbitrum
   One; the firewall demo and default settlement run on Arbitrum (proven on-chain).
 - **Magic Labs Bonus:** Google OAuth + email onboarding live; session persists across reload.
@@ -81,13 +81,13 @@ then a $0.20 one gets blocked. "x402 gives agents a wallet; we give them a leash
 ## Honest status (state this plainly to judges)
 
 - **Live & proven on-chain (operator-verified):** EIP-7702 delegation; on-chain mandate enforcement +
-  over-cap revert (`PerChargeExceeded`, zero gas); same-chain USDC checkout on Arbitrum; proof receipt
-  (payer bound to the real on-chain sender); Magic Google + email login; unified cross-chain balance
-  read; x402-pattern purchase, mandate-settled.
-- **In progress (roadmap upside, not a gate):** cross-chain value movement via UA (Particle V2
-  migration); Circle Gateway is the backup rail. The UA Track requires prominent UA + EIP-7702 +
-  chain-agnostic UX — which we already meet; cross-chain settlement only strengthens the 30% axis.
-- **Not claimed:** gas sponsorship. And this is the **x402 HTTP pattern** with a custom
+  over-cap revert (`PerChargeExceeded`, zero gas); same-chain USDC checkout on Arbitrum; **cross-chain
+  value movement via UA — a merchant paid on Arbitrum with USDC sourced from Base, no manual bridge
+  (C21)**; **zero-gas onboarding — the one-time 7702 delegation is relayer-sponsored (C23)**; proof
+  receipt (payer bound to the real on-chain sender); Magic Google + email login; unified cross-chain
+  balance read; x402-pattern purchase, mandate-settled.
+- **Not claimed:** a general gas paymaster — only the one-time 7702 delegation is sponsored (the
+  settlement fee is paid in USDC). And this is the **x402 HTTP pattern** with a custom
   `onelink-mandate` settlement scheme — **not** Coinbase-facilitator wire-compatible. We say so.
 
 ## Verifiable on-chain (drop these in the submission)

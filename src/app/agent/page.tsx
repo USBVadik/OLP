@@ -523,7 +523,8 @@ export default function AgentPage() {
                   </button>
                   <p className="text-[11px] leading-relaxed text-faint">
                     One click: the agent works through these APIs within its budget and is stopped by
-                    the firewall the moment it tries to overspend. Or trigger a single call below.
+                    the firewall the moment it tries to overspend — a deterministic loop, not an LLM.
+                    Or trigger a single call below.
                   </p>
                   {resources.map((r) => {
                     const owned = r.id in bought;
