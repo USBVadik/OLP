@@ -586,17 +586,25 @@
        merchant mismatch → client_reported) and on prod (`/receipt/fc5adc83…` renders "verified by
        Particle activity", 0× "reported"). Free backfill (any past payment with a `ua_transaction_id`).
        Spec: `.kiro/specs/verified-funding-route/`.
-     - **L3 (ideal, only if Particle returns source-leg tx hashes):** verify the source-chain USDC
-       debit on-chain and link it — the only fully-trustless version.
+     - **L3 — ✅ SHIPPED + live-verified (2026-07-06, commit `1e1b231`):** the receipt now surfaces the
+       source-leg on-chain debit tx(s) from the activity's `*UserOperations` (`chainId != settlement`,
+       real 0x hash, deduped) as a clickable explorer link ("&lt;chain&gt; debit on-chain"). Recon
+       confirmed the source-leg tx is a real MINED Base tx (`0x943ccd1b…687f`, status `0x1`, Base USDC
+       in logs); prod `/receipt/fc5adc83…` renders `basescan.org/tx/0x943ccd1b…`. A judge can inspect
+       the actual source USDC debit — not just a vendor claim. (Label stays "verified by Particle
+       activity"; the source→settlement LINKAGE is via Particle activity, so we do NOT claim
+       "on-chain proven" outright — the on-chain link is inspectable supporting evidence.)
      Already shipped + human-verifiable today: the receipt links UniversalX activity by
      `ua_transaction_id` (a vendor/activity view of the legs — NOT an on-chain proof).
 - **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green). 2026-07-06 — item 2
   L0 spike GREEN + **L2 SHIPPED & live-verified** (commit `5b042ce`): the receipt now server-verifies
   the funding route via Particle `getTransaction` and labels it "verified by Particle activity"
-  (read-time; `mark-paid` / DB untouched; fail-closed to "reported"). Still VENDOR-verified, not
-  on-chain — L3 (source-leg tx on-chain) remains the only open, optional step.
+  (read-time; `mark-paid` / DB untouched; fail-closed to "reported"). **L3 also SHIPPED** (commit
+  `1e1b231`): the receipt links the on-chain source-leg debit (BaseScan) so the source USDC movement
+  is independently inspectable. Route linkage is still via Particle activity (vendor), so we stop
+  short of claiming "on-chain proven" — but every leg is now on-chain-inspectable. Fully resolved.
 - **owner:** builder
-- **review:** next live `/pay` cross-chain completion
+- **review:** n/a — funding-route L0/L2/L3 shipped + live-verified 2026-07-06 (`fc5adc83`).
 
 ### R23 — Wallet receive copy overclaimed reach ("every chain / Solana / anywhere")
 
