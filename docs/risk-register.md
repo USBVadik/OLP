@@ -562,9 +562,27 @@
   1. The receipt's settled cross-chain caption now labels the funding source as **reported by your
      wallet**, keeping "verified on-chain" on the settlement + proof legs only
      (`src/components/cross-chain-route.tsx`). ✅ shipped
-  2. (future, out of scope) server-verify the route from the UA / UniversalX to upgrade "reported"
-     → "verified".
-- **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green)
+  2. (future enhancement — NOT required for honesty; item 1 already removed the overclaim) upgrade
+     "reported" → "verified" by server-deriving the funding legs, in SPIKE-GATED steps, because the
+     load-bearing assumption (the server can fetch the funding breakdown by `ua_transaction_id`) is
+     UNVERIFIED and only sourced from Particle's PUBLIC docs — verify it, do not trust the docs:
+     - **L0 spike (first):** confirm a server-side fetch by transactionId actually returns
+       `depositTokens` / `lendingTokens` / `fromChains` — check the INSTALLED SDK `.d.ts` types,
+       `docs/workshop-insights.md` + the workshop reference repo, and a throwaway server call with
+       `PARTICLE_SERVER_KEY` against a known id (`fc5adc83` → `0x0655f16e0cd6c8`). NB:
+       `preview_json.tokenChanges.fromChains` is ALSO client-originated (built in-browser) → it is
+       NOT a server-authoritative substitute; only a direct server→Particle query counts.
+     - **L2 (only if L0 is green):** store server-verified funding metadata as a multi-source chain
+       ARRAY (not a single `source_chain_id`) + `funding_source_status: particle_verified |
+       client_reported`; flip the caption to "verified by Particle activity". Never block PAID on
+       Particle availability.
+     - **L3 (ideal, only if Particle returns source-leg tx hashes):** verify the source-chain USDC
+       debit on-chain and link it — the only fully-trustless version.
+     Already shipped + human-verifiable today: the receipt links UniversalX activity by
+     `ua_transaction_id` (a vendor/activity view of the legs — NOT an on-chain proof).
+- **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green). 2026-07-06 — item 2
+  "reported → verified" upgrade analyzed + spike-gated plan added after an independent re-review;
+  still OPTIONAL — the honesty risk stays CLOSED via item 1, this is only a strength upgrade.
 - **owner:** builder
 - **review:** next live `/pay` cross-chain completion
 
