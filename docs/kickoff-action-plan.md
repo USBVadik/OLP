@@ -1,5 +1,13 @@
 # Kickoff Action Plan
 
+> **SUPERSEDED / HISTORICAL (kickoff-era planning, 2026-05).** This file reflects
+> the early Base-active / Arbitrum-exploratory / `transfer_fallback` plan that was
+> later reversed. Current reality: Arbitrum-first settlement,
+> `universal_7702_transfer`, and cross-chain payment proven live in ledger C21.
+> Source of truth: `docs/status.md`, `docs/agent-context.md`,
+> `docs/honest-claim-ledger.md`, and `docs/demo-runbook.md`. Kept for trace only;
+> do not act on the chain or payment-mode directives below.
+
 Use this on day one of the hackathon. Follow the steps in order. Do not add product features before the final chain and payment mode are chosen.
 
 ## 0. Start From Current Baseline

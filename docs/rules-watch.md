@@ -1,5 +1,13 @@
 # Rules Watch
 
+> **SUPERSEDED / HISTORICAL (kickoff-era planning, 2026-05).** This file reflects
+> the early Base-active / Arbitrum-exploratory / `transfer_fallback` plan that was
+> later reversed. Current reality: Arbitrum-first settlement,
+> `universal_7702_transfer`, and cross-chain payment proven live in ledger C21.
+> Source of truth: `docs/status.md`, `docs/agent-context.md`,
+> `docs/honest-claim-ledger.md`, and `docs/demo-runbook.md`. Kept for trace only;
+> do not act on the chain or payment-mode directives below.
+
 Last updated: 2026-05-07
 
 This document tracks what we currently know before the official UXmaxx kickoff. Treat it as planning context, not final submission truth.

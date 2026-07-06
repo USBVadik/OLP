@@ -1,5 +1,13 @@
 # Hackathon Start Runbook
 
+> **SUPERSEDED / HISTORICAL (kickoff-era planning, 2026-05).** This file reflects
+> the early Base-active / Arbitrum-exploratory / `transfer_fallback` plan that was
+> later reversed. Current reality: Arbitrum-first settlement,
+> `universal_7702_transfer`, and cross-chain payment proven live in ledger C21.
+> Source of truth: `docs/status.md`, `docs/agent-context.md`,
+> `docs/honest-claim-ledger.md`, and `docs/demo-runbook.md`. Kept for trace only;
+> do not act on the chain or payment-mode directives below.
+
 Use this after the official Encode/UXmaxx kickoff. Until final rules are live, do not add product features, spend mainnet gas, or migrate the architecture.
 
 ## 1. Read Final Encode/UXmaxx Page
