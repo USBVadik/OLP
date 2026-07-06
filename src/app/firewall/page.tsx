@@ -259,7 +259,7 @@ export default function FirewallPage() {
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-md">
+      <div className={`mx-auto w-full ${armed ? "max-w-3xl" : "max-w-md"}`}>
         <header className="mb-5 flex items-center justify-between">
           <Wordmark href="/" />
           <div className="flex items-center gap-2">

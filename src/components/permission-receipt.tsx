@@ -1,7 +1,7 @@
 import { computeMandateId } from "@/lib/mandates/mandate";
 import { describePermission } from "@/lib/mandates/permission";
 import { type PaymentMandate } from "@/lib/mandates/types";
-import { Chip, Dot, IconCheck, IconReceipt } from "@/components/ui";
+import { Chip, IconCheck, IconReceipt } from "@/components/ui";
 
 type Props = {
   /** The signed, armed mandate this receipt certifies. */
@@ -77,10 +77,8 @@ export function PermissionReceipt({ mandate, revoked = false }: Props) {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="flex items-center gap-2 text-muted">
-        <Dot tone="gold" /> {label}
-      </dt>
-      <dd className="text-right text-ink">{children}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="whitespace-nowrap text-right text-ink">{children}</dd>
     </div>
   );
 }
