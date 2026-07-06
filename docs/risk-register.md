@@ -410,12 +410,22 @@
 - **key-loss risk (controlled):** losing the new attestor key = losing emitter control (re-transfer is
   only possible from the new key). Store it as carefully as the merchant/owner key; the script
   post-verifies `owner()` so a fat-fingered address is caught before you rely on it.
-- **mitigation_status:** open — script + runbook ready (`contracts/scripts/transfer-receipt-emitter-owner.ts`,
-  dry-run by default). The on-chain transfer + env swap + redeploy is a pending operator step. Until
-  it's done, the honest `/trust` framing ("InvoicePaid is attested, not the source of truth") stands
-  and is the accepted interim cover.
+- **mitigation_status:** DONE on-chain (2026-07-06) — ownership transferred to the relayer key on
+  BOTH chains; the attestor (`0x0AC0…9f41`) is now distinct from the merchant payee (`0x8C54…Fb7`).
+  Transfer txs: Base `0xe6a2c4a7…de6da`, Arbitrum `0x5c8db72c…3642` (both status 0x1; `owner()`
+  independently RPC-verified == relayer on both). `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` swapped to the
+  relayer key on local + Vercel prod (old merchant key preserved as `MERCHANT_PRIVATE_KEY`); prod
+  redeployed. The relayer was funded on Base (0.0005 ETH, tx `0x22e57237…7a36`) for proof-recording
+  gas. PENDING one live `/pay` to confirm InvoicePaid still records under the new owner key (operator
+  step — Magic-gated).
+- **tradeoff (honest cross-ref to R16):** the attestor is now the SAME key as the charge relayer, so
+  the proof-owner and the gas-relayer are no longer separate (R16 had deliberately split them).
+  Accepted for the demo — the ReceiptEmitter holds NO funds and InvoicePaid is an attestation, not
+  the settlement's source of truth, so a relayer-key compromise could forge proof *events* but cannot
+  move funds or fake the trustless on-chain settlement. A production deploy would use a THIRD
+  dedicated attestor key (distinct from both merchant and relayer).
 - **owner:** builder
-- **review:** before final submission (Jul 19) — either run the split or keep the honest framing as the accepted position.
+- **review:** confirm the live `/pay` recording once — then this is fully closed.
 
 ## Security findings (external audit, 2026-06-21)
 
