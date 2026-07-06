@@ -8,16 +8,17 @@ deployed live at onelink-pay.vercel.app.
 
 ## Pitch card (rehearse this — 60–90s)
 
-**Hook (10s):** "You can't hand an AI your wallet. OneLink Pay gives it a *card* instead — a spending limit enforced on-chain, not on trust."
+**Cold-open hook (10s) — lead with the payoff, human-first.** Start ALREADY armed. Point the agent at an over-cap buy and say: *"Watch — this AI tries to spend more than I allowed… and it can't. My money never moves."* The charge is refused, the budget bars don't flinch, and the **"Firewall held"** beat stays lit. Only THEN name the tech: *"That refusal happened on-chain, on my own account — and it cost nothing."*
 
-**90-second beats:**
-1. Magic login (no seed phrase, **no gas**) → Particle Universal Account in EIP-7702 mode.
-2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable.
-3. **Send the agent** → it buys within budget (`402 → pay → 200`); the Budget HUD drains.
-4. It tries an over-cap buy → **BLOCKED on-chain**: "no funds moved, zero gas."
-5. Cross-chain: the merchant is paid on Arbitrum with USDC sourced from Base — no manual bridge.
-6. Open the public proof receipt → anyone verifies on a block explorer. **Revoke** → agent disarmed.
-7. **It's your wallet, not ours:** same-address EOA — the first payment's delegation is sponsored (you pay zero gas), and you can export your key or revert the delegation anytime. Non-custodial by construction.
+**Then rewind — "here's all it took" (60–90s):**
+1. Magic login — no seed phrase, no gas, no chain picker. *(Your own EOA → Particle UA in EIP-7702 mode.)*
+2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable — "a card with a built-in limit."
+3. **Send the agent** → it buys *within* budget (`402 → pay → 200`); the Budget HUD drains. The limit is real; money really moves inside it.
+4. **Revoke** → agent disarmed instantly — the kill switch is yours (7702 reversibility as a safety feature).
+5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). And **zero native gas** — the one-time delegation is relayer-sponsored (C23).
+6. Open the public **proof receipt** → anyone verifies on a block explorer, no account.
+
+**Golden path — don't sprawl.** The live run is exactly the beats above (`/firewall` for the block + one cross-chain `/pay` for the credibility beat). `/dashboard`, `/wallet` (Pro / key-export) and `/demo-replay` are **"explore if asked," not live beats** — one crisp "it physically can't overspend" moment beats five decent flows.
 
 **Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC) and the **one-time 7702 delegation is now sponsored** — the relayer pays it (proven on-chain, C23), so a first-time payer needs **zero native gas**. (Scoped to the delegation step; the settlement fee is still paid in USDC — we do **not** claim a general paymaster.)
 
@@ -61,66 +62,64 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 - **Self-custody / Pro mode (C22).** Opt-in expert overlay on `/wallet`: your own EOA + delegate contract shown, **key export** via Magic's own reveal UI (OneLink never sees the key), reversible undelegate, and custom mandate caps — the "provably yours" story vs custodial / MPC agent wallets.
 - **Where we fit + the trust gap (`/trust`).** A 2026-stack map (OneLink = the enforcement & proof layer on top of AP2 / x402 / cards), third-party trust data (~¾ won't let AI pay even with limits set; only ~14% trust an agent to buy — each sourced + linked), and a fair "vs the giants" comparison (Visa/OpenAI, Coinbase Agentic Wallets, Circle/Catena, AP2). The "why us, not them" evidence, in-app.
 
-## Live demo (~2 minutes, two acts)
+## Live demo (~2 minutes, agent-first)
 
-Two wows, two flows. **Act 1** = the chain-abstraction magic (cross-chain checkout). **Act 2** = the
-agent on a leash. Both are live on Arbitrum + Base; keep amounts tiny.
+One hero moment, one credibility beat — **cold-open on the block.** **Act 1** = the agent on a leash
+(the on-chain block, the emotional peak). **Act 2** = the cross-chain checkout (proof-of-depth,
+*after* the peak — never the opener). Both live on Arbitrum + Base; keep amounts tiny.
 
-### Act 1 — Cross-chain checkout: one balance, any chain (UX 40% + UA 30%) — `/pay/<id>`
+### Act 1 — The agent on a leash (the hook, cold-open) — `/agent` (or `/firewall`)
 
-1. **Hook:** "You can't hand an AI — or a merchant — your wallet."
-2. Open `/pay/<id>`. **Continue with Google** (Magic) — no seed phrase, no extension, no chain
-   selector. Logged in within seconds.
-3. **Trust Preview — your single consent:** before you tap, the card shows the *planned* route —
-   **Base → Arbitrum, no manual bridge**, the network fee paid in USDC — and the exact amount the
-   merchant receives. Consent you can read, not a blind signature (EIP-712 hash behind "Show
-   technical details").
-4. **One tap — "Pay".** A single tap orchestrates delegate → build → sign → settle: the Universal
-   Account sources USDC cross-chain and settles to the merchant in one operation. No "build preview"
-   then "confirm" — the Trust Preview above was the only explicit approval; the plumbing signatures
-   are blind (Magic). **You pay zero native gas** — the first-time 7702 delegation is submitted by our
-   relayer (C23), and the settlement fee is paid in USDC. *(One-tap = `NEXT_PUBLIC_ONE_TAP_CHECKOUT=true`;
-   sponsored delegation = `NEXT_PUBLIC_SPONSORED_DELEGATION=true`; both live-verified 2026-07-05.)*
-5. **Proof Receipt:** open the public `/receipt/<id>` — "Cross-chain: Base → Arbitrum" badge, the
-   animated route, per-chain explorer links, the UniversalX activity link, and the InvoicePaid
-   attestation. Verifiable by anyone, no account.
+Set up ALREADY armed before you present, so you can open on the block. (The `/agent` screen shows
+your one Universal Account balance across chains — Particle's chain-abstraction, made visible.)
 
-Talk track: "Particle's Universal Account is one balance across the EVM chains you hold USDC on — the user never bridges,
-never picks a network, never holds gas on the settlement chain. We make that visible and provable."
-
-### Act 2 — The agent on a leash (the thesis) — `/agent`
-
-6. (Still signed in.) The **Universal Account balance** shows one balance across the EVM chains you
-   hold USDC on (Base, Arbitrum, …) — Particle's superpower, made visible.
-7. **Mandate Card** — read it aloud: `$0.10 / charge`, `$2 / day`, `$10 total`, **one merchant**,
-   **expires today**, **revocable anytime**. "If a charge breaks any limit it reverts on-chain —
-   you pay nothing." **Arm** it (one signature + one approve). The Budget HUD lights up
-   2.00/2.00 today, 10.00/10.00 lifetime.
-8. **Send the agent (autonomous run).** One click. The terminal narrates the real x402 handshake —
+1. Read the mandate card aloud: `$0.10 / charge`, `$2 / day`, `$10 total`, **one merchant**,
+   **expires today**, **revocable anytime**. "If a charge breaks any limit it reverts on-chain — you
+   pay nothing." *(If arming live: one signature + one approve; the Budget HUD lights up 2.00/2.00
+   today, 10.00/10.00 lifetime.)*
+2. **Send the agent (autonomous run).** One click. The terminal narrates the real x402 handshake —
    it buys **Market insight ($0.05)** then **Live sentiment ($0.08)** (`402 → pay within mandate →
    200 OK`), and the **Budget HUD drains** with each purchase.
-9. It then reaches **Premium dataset ($0.20)** — over the $0.10 per-charge cap. **BLOCKED: over the
-   per-charge cap. No funds moved, zero gas.** The agent halts itself ("I cannot exceed the
-   mandate"); the HUD flashes **Firewall held · budget untouched** — the bars do NOT move.
-10. **Revoke** → "Mandate revoked. Agent disarmed." Run again → `BLOCKED: MandateIsRevoked`. 7702
-    reversibility as a safety feature.
+3. It then reaches **Premium dataset ($0.20)** — over the $0.10 per-charge cap. **BLOCKED: over the
+   per-charge cap. No funds moved, zero gas.** The agent halts itself; the Budget HUD and the "Your
+   own account" spine hold **Firewall held · budget untouched** — the bars do NOT move. *(This is the
+   10-second wow — say it human-first: "it tried to overspend and it can't; my money never moved.")*
+4. **Revoke** → "Mandate revoked. Agent disarmed." Run again → `BLOCKED: MandateIsRevoked`. 7702
+   reversibility as a safety feature.
 
 Proven live on Arbitrum (2026-06-21): autonomous run bought 0.05 + 0.08, over-cap 0.20 blocked
 (`PerChargeExceeded`), HUD drained to 1.87/9.87, revoke confirmed.
 
-Talk track: "x402 gives an agent a wallet; OneLink is the leash. The agent runs unattended and
-makes its own purchases — but the on-chain firewall is the hard limit. Even a buggy or
-prompt-injected agent physically cannot exceed what you signed."
+Talk track: "x402 gives an agent a wallet; OneLink is the leash. The agent runs unattended and makes
+its own purchases — but the on-chain firewall is the hard limit. Even a buggy or prompt-injected
+agent physically cannot exceed what you signed." **Honesty:** the agent is an *unattended
+deterministic* loop — **not** LLM-driven; the x402 flow is the *pattern* (`onelink-mandate`, not the
+Coinbase facilitator); the on-chain enforcement is fully real.
 
-**Honesty lines (say them):** the agent is a real **unattended deterministic** loop — **not**
-LLM-driven, so no AI reasoning is claimed. The x402 flow is the *pattern* settled by our
-`onelink-mandate` scheme — **not** the Coinbase facilitator. **Gas abstraction** is real — the
-network fee is paid in USDC from the UA. The one-time 7702 delegation is now **relayer-sponsored**
-(C23) — a first-time payer needs **zero native gas**; this is scoped to the delegation step, **not**
-a general paymaster (we don't sponsor the settlement fee, which is paid in USDC).
+*(Scripted alternative to the one-click run: preset scenarios on `/firewall` — the fallback for Act 1.)*
 
-*(Alternative scripted version of the same beat lives at `/firewall` — preset scenarios instead of
-the one-click autonomous run.)*
+### Act 2 — Cross-chain checkout: one balance, any chain (credibility) — `/pay/<id>`
+
+5. Open `/pay/<id>`. **Continue with Google** (Magic) — no seed phrase, no extension, no chain
+   selector. Logged in within seconds.
+6. **Trust Preview — your single consent:** before you tap, the card shows the *planned* route —
+   **Base → Arbitrum, no manual bridge**, the network fee paid in USDC — and the exact amount the
+   merchant receives. Consent you can read, not a blind signature (EIP-712 hash behind "Show
+   technical details").
+7. **One tap — "Pay".** A single tap orchestrates delegate → build → sign → settle: the Universal
+   Account sources USDC cross-chain and settles to the merchant in one operation. The Trust Preview
+   was the only explicit approval; the plumbing signatures are blind (Magic). **You pay zero native
+   gas** — the first-time 7702 delegation is relayer-submitted (C23), the settlement fee is in USDC.
+   *(One-tap = `NEXT_PUBLIC_ONE_TAP_CHECKOUT=true`; sponsored delegation =
+   `NEXT_PUBLIC_SPONSORED_DELEGATION=true`; both live-verified 2026-07-05.)*
+8. **Proof Receipt:** open the public `/receipt/<id>` — "Cross-chain: Base → Arbitrum" badge, the
+   animated route, per-chain explorer links, the UniversalX activity link, and the InvoicePaid
+   attestation. Verifiable by anyone, no account.
+
+Talk track: "Particle's Universal Account is one balance across the EVM chains you hold USDC on — the
+user never bridges, never picks a network, never holds gas on the settlement chain." **Gas
+abstraction** is real (the network fee is paid in USDC); the one-time delegation is relayer-sponsored
+(C23) — **not** a general paymaster.
 
 ### Closer — "it's your wallet, not ours" (optional, ~15s) — `/wallet`
 
@@ -218,7 +217,7 @@ Accounts:
 - [ ] If serving a **deployed** build (not localhost): that build was built with `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` (R18). Confirm `/debug/*` shows the "disabled" stub.
 - [ ] `corepack pnpm dev` up; `/`, `/pay/<id>`, `/firewall`, `/agent`, `/dashboard` load with no console errors.
 
-### 1. Act 1 — cross-chain checkout + proof receipt (verifies C8 / C20 / C21 + **R15**)
+### 1. Cross-chain checkout + proof receipt (verifies C8 / C20 / C21 + **R15**)
 
 - [ ] Open `/pay/<id>` (a Base-funded → Arbitrum-settled link), Continue with Google. **Before signing**, the Trust Preview shows the **Base → Arbitrum** route + fee in USDC. Pay. **Record the settlement tx hash** (Arbitrum).
 - [ ] Open `/receipt/<id>`: **"Cross-chain: Base → Arbitrum" badge** + animated route + UniversalX link present; "How is this verified?" disclosure reads correctly; payment-tx link → **arbiscan.io** (resolves), proof-tx (InvoicePaid) link → **basescan.org** (resolves). **Record the proof tx hash.**
@@ -240,7 +239,7 @@ Accounts:
 - [ ] Revoke → `Mandate revoked`; run again → `BLOCKED: MandateIsRevoked`.
 - [ ] (optional a11y) with VoiceOver/NVDA on, the "BLOCKED" line is announced aloud (aria-live fix).
 
-### 4. Act 2 — `/agent` autonomous run (verifies C16 / C17)
+### 4. `/agent` autonomous run (verifies C16 / C17)
 
 - [ ] Login + Arm; the Universal Account balance shows one balance across the EVM chains held (Base, Arbitrum, …) — or "Balance unavailable … Retry" (R12). Demo proceeds either way.
 - [ ] Click **Send the agent (autonomous run)** → it buys Market insight ($0.05) then Live sentiment ($0.08) (`402 → Paying… → 200 OK`), HUD drains 2.00 → 1.87.
