@@ -1,6 +1,6 @@
 # OneLink Pay — Demo Runbook
 
-Last updated: 2026-07-05
+Last updated: 2026-07-06
 
 The definitive "what to show and say" for judges. Reflects the current build — Arbitrum-first, with
 cross-chain settlement via the Particle Universal Account (prod mode `universal_7702_transfer`),
@@ -18,7 +18,7 @@ deployed live at onelink-pay.vercel.app.
 5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). And **zero native gas** — the one-time delegation is relayer-sponsored (C23).
 6. Open the public **proof receipt** → anyone verifies on a block explorer, no account.
 
-**Golden path — don't sprawl.** The live run is exactly the beats above (`/firewall` for the block + one cross-chain `/pay` for the credibility beat). `/dashboard`, `/wallet` (Pro / key-export) and `/demo-replay` are **"explore if asked," not live beats** — one crisp "it physically can't overspend" moment beats five decent flows.
+**Golden path — don't sprawl.** The live run is exactly the beats above (`/firewall` for the block + one cross-chain `/pay` for the credibility beat). `/try` (walletless self-serve block), `/dashboard`, `/wallet` (Pro / key-export) and `/demo-replay` are **"explore if asked," not live beats** — one crisp "it physically can't overspend" moment beats five decent flows.
 
 **Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC) and the **one-time 7702 delegation is now sponsored** — the relayer pays it (proven on-chain, C23), so a first-time payer needs **zero native gas**. (Scoped to the delegation step; the settlement fee is still paid in USDC — we do **not** claim a general paymaster.)
 
@@ -54,6 +54,7 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 
 - **Magic email / Google login -> Particle UA in EIP-7702 mode.** EOA delegated in place (same address), across Base + Arbitrum + Optimism.
 - **Permission Firewall — real on-chain enforcement (live on Base and Arbitrum).** `SpendPolicy` enforces per-charge / daily / total caps + expiry + merchant-only recipient + revoke. Off-scope or over-cap charges revert.
+- **Walletless self-serve block — `/try` (C24).** Anyone — no wallet, no login — taps once and triggers the real on-chain over-cap revert (`PerChargeExceeded`, no funds moved, zero gas), simulated against the live Arbitrum `SpendPolicy`. Lets a skeptical judge drive the wow themselves.
 - **Cross-chain settlement via the Universal Account (C21).** USDC sourced from Base, settled to the merchant on Arbitrum in one operation — no manual bridge. Proven live + deployed.
 - **Autonomous agent on a leash.** One-click unattended run buys within the mandate and is halted by the firewall on the over-cap call (deterministic — not LLM-driven).
 - **Proof Receipt.** A verified -> matched -> recorded trail, shareable at `/receipt/[id]`; anyone can verify on a block explorer.
@@ -131,6 +132,10 @@ The mic-drop for the non-custodial thesis. Flip on **Pro** in the Account panel:
 
 Talk track: "Competitors hand the agent a custodial or MPC wallet. OneLink's limit lives on *your own*
 account — you can export the key and walk, or revert the delegation, anytime. It's provably yours."
+
+### Judge self-serve — `/try` (no wallet, leave-behind)
+
+Hand a skeptical judge **onelink-pay.vercel.app/try**. With no wallet and no login, one tap triggers the real on-chain block: a pre-signed demo mandate is charged **$0.50 over its $0.10 per-charge cap**, the live Arbitrum `SpendPolicy` reverts **`PerChargeExceeded`**, and the page shows **"Blocked on-chain · no funds moved · zero gas."** The route is **simulate-only** — it never submits a transaction and never reads a client-supplied amount (no drain vector); the over-cap reverts before any transfer, so it needs no allowance, funds, or gas. Use it as the **leave-behind** after the demo, or as the **Act 1 fallback** if live login flakes (C24).
 
 ## On-chain proofs (copy-paste)
 
