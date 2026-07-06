@@ -221,6 +221,49 @@ export default function PitchPage() {
           </p>
         </section>
 
+        {/* For builders */}
+        <section className="mt-20">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[2rem]">
+            Integrate in one call
+          </h2>
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink2">
+            No contracts to deploy, no SDK. Send users to a hosted link, or bound an agent&rsquo;s
+            x402 spend with a signed mandate — two paths a builder ships today.
+          </p>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <div className="op-card-quiet p-5">
+              <p className="font-semibold text-ink">Hosted pay link</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink2">
+                One POST from your backend, then redirect the customer. Cross-chain USDC, settled on
+                your chain.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-xl border border-line bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink2">{`POST /api/payment-links
+  x-admin-create-token: $TOKEN
+  { merchantAddress, amount, token,
+    destinationChainId }
+→ { checkoutUrl: ".../pay/<id>" }`}</pre>
+            </div>
+            <div className="op-card-quiet p-5">
+              <p className="font-semibold text-ink">Agent on x402</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink2">
+                GET → 402 → pay within the signed mandate → retry with proof → 200. The firewall
+                caps every call on-chain.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-xl border border-line bg-paper p-3 font-mono text-[11px] leading-relaxed text-ink2">{`GET  /api/x402/<resource>   → 402 + terms
+POST /api/mandates/charge   → { txHash }
+     (reverts on-chain if over-cap)
+GET  /api/x402/<resource>
+     X-PAYMENT: <proof>     → 200 + data`}</pre>
+            </div>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink2">
+            <span className="font-medium text-ink">Who it&rsquo;s for:</span> AI-agent frameworks that
+            need a hard spend ceiling, usage/subscription billing that wants a revocable capped
+            mandate, and API providers pricing per call over x402. Full guide:{" "}
+            <span className="font-mono text-xs">docs/integrate.md</span>.
+          </p>
+        </section>
+
         {/* See it for yourself */}
         <section className="mt-20 rounded-3xl border border-line bg-paper2 p-8 text-center sm:p-10">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[2rem]">
