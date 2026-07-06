@@ -292,6 +292,11 @@ export default function HomePage() {
           </Reveal>
         </section>
 
+        {/* Integrate in one call — adoption story */}
+        <Reveal>
+          <IntegrateSection />
+        </Reveal>
+
         {/* Honest scope footer */}
         <footer className="mt-16 flex flex-col gap-3 border-t border-line pt-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <Wordmark href="/" />
@@ -501,6 +506,53 @@ function SponsorStrip() {
               {s.name}
             </p>
             <p className="mt-1 text-sm leading-relaxed text-muted">{s.advantage}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+const INTEGRATE_SNIPPET = `curl -s https://onelink-pay.vercel.app/api/payment-links \\
+  -H "content-type: application/json" \\
+  -H "x-admin-create-token: $KEY" \\
+  -d '{"merchantAddress":"0xYourMerchant","amount":"1000000","token":"USDC","destinationChainId":42161}'
+
+# → { "paymentLink": { "id": "…" }, "checkoutUrl": "https://onelink-pay.vercel.app/pay/<id>" }`;
+
+const INTEGRATE_PATHS: { t: string; d: string }[] = [
+  { t: "Hosted pay link", d: "One API call returns a checkout URL — no SDK, no contracts to deploy." },
+  { t: "Server-to-server charge", d: "Charge a payer-signed mandate within its caps; an over-cap charge reverts on-chain, no funds move." },
+  { t: "x402 agent leash", d: "Bound an agent's per-call x402 spend to the same on-chain mandate ceiling." },
+];
+
+function IntegrateSection() {
+  return (
+    <section className="mt-24">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Integrate in one call</h2>
+        <Link href="/pitch" className="op-link text-sm">
+          See all three paths &rarr;
+        </Link>
+      </div>
+      <p className="mt-3 max-w-2xl text-ink2">
+        No SDK, no contracts to deploy — every endpoint is a route this app already serves. Create a
+        hosted checkout with one API call; your customer logs in with email or Google and pays in
+        USDC, and the Universal Account sources funds cross-chain and settles on your chain.
+      </p>
+      <pre className="mt-5 overflow-x-auto rounded-2xl border border-line bg-paper2 p-5 font-mono text-xs leading-relaxed text-ink2">
+        <code>{INTEGRATE_SNIPPET}</code>
+      </pre>
+      <p className="mt-2 text-xs text-muted">
+        Server-side call — your create token stays secret; the browser only ever sees the returned{" "}
+        <code className="font-mono text-ink2">checkoutUrl</code>.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {INTEGRATE_PATHS.map((p) => (
+          <div key={p.t} className="op-card-quiet p-4">
+            <p className="font-semibold text-ink">{p.t}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted">{p.d}</p>
           </div>
         ))}
       </div>
