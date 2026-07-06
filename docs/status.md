@@ -1,13 +1,13 @@
 # Status
 
-Last updated: 2026-06-21
+Last updated: 2026-07-06
 
 ## Active Stack
 
 This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + Particle Universal Accounts.
 
 - Magic is the embedded wallet/auth layer.
-- Particle Universal Account SDK (`2.0.0-beta.3`, pinned exact) is the chain abstraction layer.
+- Particle Universal Account SDK (`2.0.3`, pinned exact stable) is the chain abstraction layer.
 - Legacy/fallback modes use `new UniversalAccount({ ownerAddress })` (separate smart-account address, `UNIVERSAL` version `1.0.3`).
 - An explicit EIP-7702 mode (`universal_7702_transfer`) is now implemented: `smartAccountOptions { useEIP7702: true, version: UNIVERSAL_ACCOUNT_VERSION }`, with the EOA delegated in-place via Magic's `sign7702Authorization` / `send7702Transaction`.
 - Particle AuthKit is installed but not used in the active flow.
@@ -130,7 +130,7 @@ i.e. `-32801` on both Base and Arbitrum, in both legacy and EIP-7702 modes, duri
 Universal Accounts V2 migration; the interim rail was `createTransferTransaction` + server-side
 `Transfer` verification.
 
-**This is resolved.** On `@particle-network/universal-account-sdk@2.0.0-beta.3` the cross-chain
+**This is resolved.** On `@particle-network/universal-account-sdk` (now pinned stable `2.0.3`) the cross-chain
 payment is proven live and deployed (ledger C21) using `createUniversalTransaction` +
 `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 delegate
 (`0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`) + single-shot build/sign/send. The residual risk is

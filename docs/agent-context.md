@@ -22,7 +22,7 @@ consent / permission-safety pieces are concept-mode — keep claim discipline be
 
 - Magic embedded wallet
 - Particle Universal Accounts
-- Base mainnet
+- Base + Arbitrum One (Arbitrum-first settlement); cross-chain via Particle UA (C21). UA SDK pinned stable `2.0.3`
 - `PAYMENT_MODE=universal_7702_transfer` as the current Universal Accounts Track candidate
 - `createTransferTransaction` rail
 - server-side USDC `Transfer` verification
