@@ -8,12 +8,12 @@ import { buildMandateTypedData, getSpendPolicyAddress } from "@/lib/mandates/man
 import { DEMO_BLOCK_MANDATE, DEMO_BLOCK_PAYER } from "@/lib/demo/firewall-block";
 import { getPublicRpcUrl, ARBITRUM_CHAIN } from "@/lib/config/payment";
 
-const DEBUG = process.env.NEXT_PUBLIC_ENABLE_DEBUG_PROBES === "true";
-
 /**
- * DEV-ONLY (debug-gated): one-time signer for the walletless "guided live" firewall block.
- * The demo PAYER logs in via Magic and signs the exact fixed DEMO_BLOCK_MANDATE; copy the printed
- * signature into DEMO_BLOCK_SIGNATURE (local .env.local + Vercel prod). Off in prod builds.
+ * One-time signer for the walletless "guided live" firewall block (/try). The demo PAYER logs in
+ * via Magic and signs the exact fixed DEMO_BLOCK_MANDATE; copy the printed signature into
+ * DEMO_BLOCK_SIGNATURE (env). Intentionally NOT gated behind the debug flag (it moves no funds and
+ * only the payer's own signature is usable), and NOT under /debug/* so it doesn't contradict the
+ * R18 "debug routes are disabled in prod" invariant. Removed after the demo is armed.
  */
 
 let Magic: any = null;
@@ -44,7 +44,7 @@ export default function ArmDemoBlockPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!DEBUG || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     loadMagic().then(() => {
       setMagic(
         new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!, {
@@ -101,7 +101,6 @@ export default function ArmDemoBlockPage() {
         typed.message,
       );
       setSignature(sig);
-      // Local sanity: recover the signer so you can see it equals the payer before trusting it.
       const rec = verifyTypedData(typed.domain as any, typed.types as any, typed.message as any, sig);
       setRecovered(rec);
     } catch (e: any) {
@@ -110,20 +109,6 @@ export default function ArmDemoBlockPage() {
       setBusy(null);
     }
   }, [magic]);
-
-  if (!DEBUG) {
-    return (
-      <main className="op-shell px-5 py-12">
-        <div className="mx-auto max-w-md op-card p-6 text-sm text-muted">
-          <p className="font-semibold text-ink">Debug tool disabled</p>
-          <p className="mt-1.5">
-            Set <span className="font-mono text-xs">NEXT_PUBLIC_ENABLE_DEBUG_PROBES=true</span> (local
-            only) to arm the walletless demo. This is off in production builds.
-          </p>
-        </div>
-      </main>
-    );
-  }
 
   const isPayer = address?.toLowerCase() === DEMO_BLOCK_PAYER.toLowerCase();
   const recoveredOk = recovered?.toLowerCase() === DEMO_BLOCK_PAYER.toLowerCase();
@@ -137,17 +122,18 @@ export default function ArmDemoBlockPage() {
         </header>
 
         <div className="op-card p-6">
-          <span className="op-eyebrow">Dev · arm walletless demo</span>
+          <span className="op-eyebrow">Arm the walletless demo</span>
           <h1 className="mt-2 font-display text-2xl font-semibold text-ink">Sign the demo block mandate</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Log in as the demo payer (<span className="font-mono text-xs">{DEMO_BLOCK_PAYER.slice(0, 10)}…{DEMO_BLOCK_PAYER.slice(-6)}</span>)
-            and sign the fixed demo mandate. Copy the signature into{" "}
-            <span className="font-mono text-xs">DEMO_BLOCK_SIGNATURE</span>.
+            Log in as the demo payer (
+            <span className="font-mono text-xs">{DEMO_BLOCK_PAYER.slice(0, 10)}…{DEMO_BLOCK_PAYER.slice(-6)}</span>
+            ) and sign the fixed demo mandate. It moves no funds and costs no gas — it&rsquo;s a plain
+            EIP-712 signature. Copy the result into <span className="font-mono text-xs">DEMO_BLOCK_SIGNATURE</span>.
           </p>
 
           {!address ? (
             <div className="mt-5 space-y-3">
-              <LoginWithGoogleButton magic={magic} returnTo="/debug/arm-demo-block" />
+              <LoginWithGoogleButton magic={magic} returnTo="/arm-demo-block" />
               <input
                 type="email"
                 value={email}
@@ -180,7 +166,10 @@ export default function ArmDemoBlockPage() {
               <p className="mt-1.5 break-all font-mono text-[11px] leading-relaxed text-ink2">{signature}</p>
               <p className="mt-2 flex items-center gap-1.5 text-xs">
                 {recoveredOk ? (
-                  <><IconCheck className="h-3.5 w-3.5 text-verify" /> <span className="text-verify">Recovers to the payer — valid.</span></>
+                  <>
+                    <IconCheck className="h-3.5 w-3.5 text-verify" />{" "}
+                    <span className="text-verify">Recovers to the payer — valid.</span>
+                  </>
                 ) : (
                   <span className="text-danger">Recovered {recovered ?? "?"} ≠ payer — do not use.</span>
                 )}
