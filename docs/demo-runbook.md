@@ -85,8 +85,12 @@ your one Universal Account balance across chains — Particle's chain-abstractio
    per-charge cap. No funds moved, zero gas.** The agent halts itself; the Budget HUD and the "Your
    own account" spine hold **Firewall held · budget untouched** — the bars do NOT move. *(This is the
    10-second wow — say it human-first: "it tried to overspend and it can't; my money never moved.")*
-4. **Revoke** → "Mandate revoked. Agent disarmed." Run again → `BLOCKED: MandateIsRevoked`. 7702
-   reversibility as a safety feature.
+4. **Revoke** → "Mandate revoked on-chain. Agent disarmed." The charge buttons stay live on
+   purpose: **tap any charge again** — even the within-budget one that just settled — and the
+   firewall now reverts it `BLOCKED: mandate revoked. No funds moved, zero gas.` 7702
+   reversibility as a safety feature. *(This post-revoke retry is the most convincing proof — the
+   same button that paid a second ago now can't move a cent. It reads clearer to judges than
+   another cross-chain tx hash.)*
 
 Proven live on Arbitrum (2026-06-21): autonomous run bought 0.05 + 0.08, over-cap 0.20 blocked
 (`PerChargeExceeded`), HUD drained to 1.87/9.87, revoke confirmed.

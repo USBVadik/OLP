@@ -114,17 +114,21 @@ export default function HomePage() {
               className="op-animate-rise mt-5 max-w-xl text-lg leading-relaxed text-ink2"
               style={{ animationDelay: "240ms" }}
             >
-              Sign one scoped mandate. Your AI agent (or a merchant) can spend USDC only inside the
-              per-charge, daily, and total caps you set — over-cap charges revert on-chain at zero
-              gas, and every payment ships a verifiable proof receipt.
+              Let an app, script, or AI agent touch your money{" "}
+              <span className="font-medium text-ink">without handing over your wallet</span>. Sign
+              one scoped mandate — it can spend USDC only within your per-charge, daily, and total
+              caps, only to one merchant, until it expires, and you can revoke anytime. Over-limit
+              charges revert on-chain; every payment ships a verifiable proof receipt.
             </p>
 
             <p
               className="op-animate-rise mt-3 max-w-xl text-sm leading-relaxed text-muted"
               style={{ animationDelay: "290ms" }}
             >
-              In plain words: it&rsquo;s a debit card with a built-in limit — but for your apps and
-              AI agents, and the limit is enforced on-chain, not by trust.
+              In plain words: full wallet access is dangerous and approving every payment by hand is
+              slow — so OneLink gives each app a{" "}
+              <span className="font-medium text-ink2">budget it physically can&rsquo;t exceed</span>,
+              and you can safely let software pay.
             </p>
 
             <div

@@ -449,7 +449,7 @@ function ArmedPanel({
             <button
               key={s.id}
               onClick={() => onRunScenario(s)}
-              disabled={running || revoked}
+              disabled={running}
               className="op-btn-secondary w-full justify-center"
             >
               {s.expectBlocked ? (
@@ -462,8 +462,9 @@ function ArmedPanel({
           ))}
         </div>
         <p className="text-xs leading-relaxed text-muted">
-          The agent calls the same on-chain firewall a real one would. Over-cap attempts revert in
-          simulation — no funds move and no gas is spent.
+          {revoked
+            ? "Revoked. Tap any charge above — even one that just settled — and the firewall now reverts it as mandate-revoked: no funds move, zero gas. The kill switch holds on-chain."
+            : "The agent calls the same on-chain firewall a real one would. Over-cap attempts revert in simulation — no funds move and no gas is spent."}
         </p>
       </div>
     </div>

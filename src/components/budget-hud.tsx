@@ -117,9 +117,18 @@ export function BudgetHud({ chainId, mandate, protectedPulse, refreshSignal }: P
           : `Expires in ${countdown}`}
       </p>
 
-      <p className="mt-1 text-[11px] text-faint">
-        Per charge: up to {formatUsdcAmount(state.perChargeLeft)}
-      </p>
+      <dl className="mt-3 space-y-1 border-t border-line/60 pt-3 text-xs">
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted">Per action</dt>
+          <dd className="font-mono text-ink">up to {formatUsdcAmount(state.perChargeLeft)}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted">Merchant</dt>
+          <dd className="font-mono text-ink2">
+            only {mandate.merchant.slice(0, 6)}&hellip;{mandate.merchant.slice(-4)}
+          </dd>
+        </div>
+      </dl>
     </div>
   );
 }
