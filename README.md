@@ -1,6 +1,8 @@
 # OneLink Pay
 
-**On-chain spending limits for the agent era.** Sign one scoped mandate; your AI agent (or a merchant) can charge USDC — but only inside the per-charge, daily, and total caps you approved. Over-cap, off-merchant, or post-revoke charges revert on-chain at zero gas. Every payment ships a public, verifiable proof receipt.
+**Give your AI a card, not your wallet.** OneLink Pay is a permission firewall for Universal Accounts: sign one scoped mandate, and an app, script, or AI agent can spend USDC only inside the per-charge, daily, and total caps you set — to a single merchant, until it expires, revocable anytime. Over-cap, off-merchant, or post-revoke charges revert on-chain (caught in simulation — zero gas). Every payment ships a public, verifiable proof receipt.
+
+Particle makes execution chain-abstracted; OneLink makes consent visible, limits enforceable, and every settlement provable.
 
 Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-hackathon) (Encode Club + 7702 Collective).
 
@@ -10,9 +12,10 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 **No login or wallet needed — verify the core claims right now:**
 
-1. **Watch the 90-second replay** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): both wow moments — cross-chain checkout and the agent blocked on-chain — with the same proof links.
-2. **Verify the cross-chain payment yourself (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
-3. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
+1. **Trigger the on-chain block yourself — no wallet, no gas** → [`/try`](https://onelink-pay.vercel.app/try): one tap fires the live Arbitrum `SpendPolicy`; an over-cap charge reverts (`PerChargeExceeded`) with no funds moved. The firewall, driven by you.
+2. **Verify the cross-chain payment (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
+3. **Watch the walkthrough** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): a real, verified **same-chain** payment and its on-chain proof receipt — no wallet, no gas. (The live cross-chain checkout and the agent-on-a-leash block are on `/pay` and `/agent`, below.)
+4. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
 
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
 
@@ -25,7 +28,7 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 
 ## What's live
 
-- **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` at zero gas. 22 Hardhat tests pass.
+- **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` — caught in simulation before broadcast, so no funds move and zero gas is spent. 22 Hardhat tests pass.
 - **Cross-chain settlement via Particle Universal Account (EIP-7702)** — a Magic-signed UA pays a merchant on Arbitrum with USDC sourced cross-chain from Base in one operation — no manual bridge. Proven live (Arbitrum settle `0x85d8…4911`, Base source `0x8b85…4a2e`, UniversalX `0x0654e81cfea86a`) and wired into `/pay` (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`, live in prod). Same-chain checkout runs on the same path.
 - **Agent on a leash (x402-pattern)** — `/agent` runs the real x402 HTTP handshake (`GET → 402 → pay → retry-with-proof → 200`) settled through the on-chain mandate, so an agent's per-call spend is bounded by the caps. Within-cap buys succeed; over-cap calls are refused before any funds move. Proven live on Arbitrum. Settlement scheme is `onelink-mandate` (the x402 *pattern*, not the Coinbase facilitator).
 - **Legible consent** — a plain-English mandate card before signing (EIP-712 hash behind a disclosure) and a live budget HUD that drains from on-chain `SpendPolicy` state.
@@ -89,7 +92,11 @@ SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_DESTINATION_CHAIN_ID=8453
 NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer
 NEXT_PUBLIC_RECEIPT_EMITTER_ADDRESS=
+# Permission Firewall (SpendPolicy) — REQUIRED for /firewall + /agent
+NEXT_PUBLIC_SPEND_POLICY_ADDRESS=
+NEXT_PUBLIC_SPEND_POLICY_ADDRESS_ARBITRUM=
 BASE_MAINNET_RPC_URL=
+NEXT_PUBLIC_BASE_RPC_URL=https://mainnet.base.org
 NEXT_PUBLIC_ARBITRUM_CHAIN_ID=42161
 NEXT_PUBLIC_ARBITRUM_USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
 ARBITRUM_MAINNET_RPC_URL=
@@ -97,10 +104,12 @@ NEXT_PUBLIC_ARBITRUM_RECEIPT_EMITTER_ADDRESS=
 RECEIPT_EMITTER_OWNER_PRIVATE_KEY=
 RELAYER_PRIVATE_KEY=
 ADMIN_CREATE_TOKEN=
+# "true" = relayer pays the one-time 7702 delegation (zero-gas onboarding, C23)
+NEXT_PUBLIC_SPONSORED_DELEGATION=false
 NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false
 ```
 
-Never commit `.env.local`, private keys, seed phrases, or admin tokens. `RELAYER_PRIVATE_KEY` is optional (falls back to the ReceiptEmitter owner key). Keep `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` in any deployed build — it gates the `/debug/*` lab routes and is inlined at build time.
+The values above are safe local defaults (Base + `universal_7702_transfer`); the live prod demo is **Arbitrum-first** — set `NEXT_PUBLIC_DESTINATION_CHAIN_ID=42161` to mirror it. `NEXT_PUBLIC_SPEND_POLICY_ADDRESS*` must be set for the firewall/agent demos. Never commit `.env.local`, private keys, seed phrases, or admin tokens. `RELAYER_PRIVATE_KEY` is optional (falls back to the ReceiptEmitter owner key). Keep `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false` in any deployed build — it gates the `/debug/*` lab routes and is inlined at build time.
 
 ## Local Commands
 
@@ -109,7 +118,9 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm typecheck
 corepack pnpm lint
-cd contracts && corepack pnpm test
+corepack pnpm test:unit          # 181 unit tests (node:test)
+corepack pnpm build
+cd contracts && corepack pnpm test   # 22 Hardhat contract tests
 ```
 
 Deploy ReceiptEmitter v1.1 to Base mainnet:
