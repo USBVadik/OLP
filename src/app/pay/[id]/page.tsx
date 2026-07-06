@@ -169,6 +169,10 @@ const ONE_TAP_CHECKOUT = process.env.NEXT_PUBLIC_ONE_TAP_CHECKOUT === "true";
 // so Next inlines it into the CLIENT bundle at build — aliasing it through a helper param does NOT
 // inline on the client (known Next.js gotcha). The server route can still use the helper (runtime).
 const SPONSORED_DELEGATION = process.env.NEXT_PUBLIC_SPONSORED_DELEGATION === "true";
+// Developer-only checkout disclosures (event logs, raw JSON, balance dumps). Hidden by default so
+// the consumer/judge checkout stays clean; enabled locally via the same flag as the /debug pages.
+// Read as a LITERAL `process.env.NEXT_PUBLIC_*` so Next inlines it into the client bundle.
+const SHOW_DEV_DETAILS = process.env.NEXT_PUBLIC_ENABLE_DEBUG_PROBES === "true";
 
 interface PaymentLink {
   id: string;
@@ -1035,7 +1039,8 @@ export default function PayPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        {/* Developer logs */}
+        {/* Developer logs — dev-only, hidden on the consumer checkout (NEXT_PUBLIC_ENABLE_DEBUG_PROBES) */}
+        {SHOW_DEV_DETAILS && (
         <div className="mt-4">
           <Disclosure summary={`Developer logs (${logs.length})`}>
             <div className="max-h-96 space-y-2 overflow-auto">
@@ -1060,6 +1065,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
             </div>
           </Disclosure>
         </div>
+        )}
       </div>
     </main>
   );
@@ -1244,6 +1250,7 @@ function SuccessState({
           <IconArrowUpRight className="h-4 w-4" />
         </a>
       </div>
+      {SHOW_DEV_DETAILS && (
       <div className="mt-4">
         <Disclosure summary="Raw payment result">
           <pre className="max-h-72 overflow-auto text-left text-xs text-muted">
@@ -1251,6 +1258,7 @@ function SuccessState({
           </pre>
         </Disclosure>
       </div>
+      )}
     </div>
   );
 }
@@ -1402,7 +1410,7 @@ function PreviewStep({
         </div>
         {balances?.error ? (
           <p className="mt-1 text-xs text-danger">{balances.error}</p>
-        ) : balances ? (
+        ) : balances && SHOW_DEV_DETAILS ? (
           <div className="mt-3">
             <Disclosure summary="Show balance details">
               <pre className="max-h-40 overflow-auto text-xs text-muted">
@@ -1453,6 +1461,7 @@ function PreviewStep({
               </li>
             ) : null}
           </ul>
+          {SHOW_DEV_DETAILS && (
           <div className="mt-3">
             <Disclosure summary="Raw Particle transaction">
               <p className="mb-2 text-xs text-muted">
@@ -1463,6 +1472,7 @@ function PreviewStep({
               </pre>
             </Disclosure>
           </div>
+          )}
         </div>
       ) : null}
 

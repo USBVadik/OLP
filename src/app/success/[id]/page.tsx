@@ -9,7 +9,7 @@ import {
   type ChainPaymentConfig,
 } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
-import { Wordmark, IconCheck, IconArrowUpRight, AppNav } from "@/components/ui";
+import { Wordmark, IconCheck, IconArrowUpRight } from "@/components/ui";
 import { ProofReceiptCard, VerificationMethod } from "@/components/proof-receipt";
 import { CopyLinkButton } from "@/components/copy-link-button";
 
@@ -48,8 +48,6 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
             <IconCheck className="h-3.5 w-3.5" /> Verified
           </span>
         </header>
-
-        <AppNav className="mb-5" />
 
         <ProofReceiptCard
           amountLabel={amount}

@@ -139,7 +139,7 @@ function DashboardContent() {
             proof anchor <span className="ml-1 font-semibold text-ink">{PROOF_CHAIN.name}</span>
           </Chip>
           <Chip>
-            proof <span className="ml-1 font-semibold text-ink">ReceiptEmitter</span>
+            proof <span className="ml-1 font-semibold text-ink">on-chain</span>
           </Chip>
         </div>
 

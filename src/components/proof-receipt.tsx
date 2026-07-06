@@ -177,7 +177,7 @@ export function ProofReceiptCard({
         <dl className="divide-y divide-line border-t border-line">
           <Field label="Merchant" value={merchant} mono />
           {invoiceId ? <Field label="Invoice ID" value={invoiceId} mono /> : null}
-          {mode ? <Field label="Payment mode" value={mode} mono /> : null}
+          {mode ? <Field label="Payment mode" value={mode} /> : null}
           {isCrossChain ? (
             <Field label="Proof anchor" value={`${proofChainName}`} />
           ) : null}
