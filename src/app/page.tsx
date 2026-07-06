@@ -525,6 +525,23 @@ const INTEGRATE_SNIPPET = `curl -s https://onelink-pay.vercel.app/api/payment-li
 
 # → { "paymentLink": { "id": "…" }, "checkoutUrl": "https://onelink-pay.vercel.app/pay/<id>" }`;
 
+// Real, byte-for-byte response of the walletless demo endpoint (GET, no key, no gas). Keep this in
+// sync with GET /api/demo/firewall-block — it is a public claim, so it must match the live output.
+const FIREWALL_VERDICT_SNIPPET = `# Walletless — no key, no funds, no gas. Hits the live Arbitrum SpendPolicy.
+curl -s https://onelink-pay.vercel.app/api/demo/firewall-block
+
+# → the on-chain verdict, machine-readable:
+{
+  "armed": true,
+  "blocked": true,
+  "reason": "over the per-charge cap",
+  "errorName": "PerChargeExceeded",
+  "attempted": "0.50",
+  "cap": "0.10",
+  "chainId": 42161,
+  "policy": "0x9782e3724859469fbBAC5085EA8bf8E70724164E"
+}`;
+
 const INTEGRATE_PATHS: { t: string; d: string }[] = [
   { t: "Hosted pay link", d: "One API call returns a checkout URL — no SDK, no contracts to deploy." },
   { t: "Server-to-server charge", d: "Charge a payer-signed mandate within its caps; an over-cap charge reverts on-chain, no funds move." },
@@ -552,6 +569,21 @@ function IntegrateSection() {
         Server-side call — your create token stays secret; the browser only ever sees the returned{" "}
         <code className="font-mono text-ink2">checkoutUrl</code>.
       </p>
+
+      <p className="mt-7 max-w-2xl text-ink2">
+        The firewall speaks JSON, too. Trigger the live block yourself — walletless — and read the
+        on-chain verdict your integration branches on: whether it was blocked, why, and the cap it
+        broke.
+      </p>
+      <pre className="mt-3 overflow-x-auto rounded-2xl border border-line bg-paper2 p-5 font-mono text-xs leading-relaxed text-ink2">
+        <code>{FIREWALL_VERDICT_SNIPPET}</code>
+      </pre>
+      <p className="mt-2 text-xs text-muted">
+        The over-cap charge reverts in simulation against the live Arbitrum SpendPolicy — nothing
+        moves, no gas. Run it now on{" "}
+        <Link href="/try" className="op-link">/try</Link>.
+      </p>
+
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {INTEGRATE_PATHS.map((p) => (
           <div key={p.t} className="op-card-quiet p-4">
