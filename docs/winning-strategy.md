@@ -144,7 +144,7 @@ header on `docs/deep-research-onelink-pay-uxmaxx.md` (v1) pointing to v2.
 - End-to-end via product `/pay` (invoice `40027dcf`, post source-fix): Arbitrum settle
   `0x8163be21df713539c257165bdcd2de9ce4a4d097e6ff60ca6ad50c569f966464`; Base InvoicePaid proof
   `0x2fba4854014cba9a56ca6a29061cef408f94bb03e25a2e36d9ce1a6963fd7055`; UniversalX `0x0654ea35e34844`;
-  public receipt `https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3`.
+  public receipt `https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`.
   (Invoice `7be9118e` was also cross-chain but its DB `source_chain_id` predates the fix — prefer `40027dcf`.)
 - Recipe: `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the
   V2 delegate (`0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`) + single-shot build/sign/send.

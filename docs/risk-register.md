@@ -410,14 +410,16 @@
 - **key-loss risk (controlled):** losing the new attestor key = losing emitter control (re-transfer is
   only possible from the new key). Store it as carefully as the merchant/owner key; the script
   post-verifies `owner()` so a fat-fingered address is caught before you rely on it.
-- **mitigation_status:** DONE on-chain (2026-07-06) — ownership transferred to the relayer key on
+- **mitigation_status:** CLOSED, live-verified (2026-07-06) — ownership transferred to the relayer key on
   BOTH chains; the attestor (`0x0AC0…9f41`) is now distinct from the merchant payee (`0x8C54…Fb7`).
   Transfer txs: Base `0xe6a2c4a7…de6da`, Arbitrum `0x5c8db72c…3642` (both status 0x1; `owner()`
   independently RPC-verified == relayer on both). `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` swapped to the
   relayer key on local + Vercel prod (old merchant key preserved as `MERCHANT_PRIVATE_KEY`); prod
   redeployed. The relayer was funded on Base (0.0005 ETH, tx `0x22e57237…7a36`) for proof-recording
-  gas. PENDING one live `/pay` to confirm InvoicePaid still records under the new owner key (operator
-  step — Magic-gated).
+  gas. **CLOSED 2026-07-06** — a live `/pay` confirmed recording under the new owner key: cross-chain
+  invoice `fc5adc83` (2 USDC, Base→Arbitrum, stable 2.0.3) recorded InvoicePaid on Base — proof tx
+  `0x991296…ee898cf8` **sender = relayer `0x0AC0…9f41` (RPC-verified), status 0x1** — NOT the merchant;
+  Arbitrum settle `0x65ef…cffcf72d` status 0x1. Register + record now both run under the relayer.
 - **tradeoff (honest cross-ref to R16):** the attestor is now the SAME key as the charge relayer, so
   the proof-owner and the gas-relayer are no longer separate (R16 had deliberately split them).
   Accepted for the demo — the ReceiptEmitter holds NO funds and InvoicePaid is an attestation, not
@@ -425,7 +427,7 @@
   move funds or fake the trustless on-chain settlement. A production deploy would use a THIRD
   dedicated attestor key (distinct from both merchant and relayer).
 - **owner:** builder
-- **review:** confirm the live `/pay` recording once — then this is fully closed.
+- **review:** n/a — closed, live-verified 2026-07-06 (invoice `fc5adc83`).
 
 ## Security findings (external audit, 2026-06-21)
 

@@ -31,19 +31,19 @@ cross-chain from **Base** in one operation. Verified on-chain (RPC + explorers).
 
 ## Evidence B — end-to-end through the product (`/pay`)
 
-Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, settled on
-**Arbitrum (42161)** — recorded with the true funding source. The public receipt renders the
-"Cross-chain: Base → Arbitrum" badge (smoke-verified on prod this session).
+Invoice `fc5adc83` paid through the live product on the **stable SDK 2.0.3** (2026-07-06). Funded
+from **Base (8453)**, settled on **Arbitrum (42161)** — recorded with the true funding source. The
+InvoicePaid attestor is the relayer key, **distinct from the merchant payee** (R26). RPC-verified.
 
 | Field | Value |
 |---|---|
-| Invoice | `40027dcf-f45e-4991-a215-553dfb71d0e3` |
-| Public receipt (no account) | https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3 |
-| Funding source → settlement | Base `8453` → Arbitrum `42161` (`source_chain_id` recorded post-fix) |
-| Amount | 1.0 USDC |
-| **Arbitrum settlement tx** | [`0x8163…6464`](https://arbiscan.io/tx/0x8163be21df713539c257165bdcd2de9ce4a4d097e6ff60ca6ad50c569f966464) |
-| **Base InvoicePaid proof tx** | [`0x2fba…7055`](https://basescan.org/tx/0x2fba4854014cba9a56ca6a29061cef408f94bb03e25a2e36d9ce1a6963fd7055) |
-| UniversalX activity | [`0x0654ea35e34844`](https://universalx.app/activity/details?id=0x0654ea35e34844) |
+| Invoice | `fc5adc83-3b17-4004-8902-a5a40a178dd5` |
+| Public receipt (no account) | https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5 |
+| Funding source → settlement | Base `8453` → Arbitrum `42161` (`source_chain_id` recorded) |
+| Amount | 2 USDC |
+| **Arbitrum settlement tx** | [`0x65ef…f72d`](https://arbiscan.io/tx/0x65ef93082bc8bfabcd16d5034e95f45e60ad80e17bbf8c12f0494606cffcf72d) (status 0x1, RPC-verified) |
+| **Base InvoicePaid proof tx** | [`0x9912…8cf8`](https://basescan.org/tx/0x991296565f53896660c9adae53d7c498b1c0dad6c9e53b2f9dc90114ee898cf8) (sender = relayer `0x0AC0…`, not the merchant) |
+| UniversalX activity | [`0x0655f16e0cd6c8`](https://universalx.app/activity/details?id=0x0655f16e0cd6c8) |
 
 > Screenshot: open the public receipt URL above — it is the live, self-verifying artifact
 > (cross-chain badge, animated route, per-chain explorer links, UniversalX link, InvoicePaid proof).
@@ -92,10 +92,9 @@ Invoice `40027dcf` paid through the live product. Funded from **Base (8453)**, s
 
 ## Notes for the team (not for judges)
 
-- Use **invoice `40027dcf`** as the product cross-chain example: it is post the "store true funding
-  source" fix, so its `source_chain_id` correctly reads `8453` (Base).
-- Invoice `7be9118e` was also cross-chain (build preview `fromChains:[8453] → toChains:[42161]`,
-  same `ua_transaction_id 0x0654e9323a0bf7`), but its completed-row `source_chain_id` reads `42161`
-  because it predates that fix — a stored-field artifact, not a same-chain payment. Prefer
-  `40027dcf` in any public material to avoid confusion.
+- Use **invoice `fc5adc83`** as the product cross-chain example: stable SDK 2.0.3, 2 USDC,
+  `source_chain_id` = `8453` (Base → Arbitrum), and the InvoicePaid attestor is the relayer key
+  (distinct from the merchant payee — R26).
+- Older cross-chain runs (`40027dcf` on beta-3, `7be9118e`) remain valid on-chain but predate the
+  stable-SDK + attestor-split; prefer `fc5adc83` in any public material.
 - All claims trace to `docs/honest-claim-ledger.md`. This page adds no new claim.

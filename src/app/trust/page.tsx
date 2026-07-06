@@ -63,7 +63,7 @@ function StatusChip({ status }: { status: Status }) {
 
 export default function TrustPage() {
   const receiptUrl =
-    "https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3";
+    "https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5";
   const counts = { real: 0, pattern: 0, future: 0 } as Record<Status, number>;
   for (const r of ROWS) counts[r.status] += 1;
   return (

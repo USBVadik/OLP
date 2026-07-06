@@ -43,7 +43,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 | Requirement | How we meet it |
 |---|---|
 | Use UA SDK in **EIP-7702 mode** | Magic EOA upgraded in place via Particle UA (`useEIP7702: true`); same address delegated on Base + Arbitrum (no new address, no smart-account deploy). |
-| **≥1 cross-chain operation moving value via UA** | A merchant is paid 1.0 USDC on Arbitrum sourced cross-chain from Base, one operation, no bridge — proven live + RPC-verified (C21). Receipt: `/receipt/40027dcf…`. |
+| **≥1 cross-chain operation moving value via UA** | A merchant is paid 2 USDC on Arbitrum sourced cross-chain from Base, one operation, no bridge — proven live + RPC-verified on stable SDK 2.0.3 (C21). Receipt: `/receipt/fc5adc83…`. |
 | Functional demo (deployed or runnable) | Deployed + live: https://onelink-pay.vercel.app (`/agent`, `/firewall`, `/pay`, `/receipt`, `/dashboard`, `/wallet`). |
 
 ---
@@ -100,7 +100,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 ## Key links
 
 - **Live app:** https://onelink-pay.vercel.app
-- **No login needed:** [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay) · verifiable cross-chain receipt [`/receipt/40027dcf…`](https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3) · honesty surface [`/trust`](https://onelink-pay.vercel.app/trust)
+- **No login needed:** [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay) · verifiable cross-chain receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5) · honesty surface [`/trust`](https://onelink-pay.vercel.app/trust)
 - **Live product:** `/agent` (agent on a leash) · `/firewall` (sign + enforce + revoke) · `/pay` (cross-chain checkout) · `/dashboard` · `/wallet`
 - **Verify on-chain (60s):** `docs/proof-pack.md`
 - **Talk track + pitch card:** `docs/demo-runbook.md`

@@ -153,7 +153,7 @@ Cross-chain (C21 — Base -> Arbitrum, no manual bridge):
 - Arbitrum settlement: `0x85d8c4c24b75ef404889b44a63e97b9b2ac23d9a341a991f86cd0a4dbf6a4911`
 - Base source: `0x8b85d45f013f7ef86436b723e00cabebd41cba8f96c5d9ec85ad4e5d757d4a2e`
 - UniversalX activity: `https://universalx.app/activity/details?id=0x0654e81cfea86a`
-- Product receipt (invoice `40027dcf`): `/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3` (Arbitrum settle `0x8163be21…f966464`, Base proof `0x2fba4854…63fd7055`)
+- Product receipt (invoice `fc5adc83`, stable 2.0.3, 2 USDC): `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5` (Arbitrum settle `0x65ef9308…cffcf72d`, Base proof `0x99129656…ee898cf8`; proof sender = relayer ≠ merchant, R26)
 - Full evidence: `docs/proof-pack.md`
 
 Sponsored 7702 delegation (C23 — relayer pays gas, payer needs zero native gas):

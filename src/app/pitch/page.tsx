@@ -19,7 +19,7 @@ export const metadata = {
 };
 
 const APP = "https://onelink-pay.vercel.app";
-const RECEIPT = `${APP}/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3`;
+const RECEIPT = `${APP}/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`;
 
 const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
   {
@@ -278,7 +278,7 @@ GET  /api/x402/<resource>
               Agent on a leash
               <IconArrowUpRight className="h-4 w-4" />
             </Link>
-            <Link href="/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3" className="op-btn-secondary">
+            <Link href="/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5" className="op-btn-secondary">
               Cross-chain receipt
             </Link>
             <Link href="/demo-replay" className="op-btn-ghost">

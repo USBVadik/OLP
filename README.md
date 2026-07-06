@@ -11,7 +11,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 **No login or wallet needed — verify the core claims right now:**
 
 1. **Watch the 90-second replay** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): both wow moments — cross-chain checkout and the agent blocked on-chain — with the same proof links.
-2. **Verify the cross-chain payment yourself (~60s)** → open the live receipt [`/receipt/40027dcf…`](https://onelink-pay.vercel.app/receipt/40027dcf-f45e-4991-a215-553dfb71d0e3); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
+2. **Verify the cross-chain payment yourself (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
 3. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
 
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
