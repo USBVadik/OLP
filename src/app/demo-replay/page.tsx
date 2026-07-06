@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEMO_REPLAY_PAYMENT, DEMO_REPLAY_PAYMENT_LINK, getDemoReplaySuccess } from "@/lib/demo/replay";
-import { getActivePaymentChain, getPaymentModeLabel } from "@/lib/config/payment";
+import { BASE_CHAIN, getPaymentModeLabel } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import {
   Wordmark,
@@ -16,7 +16,7 @@ import {
   IconLock,
 } from "@/components/ui";
 
-const ACTIVE_CHAIN = getActivePaymentChain();
+const ACTIVE_CHAIN = BASE_CHAIN;
 const PAYMENT_MODE_LABEL = getPaymentModeLabel();
 
 function formatAmount() {

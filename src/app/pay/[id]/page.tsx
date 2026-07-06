@@ -11,7 +11,6 @@ import {
   ARBITRUM_CHAIN,
   BASE_CHAIN,
   OPTIMISM_CHAIN,
-  getActivePaymentChain,
   getConfiguredPaymentMode,
   getExplorerTxUrl,
   getPaymentChainById,
@@ -157,7 +156,7 @@ async function delegateOrSponsor(
   await delegateChain7702(magic, ua, ownerAddress, chainId, logFn);
 }
 
-const ACTIVE_CHAIN = getActivePaymentChain();
+const ACTIVE_CHAIN = BASE_CHAIN;
 const PAYMENT_MODE = getConfiguredPaymentMode();
 const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 const IS_7702 = PAYMENT_MODE === "universal_7702_transfer";
@@ -383,7 +382,7 @@ function getModeHelpText() {
     return "Strict invoice mode: Particle builds approve + payInvoice.";
   }
   if (PAYMENT_MODE === "universal_7702_transfer") {
-    return "EIP-7702 mode: your Magic EOA is delegated in-place to the Universal Account, then Particle attempts settlement on the invoice's chain. Cross-chain sourcing remains experimental during Particle's V2 migration.";
+    return "EIP-7702 mode: your Magic EOA is delegated in-place to the Universal Account, which sources USDC across chains and settles on the invoice's chain in one operation — no manual bridge.";
   }
   return "Fallback mode: Particle sends USDC on Base, then backend verifies the Transfer and records proof.";
 }
@@ -887,7 +886,7 @@ export default function PayPage({ params }: { params: { id: string } }) {
             );
             if (!txHash && statusCode in UA_FAILED_STATUS) {
               throw new Error(
-                `Particle did not complete the ${settlementChain.name} settlement (status ${statusCode} = ${UA_FAILED_STATUS[statusCode]}). No USDC reached the merchant and your principal was not moved — only the small routing fee was taken. This is a Particle Universal Accounts V2 migration limitation, not a OneLink Pay error.`
+                `Particle did not complete the ${settlementChain.name} settlement (status ${statusCode} = ${UA_FAILED_STATUS[statusCode]}). No USDC reached the merchant and your principal was not moved — only the small routing fee was taken. Please retry; your principal is safe.`
               );
             }
           }

@@ -37,9 +37,8 @@ export const ARBITRUM_CHAIN: ChainPaymentConfig = {
   active: false,
 };
 
-// Optimism is kept as an experimental zero-balance settlement probe. It forces the UA
-// rail to attempt cross-chain sourcing, but live settlement is not yet proven while
-// Particle's Universal Accounts V2 migration is affecting cross-chain rails.
+// Optimism is kept as an experimental, unclaimed settlement probe (zero-balance) for
+// cross-chain routing experiments only. It is NOT part of the live demo (Base + Arbitrum).
 export const OPTIMISM_CHAIN: ChainPaymentConfig = {
   key: "optimism",
   name: "Optimism",
@@ -57,10 +56,6 @@ export const PAYMENT_CHAINS = {
   arbitrum: ARBITRUM_CHAIN,
   optimism: OPTIMISM_CHAIN,
 } as const;
-
-export function getActivePaymentChain(): ChainPaymentConfig {
-  return BASE_CHAIN;
-}
 
 /** Look up a supported settlement chain by numeric chainId. Throws if unknown. */
 export function getPaymentChainById(chainId: number): ChainPaymentConfig {

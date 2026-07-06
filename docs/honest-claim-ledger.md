@@ -60,16 +60,6 @@
 These are explicitly off-limits until they get a verified row above. If a draft of any
 public-facing artifact contains them, they must be removed before use.
 
-- ⚠️ "OneLink Pay supports cross-chain value movement via the Universal Account." — PROVEN end-to-end
-  (C21): a live cross-chain payment to the merchant settled through the product `/pay` checkout on
-  v2-beta.3, independently verified on-chain. The old `REFUND_FAILED` / `-32613` / `-32801` failures
-  are resolved. As of 2026-06-21 the cross-chain `/pay` is DEPLOYED to prod
-  (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`, https://onelink-pay.vercel.app) — the
-  cross-chain payment's shareable receipt is publicly verifiable live at `/receipt/7be9118e-…`.
-  HONESTY: a fresh cross-chain payment THROUGH the prod `/pay` UI has not been re-run (the proof
-  was made via the identical code locally, against the same DB + mainnet); a first-time payer needs
-  a little native gas per touched chain for the one-time 7702 delegation. Frame the cross-chain
-  settlement as Particle Universal Accounts' chain abstraction, which it is.
 - ❌ "OneLink Pay integrates Circle Gateway."
   Reason: not yet built. Add row only after a deposit + mint round-trip is observed.
 - ❌ "A fully autonomous LLM agent decides and pays on its own in our demo."

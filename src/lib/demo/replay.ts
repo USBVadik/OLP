@@ -1,4 +1,4 @@
-import { getActivePaymentChain, getExplorerTxUrl } from "@/lib/config/payment";
+import { BASE_CHAIN, getExplorerTxUrl } from "@/lib/config/payment";
 
 export const DEMO_REPLAY_MODE = "replay";
 
@@ -45,7 +45,9 @@ export function isDemoReplayRequest(searchParams: URLSearchParams) {
 
 export function getDemoReplaySuccess(id: string) {
   if (id !== DEMO_REPLAY_PAYMENT_LINK.id) return null;
-  const chain = getActivePaymentChain();
+  // This canned replay is a Base same-chain 0.10 USDC payment (see the tx hashes above),
+  // so its explorer links resolve on BaseScan.
+  const chain = BASE_CHAIN;
   return {
     link: DEMO_REPLAY_PAYMENT_LINK,
     payment: DEMO_REPLAY_PAYMENT,

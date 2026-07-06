@@ -15,9 +15,10 @@
 
 ## Active risks
 
-### R1 — Particle UA cross-chain stays broken through submission
+### R1 — Particle UA cross-chain settlement — RESOLVED (proven live, C21)
 
-- **likelihood:** high (V2 migration ongoing, our probes still fail at settlement)
+- **likelihood:** low — RESOLVED (was high during the Particle V2 migration; cross-chain
+  settlement is now proven live on stable `2.0.3` — see C21/C8. Row kept for history.)
 - **impact:** med — **downgraded after the official rules (2026-06-21).** The UA Track does NOT
   require cross-chain value movement; it requires prominently using Universal Accounts in EIP-7702
   mode, with a supported wallet provider, for a chain-agnostic UX — which we already meet (Magic EOA

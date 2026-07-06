@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
 import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
 import {
-  getActivePaymentChain,
+  BASE_CHAIN,
   getConfiguredPaymentMode,
   getExplorerTxUrl,
   getPaymentChainById,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/config/payment";
 import { Wordmark, Chip, TxReference, IconArrowUpRight, IconCheck, AppNav } from "@/components/ui";
 
-const ACTIVE_CHAIN = getActivePaymentChain();
+const ACTIVE_CHAIN = BASE_CHAIN;
 const PAYMENT_MODE = getConfiguredPaymentMode();
 const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 const PROOF_CHAIN = getProofChain();
