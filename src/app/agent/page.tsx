@@ -282,7 +282,14 @@ export default function AgentPage() {
         const charge = await chargeRes.json();
         if (!charge.ok) {
           if (charge.blocked) {
-            const line = firewallResultLine({ kind: "blocked", reason: charge.reason });
+            const perCharge = /per-charge/.test(charge.reason ?? "");
+            const line = firewallResultLine({
+              kind: "blocked",
+              reason: charge.reason,
+              ...(perCharge
+                ? { attemptedDisplay: fmt(resource.priceAtomic), capDisplay: fmt(armed.mandate.maxPerCharge) }
+                : {}),
+            });
             append("FIREWALL", line.message, line.tone);
             append("AGENT", `Access denied by the firewall — ${resource.title} not delivered.`, "error");
             setBlockPulse((n) => n + 1);

@@ -214,7 +214,16 @@ export default function FirewallPage() {
           append("FIREWALL", line.message, line.tone, line.txUrl);
           setSettleTick((n) => n + 1);
         } else if (data.blocked) {
-          const line = firewallResultLine({ kind: "blocked", reason: data.reason });
+          // On a per-charge cap breach, name the numbers so the block reads at a glance.
+          // Other blocks (revoked/expired) stay qualitative.
+          const perCharge = /per-charge/.test(data.reason ?? "");
+          const line = firewallResultLine({
+            kind: "blocked",
+            reason: data.reason,
+            ...(perCharge
+              ? { attemptedDisplay: fmt(scenario.amountAtomic), capDisplay: fmt(armed.mandate.maxPerCharge) }
+              : {}),
+          });
           append("FIREWALL", line.message, line.tone);
           setBlockPulse((n) => n + 1);
         } else {

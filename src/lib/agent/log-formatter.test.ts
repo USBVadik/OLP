@@ -40,3 +40,24 @@ test("firewallResultLine: a revoked charge reads as blocked, not error", () => {
   assert.equal(line.tone, "blocked");
   assert.match(line.message, /MandateIsRevoked/);
 });
+
+test("firewallResultLine: blocked with attempted/cap surfaces both numbers", () => {
+  const line = firewallResultLine({
+    kind: "blocked",
+    reason: "over the per-charge cap",
+    attemptedDisplay: "0.20 USDC",
+    capDisplay: "0.10 USDC",
+  });
+  assert.equal(line.tone, "blocked");
+  assert.match(line.message, /^BLOCKED:/);
+  assert.match(line.message, /over the per-charge cap/);
+  assert.match(line.message, /attempted 0\.20 USDC/);
+  assert.match(line.message, /cap 0\.10 USDC/);
+  assert.match(line.message, /no funds moved/i);
+});
+
+test("firewallResultLine: blocked without numbers stays qualitative (revoked/expired)", () => {
+  const line = firewallResultLine({ kind: "blocked", reason: "mandate revoked" });
+  assert.equal(line.message, "BLOCKED: mandate revoked. No funds moved, zero gas.");
+  assert.doesNotMatch(line.message, /attempted/);
+});
