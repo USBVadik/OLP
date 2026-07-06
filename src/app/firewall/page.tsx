@@ -8,7 +8,6 @@ import { ERC20_APPROVE_ABI } from "@/lib/contracts/receipt-emitter";
 import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
 import {
   buildMandateTypedData,
-  computeMandateId,
   getSpendPolicyAddress,
   toRawMandate,
 } from "@/lib/mandates/mandate";
@@ -16,6 +15,7 @@ import { type MandatePreset, type PaymentMandate } from "@/lib/mandates/types";
 import { PermissionFirewall } from "@/components/permission-firewall";
 import { LoginWithGoogleButton, MagicLoginReassurance, SignOutButton } from "@/components/login-with-google";
 import { MandateCard } from "@/components/mandate-card";
+import { PermissionReceipt } from "@/components/permission-receipt";
 import { BudgetHud } from "@/components/budget-hud";
 import { AccountSpine } from "@/components/account-spine";
 import { AgentTerminal } from "@/components/agent-terminal";
@@ -28,11 +28,8 @@ import {
 } from "@/lib/agent/log-formatter";
 import {
   Wordmark,
-  Chip,
-  Dot,
   IconShield,
   IconLock,
-  IconCheck,
   IconBan,
   IconBolt,
   AppNav,
@@ -411,24 +408,12 @@ function ArmedPanel({
   refreshSignal: number;
 }) {
   const scenarios = buildAgentScenarios(mandate.maxPerCharge);
-  const mandateId = computeMandateId(mandate);
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Left: the leash — mandate state + budget + revoke */}
       <div className="space-y-4">
-        <div className="rounded-2xl border border-verify/30 bg-verify-soft/50 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <IconCheck className="h-4 w-4 text-verify" /> Permission armed
-            {revoked ? <Chip>Revoked</Chip> : <Chip tone="verify">Active</Chip>}
-          </p>
-          <dl className="mt-2 space-y-1 text-sm">
-            <Row label="Max per charge" value={fmt(mandate.maxPerCharge)} />
-            <Row label="Daily limit" value={mandate.maxPerDay > BigInt(0) ? fmt(mandate.maxPerDay) : "—"} />
-            <Row label="Total cap" value={fmt(mandate.totalCap)} />
-          </dl>
-          <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
-        </div>
+        <PermissionReceipt mandate={mandate} revoked={revoked} />
 
         <AccountSpine address={address} protectedPulse={protectedPulse} clearSignal={refreshSignal} />
 
@@ -467,17 +452,6 @@ function ArmedPanel({
             : "The agent calls the same on-chain firewall a real one would. Over-cap attempts revert in simulation — no funds move and no gas is spent."}
         </p>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="flex items-center gap-2 text-muted">
-        <Dot tone="gold" /> {label}
-      </dt>
-      <dd className="font-medium text-ink">{value}</dd>
     </div>
   );
 }
