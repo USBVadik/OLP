@@ -146,7 +146,8 @@ export default function HomePage() {
               style={{ animationDelay: "360ms" }}
             >
               The live buttons run on our funded demo account. Exploring on your own?{" "}
-              <Link href="/demo-replay" className="op-link">Watch the 90-second replay</Link> — no
+              <Link href="/demo-replay" className="op-link">Watch the 90-second replay</Link> or{" "}
+              <Link href="/try" className="op-link">trigger the on-chain block yourself</Link> — no
               wallet needed.
             </p>
             <p

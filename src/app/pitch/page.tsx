@@ -284,6 +284,9 @@ GET  /api/x402/<resource>
             <Link href="/demo-replay" className="op-btn-ghost">
               90-second replay
             </Link>
+            <Link href="/try" className="op-btn-ghost">
+              Try the block (no wallet)
+            </Link>
             <Link href="/trust" className="op-btn-ghost">
               What&rsquo;s real
             </Link>
