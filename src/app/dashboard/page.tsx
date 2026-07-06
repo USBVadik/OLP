@@ -330,10 +330,13 @@ function DashboardContent() {
                     {completedPayment && (
                       <div className="mt-3 space-y-2 border-t border-line pt-3">
                         <p className="op-eyebrow">Verified payment proof</p>
+                        {/* tx_hash is the SETTLEMENT tx on the destination chain — link it there.
+                            source_chain_id is the cross-chain FUNDING source (used only by the
+                            receipt's "funded from" badge), so it must NOT drive this explorer link. */}
                         <TxLink
                           hash={completedPayment.tx_hash}
                           label="Payment transaction"
-                          chain={chainForId(completedPayment.source_chain_id ?? l.destination_chain_id)}
+                          chain={chainForId(completedPayment.destination_chain_id ?? l.destination_chain_id)}
                         />
                         <TxLink
                           hash={completedPayment.receipt_tx_hash}
