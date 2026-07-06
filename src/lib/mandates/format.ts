@@ -88,6 +88,17 @@ export function formatExpiry(unixSeconds: number, nowMs: number = Date.now()): s
 }
 
 /**
+ * Render just the calendar date of an expiry in the same fixed English format as
+ * `formatExpiry` (no locale dependence), e.g. "Jul 7". Used by compact scope rows
+ * that only need the day, not the time or countdown — so the UI never mixes a
+ * localized date (e.g. "7 июл.") with the rest of the English copy.
+ */
+export function formatShortDate(unixSeconds: number): string {
+  const d = new Date(unixSeconds * 1000);
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+/**
  * Render a "remaining / cap" pair as a display string + integer percent.
  *
  *   used=15_000n cap=100_000n -> { display: "0.085 / 0.10 USDC", percent: 85 }

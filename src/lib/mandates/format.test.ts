@@ -6,6 +6,7 @@ import {
   formatExpiry,
   formatRemaining,
   formatCountdown,
+  formatShortDate,
 } from "./format";
 
 // formatUsdcAmount — render an atomic 6-decimal USDC bigint as human text.
@@ -144,4 +145,18 @@ test("formatCountdown renders 'expired' for negative", () => {
 test("formatCountdown renders days for >24h", () => {
   // 2 days, 3 hours
   assert.equal(formatCountdown(2 * 86400 + 3 * 3600), "2d 3h");
+});
+
+// formatShortDate — fixed-English calendar date (no locale), matching formatExpiry's date part.
+
+test("formatShortDate renders a fixed English 'Mon D' date, not a localized string", () => {
+  const future = Math.floor(1_750_000_000_000 / 1000) + 24 * 3600;
+  // English month abbrev + day, e.g. "Jun 16" — never a localized form like "16 июн.".
+  assert.match(formatShortDate(future), /^[A-Z][a-z]{2} \d{1,2}$/);
+});
+
+test("formatShortDate equals the date portion of formatExpiry (same local day)", () => {
+  const now = 1_750_000_000_000;
+  const future = Math.floor(now / 1000) + 5 * 3600;
+  assert.ok(formatExpiry(future, now).startsWith(formatShortDate(future) + ","));
 });

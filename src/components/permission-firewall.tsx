@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { computeMandateId, deriveMandate, mandateFromCustomCaps } from "@/lib/mandates/mandate";
 import { type MandatePreset, type PaymentMandate } from "@/lib/mandates/types";
+import { formatShortDate } from "@/lib/mandates/format";
 import { useProMode } from "@/hooks/use-pro-mode";
 import { Chip, ConceptTag, Dot, IconBan, IconBolt, IconCheck, IconShield } from "@/components/ui";
 
@@ -23,11 +24,6 @@ function fmt(atomic: bigint, decimals: number, symbol: string) {
 
 function shortAddr(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
-
-function expiryLabel(expiry: number) {
-  const d = new Date(expiry * 1000);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function PermissionFirewall({
@@ -233,7 +229,7 @@ export function PermissionFirewall({
         <Row label="Max per charge" value={perCharge} />
         <Row label="Daily limit" value={daily} />
         <Row label="Total cap" value={total} />
-        <Row label="Expires" value={expiryLabel(mandate.expiry)} />
+        <Row label="Expires" value={formatShortDate(mandate.expiry)} />
       </dl>
 
       {/* Blocked by policy */}
@@ -244,7 +240,7 @@ export function PermissionFirewall({
         <ul className="mt-2 space-y-1.5 text-sm text-muted">
           <BlockedRow>Any charge above {perCharge}</BlockedRow>
           <BlockedRow>Payments to anyone except this merchant</BlockedRow>
-          <BlockedRow>Anything after {expiryLabel(mandate.expiry)}, or beyond {total} total</BlockedRow>
+          <BlockedRow>Anything after {formatShortDate(mandate.expiry)}, or beyond {total} total</BlockedRow>
         </ul>
         <p className="mt-3 flex items-center gap-2 text-xs text-faint">
           <IconCheck className="h-3.5 w-3.5 text-verify" />

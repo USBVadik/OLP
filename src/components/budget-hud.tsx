@@ -120,7 +120,7 @@ export function BudgetHud({ chainId, mandate, protectedPulse, refreshSignal }: P
       <dl className="mt-3 space-y-1 border-t border-line/60 pt-3 text-xs">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted">Per action</dt>
-          <dd className="font-mono text-ink">up to {formatUsdcAmount(state.perChargeLeft)}</dd>
+          <dd className="font-mono text-ink">{inert ? "—" : `up to ${formatUsdcAmount(state.perChargeLeft)}`}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted">Merchant</dt>
