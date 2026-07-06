@@ -15,6 +15,7 @@ import { listResources, type X402Resource } from "@/lib/x402/catalog";
 import { LoginWithGoogleButton, SignOutButton } from "@/components/login-with-google";
 import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
+import { AccountSpine } from "@/components/account-spine";
 import { MandateCard } from "@/components/mandate-card";
 import {
   firewallResultLine,
@@ -506,6 +507,7 @@ export default function AgentPage() {
                   onRetry={reloadBalance}
                 />
                 <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} refreshSignal={settleTick} />
+                <AccountSpine address={address} protectedPulse={blockPulse} clearSignal={settleTick} />
                 <div className="space-y-2">
                   <p className="op-eyebrow">Paid APIs (x402)</p>
                   <button
