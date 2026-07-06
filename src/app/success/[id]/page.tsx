@@ -59,6 +59,7 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
           isCrossChain={settlementChain.chainId !== proofChain.chainId}
           payment={{ hash: payment.tx_hash, href: paymentExplorer }}
           proof={{ hash: payment.receipt_tx_hash, href: proofExplorer }}
+          settledAt={payment.completed_at ?? null}
         />
 
         {/* Share & verify */}

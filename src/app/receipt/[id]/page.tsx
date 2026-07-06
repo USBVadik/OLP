@@ -54,6 +54,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
   let proofHash: string | null = null;
   let uaTransactionId: string | null = null;
   let sourceChainId: number | null = null;
+  let settledAt: string | null = null;
   if (isCompleted) {
     const { data: payment } = await supabaseAdmin
       .from("payments")
@@ -67,6 +68,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
     proofHash = payment?.receipt_tx_hash ?? null;
     uaTransactionId = payment?.ua_transaction_id ?? null;
     sourceChainId = payment?.source_chain_id ?? null;
+    settledAt = payment?.completed_at ?? null;
   }
 
   // Cross-chain funding: if the recorded source chain differs from the settlement chain, the
@@ -118,6 +120,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               universalActivity={{ id: uaTransactionId, href: getUniversalXActivityUrl(uaTransactionId) }}
               crossChain={crossChain}
               matchedDetail={`Recipient and amount (${amountLabel}) were re-checked against this invoice from the on-chain ${settlementChain.name} USDC transfer.`}
+              settledAt={settledAt}
             />
             <div className="op-card mt-4 p-5">
               <p className="op-eyebrow">Share &amp; verify</p>

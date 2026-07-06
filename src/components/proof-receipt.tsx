@@ -10,6 +10,7 @@ import {
   IconReceipt,
 } from "@/components/ui";
 import { CrossChainRoute } from "@/components/cross-chain-route";
+import { CopyValue } from "@/components/copy-value";
 
 export interface ProofReceiptCardProps {
   amountLabel: string;
@@ -37,6 +38,8 @@ export interface ProofReceiptCardProps {
   crossChain?: { fromNames: string[]; toName: string } | null;
   /** Override the "matched" leg detail line. */
   matchedDetail?: string;
+  /** ISO timestamp the payment settled — rendered as the certificate date. */
+  settledAt?: string | null;
 }
 
 function Leg({
@@ -77,6 +80,23 @@ function Leg({
   );
 }
 
+/** Format the settlement timestamp as a stable UTC certificate date, e.g. "6 Jul 2026, 13:41 UTC". */
+function formatSettled(iso?: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const date = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).format(d);
+  return `${date} UTC`;
+}
+
 export function ProofReceiptCard({
   amountLabel,
   merchant,
@@ -90,9 +110,11 @@ export function ProofReceiptCard({
   universalActivity,
   crossChain,
   matchedDetail,
+  settledAt,
 }: ProofReceiptCardProps) {
   const recorded = Boolean(proof.hash);
   const verified = Boolean(payment.hash);
+  const settledLabel = formatSettled(settledAt);
 
   return (
     <article className="op-card overflow-hidden">
@@ -175,8 +197,9 @@ export function ProofReceiptCard({
 
       <div className="px-6 pb-6 sm:px-8">
         <dl className="divide-y divide-line border-t border-line">
-          <Field label="Merchant" value={merchant} mono />
-          {invoiceId ? <Field label="Invoice ID" value={invoiceId} mono /> : null}
+          <Field label="Merchant" value={<CopyValue value={merchant} />} />
+          {invoiceId ? <Field label="Invoice ID" value={<CopyValue value={invoiceId} />} /> : null}
+          {settledLabel ? <Field label="Settled" value={settledLabel} /> : null}
           {mode ? <Field label="Payment mode" value={mode} /> : null}
           {isCrossChain ? (
             <Field label="Proof anchor" value={`${proofChainName}`} />
