@@ -379,6 +379,44 @@
 - **owner:** builder
 - **review:** before any non-demo public deploy; keep the relayer funded on sponsored chains
 
+### R26 — ReceiptEmitter owner == merchant (the payee self-attests its own InvoicePaid proof)
+
+- **likelihood:** high (this is the current on-chain state — confirmed, not hypothetical)
+- **impact:** low–med (no funds at risk; the USDC settlement itself is trustless and independently
+  verifiable — the `InvoicePaid` event is a convenience attestation, not the source of truth. The
+  exposure is *perception*: an auditor/judge reading addresses sees the attestor == the payee, which
+  softens the "verifiable proof" story.)
+- **found_by:** external red-team review (2026-07). Verified on-chain: ReceiptEmitter `owner()` ==
+  merchant `0x8C54…Fb7` on BOTH Base (`0x89CF…5bC3`) and Arbitrum (`0xe4C6…D2A1`).
+- **context:** `registerInvoice` / `recordVerifiedPayment` are `onlyOwner`, so the emitter OWNER is
+  the attestor/registrar. The demo owner key (`RECEIPT_EMITTER_OWNER_PRIVATE_KEY`) is also the demo
+  merchant. The per-invoice `merchant` field is independent of the owner, so the fix is to make the
+  OWNER a distinct key — no contract redeploy needed (OZ `Ownable.transferOwnership`).
+- **mitigation (code artifact ready; the on-chain step is operator/ops, not autonomous):**
+  1. Generate a FRESH dedicated attestor EOA — distinct from the merchant (`0x8C54…`) AND the relayer
+     (`0x0AC0…`). Key generation is a human ops step.
+  2. Fund it with a little native gas on BOTH Base and Arbitrum (it registers invoices + records
+     proofs on both).
+  3. Dry-run, then transfer, per chain — the script defaults to a DRY RUN and is guarded (refuses if
+     signer ≠ current owner, or newOwner ∈ {zero address, current owner}):
+     `NEW_RECEIPT_EMITTER_OWNER=0x… RECEIPT_EMITTER_OWNER_PRIVATE_KEY=0x<currentOwner> BASE_MAINNET_RPC_URL=… corepack pnpm hardhat run scripts/transfer-receipt-emitter-owner.ts --network base`
+     review the dry run, then re-run with `CONFIRM_TRANSFER=yes` to broadcast; repeat `--network arbitrum`.
+  4. IMMEDIATELY set `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` (local + Vercel) to the NEW key and redeploy —
+     after the transfer the OLD key can no longer register/record, so sequence transfer → env →
+     redeploy back-to-back, in a low-activity window.
+  5. Verify `owner()` on both emitters == the new attestor ≠ merchant; run one live `/pay` and confirm
+     InvoicePaid still records. THEN flip the docs to claim "attestor ≠ merchant" (proof-pack, `/trust`)
+     and paste the transfer tx hashes here.
+- **key-loss risk (controlled):** losing the new attestor key = losing emitter control (re-transfer is
+  only possible from the new key). Store it as carefully as the merchant/owner key; the script
+  post-verifies `owner()` so a fat-fingered address is caught before you rely on it.
+- **mitigation_status:** open — script + runbook ready (`contracts/scripts/transfer-receipt-emitter-owner.ts`,
+  dry-run by default). The on-chain transfer + env swap + redeploy is a pending operator step. Until
+  it's done, the honest `/trust` framing ("InvoicePaid is attested, not the source of truth") stands
+  and is the accepted interim cover.
+- **owner:** builder
+- **review:** before final submission (Jul 19) — either run the split or keep the honest framing as the accepted position.
+
 ## Security findings (external audit, 2026-06-21)
 
 > Surfaced by an external code-level audit and triaged with Kiro. Funds were never at risk in any
