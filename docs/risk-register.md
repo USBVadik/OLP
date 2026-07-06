@@ -566,23 +566,31 @@
      "reported" → "verified" by server-deriving the funding legs, in SPIKE-GATED steps, because the
      load-bearing assumption (the server can fetch the funding breakdown by `ua_transaction_id`) is
      UNVERIFIED and only sourced from Particle's PUBLIC docs — verify it, do not trust the docs:
-     - **L0 spike (first):** confirm a server-side fetch by transactionId actually returns
-       `depositTokens` / `lendingTokens` / `fromChains` — check the INSTALLED SDK `.d.ts` types,
-       `docs/workshop-insights.md` + the workshop reference repo, and a throwaway server call with
-       `PARTICLE_SERVER_KEY` against a known id (`fc5adc83` → `0x0655f16e0cd6c8`). NB:
-       `preview_json.tokenChanges.fromChains` is ALSO client-originated (built in-browser) → it is
-       NOT a server-authoritative substitute; only a direct server→Particle query counts.
-     - **L2 (only if L0 is green):** store server-verified funding metadata as a multi-source chain
-       ARRAY (not a single `source_chain_id`) + `funding_source_status: particle_verified |
-       client_reported`; flip the caption to "verified by Particle activity". Never block PAID on
-       Particle availability.
+     - **L0 spike — ✅ DONE, GREEN (2026-07-06, verified EMPIRICALLY, not from docs):** the installed
+       SDK `2.0.3` exposes `UniversalAccount.getTransaction(transactionId): Promise<any>`; a
+       server-side call (project keys + `ownerAddress`, no Magic session) against `fc5adc83`'s
+       `ua_transaction_id` `0x0655f16e0cd6c8` returned server-authoritative funding data —
+       `status: 7 (FINISHED)`, `tokenChanges.fromChains: [42161, 8453]`, `toChains: [42161]`,
+       `depositTokens`/`decr` chainIds `[42161, 8453]`, plus `sender`/`receiver` and split
+       deposit/settlement/refund userOperations. NB: `preview_json.tokenChanges.fromChains` is
+       client-originated (built in-browser) → NOT a server-authoritative substitute; only this direct
+       server→Particle query counts. VENDOR-verified (Particle backend), NOT on-chain — safe to label
+       "verified by Particle activity", never "on-chain proven" (that is L3).
+     - **L2 (unblocked — L0 green; READ-TIME design to protect the settlement path):** do NOT touch
+       `mark-paid` or add DB columns. Enrich at READ time on `/receipt/[id]` (server component): call
+       `getTransaction(ua_transaction_id)`, validate `sender==payer` && `receiver==merchant` &&
+       `status==FINISHED`, derive the source-chain ARRAY from `fromChains`, and upgrade the caption
+       "reported" → "verified by Particle activity". Non-blocking: any miss/slowness/mismatch falls
+       back to today's "reported" label. Free backfill (every past payment with a `ua_transaction_id`).
+       Spec: `.kiro/specs/verified-funding-route/`.
      - **L3 (ideal, only if Particle returns source-leg tx hashes):** verify the source-chain USDC
        debit on-chain and link it — the only fully-trustless version.
      Already shipped + human-verifiable today: the receipt links UniversalX activity by
      `ua_transaction_id` (a vendor/activity view of the legs — NOT an on-chain proof).
 - **mitigation_status:** closed 2026-06-25 (honest labeling shipped; gate green). 2026-07-06 — item 2
-  "reported → verified" upgrade analyzed + spike-gated plan added after an independent re-review;
-  still OPTIONAL — the honesty risk stays CLOSED via item 1, this is only a strength upgrade.
+  L0 spike DONE + GREEN (server `getTransaction` returns authoritative `fromChains`; verified on
+  `fc5adc83`); L2 designed as a READ-TIME receipt enrichment (spec `.kiro/specs/verified-funding-route/`),
+  NOT touching `mark-paid`. Still OPTIONAL — the honesty risk stays CLOSED via item 1; strength upgrade only.
 - **owner:** builder
 - **review:** next live `/pay` cross-chain completion
 
