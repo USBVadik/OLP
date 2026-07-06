@@ -105,6 +105,12 @@ export default function HomePage() {
               </span>
             </h1>
             <p
+              className="op-animate-rise mt-4 font-display text-xl font-medium text-ink sm:text-2xl"
+              style={{ animationDelay: "200ms" }}
+            >
+              Trust before you pay. Proof after it settles.
+            </p>
+            <p
               className="op-animate-rise mt-5 max-w-xl text-lg leading-relaxed text-ink2"
               style={{ animationDelay: "240ms" }}
             >
