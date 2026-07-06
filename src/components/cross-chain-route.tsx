@@ -34,6 +34,8 @@ export interface CrossChainRouteProps {
   phaseLabel?: string | null;
   /** UniversalX activity URL spanning the whole cross-chain orchestration (settled state). */
   activityHref?: string | null;
+  /** Settled state: true when the funding route was server-verified via Particle activity (R22 #3 L2). */
+  verified?: boolean;
   className?: string;
 }
 
@@ -83,6 +85,7 @@ export function CrossChainRoute({
   feeLabel,
   phaseLabel,
   activityHref,
+  verified = false,
   className = "",
 }: CrossChainRouteProps) {
   const routing = status === "routing";
@@ -104,7 +107,9 @@ export function CrossChainRoute({
     ? `Routing your payment through the Universal Account and settling on ${toName}.`
     : preview
       ? `Planned cross-chain route: your USDC will be sourced from ${sources.join(" and ")} and settled on ${toName}, no manual bridge.`
-      : `Settled on ${toName}, verified on-chain. Funding source reported by your wallet: ${sources.join(" and ")}, no manual bridge.`;
+      : verified
+        ? `Settled on ${toName}, verified on-chain. Funding route verified by Particle activity: ${sources.join(" and ")}, no manual bridge.`
+        : `Settled on ${toName}, verified on-chain. Funding source reported by your wallet: ${sources.join(" and ")}, no manual bridge.`;
 
   return (
     <div
@@ -194,8 +199,12 @@ export function CrossChainRoute({
           <>
             Funded from <span className="font-medium text-ink2">{sources.join(" + ")}</span> and
             delivered on <span className="font-medium text-ink2">{toName}</span> — no manual bridge.
-            The settlement and proof are verified on-chain (above); the funding source is{" "}
-            <span className="font-medium text-ink2">reported by your wallet</span>.
+            The settlement and proof are verified on-chain (above); the funding route is{" "}
+            {verified ? (
+              <span className="font-medium text-ink2">verified by Particle activity</span>
+            ) : (
+              <span className="font-medium text-ink2">reported by your wallet</span>
+            )}.
           </>
         )}
       </p>

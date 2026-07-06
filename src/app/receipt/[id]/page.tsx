@@ -14,6 +14,7 @@ import {
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { receiptShareUrl } from "@/lib/receipts/share";
 import { ProofReceiptCard, VerificationMethod } from "@/components/proof-receipt";
+import { verifyFundingRoute } from "@/lib/funding/verify";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { Wordmark, IconCheck, IconShield, IconArrowUpRight } from "@/components/ui";
 
@@ -55,10 +56,11 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
   let uaTransactionId: string | null = null;
   let sourceChainId: number | null = null;
   let settledAt: string | null = null;
+  let payerAddress: string | null = null;
   if (isCompleted) {
     const { data: payment } = await supabaseAdmin
       .from("payments")
-      .select("tx_hash,receipt_tx_hash,ua_transaction_id,source_chain_id,completed_at")
+      .select("tx_hash,receipt_tx_hash,ua_transaction_id,source_chain_id,completed_at,payer_address")
       .eq("payment_link_id", link.id)
       .eq("status", "completed")
       .order("completed_at", { ascending: false })
@@ -69,14 +71,33 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
     uaTransactionId = payment?.ua_transaction_id ?? null;
     sourceChainId = payment?.source_chain_id ?? null;
     settledAt = payment?.completed_at ?? null;
+    payerAddress = payment?.payer_address ?? null;
   }
 
-  // Cross-chain funding: if the recorded source chain differs from the settlement chain, the
-  // payment was funded cross-chain — surface the "no manual bridge" story on the shareable receipt.
+  // Cross-chain funding route. Prefer a SERVER-verified route from Particle activity
+  // (getTransaction by ua_transaction_id — R22 #3 L2): read-only, OFF the settlement path, and
+  // fail-closed to the client-reported source chain. Only queried for potential cross-chain
+  // receipts (a same-chain payment shows no route badge anyway).
+  const mightBeCrossChain =
+    isCompleted && (sourceChainId == null || sourceChainId !== settlementChain.chainId);
+  const funding = mightBeCrossChain
+    ? await verifyFundingRoute(uaTransactionId, {
+        payer: payerAddress ?? "",
+        merchant: link.merchant_address,
+        settlementChainId: settlementChain.chainId,
+      })
+    : { status: "client_reported" as const, sourceChainIds: [] as number[], crossChain: false };
+
   const crossChain =
-    sourceChainId != null && sourceChainId !== settlementChain.chainId
-      ? { fromNames: [chainFor(sourceChainId).name], toName: settlementChain.name }
-      : null;
+    funding.status === "particle_verified" && funding.crossChain
+      ? {
+          fromNames: funding.sourceChainIds.map((id) => chainFor(id).name),
+          toName: settlementChain.name,
+          verified: true,
+        }
+      : sourceChainId != null && sourceChainId !== settlementChain.chainId
+        ? { fromNames: [chainFor(sourceChainId).name], toName: settlementChain.name, verified: false }
+        : null;
 
   // Shareable public receipt URL + a best-effort QR (server-rendered SVG, no client JS).
   const shareUrl = receiptShareUrl(process.env.NEXT_PUBLIC_APP_URL ?? "", link.id);

@@ -35,7 +35,7 @@ export interface ProofReceiptCardProps {
    * settlement chain, this surfaces the "no manual bridge" story (Particle UA chain abstraction).
    * Omit/null for a same-chain payment.
    */
-  crossChain?: { fromNames: string[]; toName: string } | null;
+  crossChain?: { fromNames: string[]; toName: string; verified?: boolean } | null;
   /** Override the "matched" leg detail line. */
   matchedDetail?: string;
   /** ISO timestamp the payment settled — rendered as the certificate date. */
@@ -146,6 +146,7 @@ export function ProofReceiptCard({
             toName={crossChain.toName}
             amountLabel={amountLabel}
             activityHref={universalActivity?.href ?? null}
+            verified={crossChain.verified}
           />
         </div>
       ) : null}
