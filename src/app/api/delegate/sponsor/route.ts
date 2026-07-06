@@ -3,6 +3,7 @@ import { createPublicClient, createWalletClient, http, type Address, type Hex } 
 import { privateKeyToAccount } from "viem/accounts";
 import { arbitrum, base, optimism } from "viem/chains";
 import {
+  DEFAULT_7702_DELEGATE_ALLOWLIST,
   isSponsoredDelegationEnabled,
   validateSponsorRequest,
 } from "@/lib/particle/sponsored-delegation";
@@ -15,6 +16,15 @@ function chainFor(chainId: number) {
   if (chainId === optimism.id)
     return { chain: optimism, rpc: process.env.OPTIMISM_MAINNET_RPC_URL || "https://mainnet.optimism.io" };
   return { chain: base, rpc: process.env.BASE_MAINNET_RPC_URL || "https://mainnet.base.org" };
+}
+
+// Optional ops override for the allowed 7702 delegate(s) (comma-separated). Defaults to the known
+// Particle V2 delegate; lets us adapt if Particle ever changes the delegate without a logic redeploy.
+function allowedDelegates(): readonly string[] {
+  const raw = process.env.SPONSOR_DELEGATE_ALLOWLIST;
+  if (!raw) return DEFAULT_7702_DELEGATE_ALLOWLIST;
+  const parsed = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return parsed.length ? parsed : DEFAULT_7702_DELEGATE_ALLOWLIST;
 }
 
 // Relayer gas guard for sponsored delegations (same rationale as the charge route, R16): this route
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Relayer key is not configured" }, { status: 500 });
     }
 
-    const validation = validateSponsorRequest(await request.json());
+    const validation = validateSponsorRequest(await request.json(), allowedDelegates());
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }

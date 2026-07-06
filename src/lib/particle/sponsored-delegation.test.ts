@@ -75,6 +75,38 @@ test("validateSponsorRequest rejects malformed authorization signature parts / n
   assert.equal(validateSponsorRequest({ ...VALID, authorization: { ...VALID.authorization, address: "0xnope" } }).ok, false);
 });
 
+test("validateSponsorRequest rejects a delegation to a non-allowlisted contract", () => {
+  const arbitrary = "0x000000000000000000000000000000000000dEaD";
+  assert.equal(
+    validateSponsorRequest({ ...VALID, authorization: { ...VALID.authorization, address: arbitrary } }).ok,
+    false,
+  );
+});
+
+test("validateSponsorRequest accepts the known delegate case-insensitively", () => {
+  assert.equal(
+    validateSponsorRequest({
+      ...VALID,
+      authorization: { ...VALID.authorization, address: VALID.authorization.address.toLowerCase() },
+    }).ok,
+    true,
+  );
+});
+
+test("validateSponsorRequest honors a custom delegate allowlist", () => {
+  const custom = "0x00000000000000000000000000000000000000AA";
+  // default delegate is rejected under a custom allowlist...
+  assert.equal(validateSponsorRequest(VALID, [custom]).ok, false);
+  // ...and the custom delegate is accepted
+  assert.equal(
+    validateSponsorRequest(
+      { ...VALID, authorization: { ...VALID.authorization, address: custom } },
+      [custom],
+    ).ok,
+    true,
+  );
+});
+
 test("SUPPORTED_SPONSOR_CHAINS covers our settlement chains (Base, Arbitrum, Optimism)", () => {
   assert.ok(SUPPORTED_SPONSOR_CHAINS.includes(8453));
   assert.ok(SUPPORTED_SPONSOR_CHAINS.includes(42161));

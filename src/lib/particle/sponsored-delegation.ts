@@ -13,6 +13,18 @@
 /** Settlement chains we can sponsor delegation on (the relayer must be funded on each). */
 export const SUPPORTED_SPONSOR_CHAINS = [8453, 42161, 10] as const; // Base, Arbitrum, Optimism
 
+/**
+ * The EIP-7702 delegate contract(s) the relayer is allowed to sponsor a delegation TO. The Particle
+ * Universal Account V2 delegate is deployed at the same deterministic address across our EVM chains
+ * (Base / Arbitrum / Optimism), so one entry covers all of them. Restricting to this set stops the
+ * public sponsor route from paying gas to delegate a payer's EOA to an ARBITRARY (possibly
+ * malicious) contract. Override via the `SPONSOR_DELEGATE_ALLOWLIST` env if Particle ever changes
+ * the delegate — no logic redeploy needed.
+ */
+export const DEFAULT_7702_DELEGATE_ALLOWLIST = [
+  "0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A", // Particle UA V2 EIP-7702 delegate
+] as const;
+
 export type Submitter = "self" | "sponsor";
 
 /** EIP-7702 authorization nonce for the given transaction submitter. */
@@ -65,7 +77,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  * Checks: payer is a 20-byte address; chainId is supported; the authorization tuple is well-formed
  * and its chainId matches the request (never sponsor a delegation for a different chain).
  */
-export function validateSponsorRequest(req: unknown): SponsorRequestResult {
+export function validateSponsorRequest(
+  req: unknown,
+  allowedDelegates: readonly string[] = DEFAULT_7702_DELEGATE_ALLOWLIST,
+): SponsorRequestResult {
   if (!isRecord(req)) return { ok: false, error: "request must be an object" };
   const { payer, chainId, authorization } = req as Record<string, unknown>;
 
@@ -80,6 +95,11 @@ export function validateSponsorRequest(req: unknown): SponsorRequestResult {
   const a = authorization as Record<string, unknown>;
   if (typeof a.address !== "string" || !ADDRESS_RE.test(a.address)) {
     return { ok: false, error: "authorization.address must be a 0x-prefixed 20-byte address" };
+  }
+  // Allowlist the delegate contract — never let the relayer sponsor a delegation of the payer's EOA
+  // to an arbitrary (possibly malicious) target; only the expected Particle UA delegate is allowed.
+  if (!allowedDelegates.map((d) => d.toLowerCase()).includes(a.address.toLowerCase())) {
+    return { ok: false, error: "authorization.address is not an allowed delegate contract" };
   }
   if (a.chainId !== chainId) {
     return { ok: false, error: "authorization.chainId must match the request chainId" };
