@@ -38,17 +38,17 @@ export function BudgetHud({ chainId, mandate, protectedPulse, refreshSignal }: P
   const countdown = useCountdown(expirySec);
   const [held, setHeld] = useState(false);
 
-  // When a block lands, flash the "budget protected" beat for ~1.7s (one-shot).
+  // A block sets the "budget protected" beat; it PERSISTS (not a 1.7s flash) so the moment lands.
+  // It clears on the next successful settle (refreshSignal), i.e. when funds actually move.
   useEffect(() => {
     if (!protectedPulse) return;
     setHeld(true);
-    const id = setTimeout(() => setHeld(false), 1700);
-    return () => clearTimeout(id);
   }, [protectedPulse]);
 
-  // After a successful charge, refetch now so the bars drain immediately (not on the next poll).
+  // After a successful charge, clear the "held" beat + refetch now so the bars drain immediately.
   useEffect(() => {
     if (!refreshSignal) return;
+    setHeld(false);
     void refetch();
   }, [refreshSignal, refetch]);
 

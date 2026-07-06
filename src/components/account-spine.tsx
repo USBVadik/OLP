@@ -19,18 +19,25 @@ import {
 export function AccountSpine({
   address,
   protectedPulse,
+  clearSignal,
 }: {
   address: string | null;
   protectedPulse?: number;
+  clearSignal?: number;
 }) {
   const [held, setHeld] = useState(false);
 
+  // A block sets the "held" beat; it PERSISTS (not a 1.7s flash) so the moment lands on camera /
+  // for a judge. It clears on the next money-moving settle (clearSignal), not on a timer.
   useEffect(() => {
     if (!protectedPulse) return;
     setHeld(true);
-    const id = setTimeout(() => setHeld(false), 1700);
-    return () => clearTimeout(id);
   }, [protectedPulse]);
+
+  useEffect(() => {
+    if (!clearSignal) return;
+    setHeld(false);
+  }, [clearSignal]);
 
   const facts = accountSpineFacts();
 
@@ -43,7 +50,7 @@ export function AccountSpine({
       <div className="flex items-center justify-between gap-2">
         <p className="op-eyebrow">Your own account</p>
         <Chip tone="gold">
-          <IconShield className="h-3.5 w-3.5" /> Non-custodial
+          <IconShield className="h-3.5 w-3.5" /> EIP-7702
         </Chip>
       </div>
 

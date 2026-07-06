@@ -430,7 +430,7 @@ function ArmedPanel({
           <p className="mt-2 font-mono text-[11px] text-faint">mandate {mandateId.slice(0, 14)}…</p>
         </div>
 
-        <AccountSpine address={address} protectedPulse={protectedPulse} />
+        <AccountSpine address={address} protectedPulse={protectedPulse} clearSignal={refreshSignal} />
 
         <BudgetHud chainId={chainId} mandate={mandate} protectedPulse={protectedPulse} refreshSignal={refreshSignal} />
 
