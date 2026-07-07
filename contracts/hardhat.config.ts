@@ -32,6 +32,11 @@ const config: HardhatUserConfig = {
       chainId: 42161,
     },
   },
+  etherscan: {
+    // Etherscan V2 unified multichain API key — one key covers Base + Arbitrum via chainId.
+    // Sourced from contracts/.env (gitignored) at runtime; never hardcoded/committed.
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
+  },
 };
 
 export default config;

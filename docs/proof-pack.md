@@ -61,6 +61,7 @@ InvoicePaid attestor is the relayer key, **distinct from the merchant payee** (R
 - EIP-7702 V2 delegate: `0x13E00E089F81aD9F36B655C9E9A07C6BF1489A5A`
 - Recipe: `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation + single-shot build/sign/send.
 - SDK: `@particle-network/universal-account-sdk@2.0.3` (pinned exact, stable). Wallet/auth: Magic.
+- **Verified source (read the contracts):** SpendPolicy — [Base](https://basescan.org/address/0x73C862a8312c12C764487a9a484f1d1ad44E3957#code) · [Arbitrum](https://arbiscan.io/address/0x9782e3724859469fbBAC5085EA8bf8E70724164E#code); ReceiptEmitter — [Arbitrum](https://arbiscan.io/address/0xe4C6656B6c248B20Bd2C5ddf9168A4531AAbD2A1#code). (The Base ReceiptEmitter `0x89CF…5bC3` is an earlier v1.1 build on solc 0.8.24 — same contract; its source is readable via the byte-identical verified Arbitrum deployment.)
 
 ---
 

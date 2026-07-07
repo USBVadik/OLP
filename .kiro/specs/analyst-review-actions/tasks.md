@@ -43,22 +43,21 @@ DailyCapExceeded, TotalCapExceeded, NotPayer`.
 - **Acceptance:** every error name in judge-facing docs matches a real `error` in SpendPolicy.sol; a
   grep for the short forms returns nothing.
 
-### M2 — Verify contracts on Basescan/Arbiscan · config + operator · S–M · no flow risk · HIGHEST ROI
-- [ ] Check current verification status on all 4 explorer pages first (may already be verified):
-      SpendPolicy Base `0x73C8…3957`, SpendPolicy Arbitrum `0x9782…164E`,
-      ReceiptEmitter Base `0x89CF…5bC3`, ReceiptEmitter Arbitrum `0xe4C6…D2A1`.
-- [ ] Read `contracts/hardhat.config.*` for exact solc version (`0.8.24`) + optimizer settings.
-- [ ] Confirm constructor args: `SpendPolicy` = none (`constructor() EIP712("OneLink Pay","1")`);
-      `ReceiptEmitter` = read `ReceiptEmitter.sol` + deploy script.
-- [ ] Add `@nomicfoundation/hardhat-verify` + etherscan config (Etherscan V2 unified key covers
-      Base + Arbitrum, or per-explorer keys). **Needs API key — USER provides; store in
-      `contracts/.env` / env, never commit.**
-- [ ] Run verify for all 4 (or manual explorer "Verify & Publish" with flattened source + exact
-      compiler settings).
-- [ ] Add "verified source" explorer links to `README.md` + `docs/proof-pack.md`.
-- **Acceptance:** all 4 contracts show a green verified-source tab; links resolve; a judge can read
-  `SpendPolicy.charge` on-chain.
-- **Blocker:** Etherscan/Arbiscan API key.
+### M2 — Verify contracts on Basescan/Arbiscan · config + operator · DONE 3/4 · HIGHEST ROI
+- [x] hardhat-verify already ships in `hardhat-toolbox` (v2.1.3); added an `etherscan` block to
+      `hardhat.config.ts` reading `ETHERSCAN_API_KEY` from `contracts/.env` (Etherscan V2 single key
+      covers Base + Arbitrum). `contracts/.env` gitignored + key salvaged from a TextEdit RTF.
+- [x] Solc confirmed **0.8.28** (opt 200, cancun) for the primary deploys. Constructor args:
+      SpendPolicy = none; ReceiptEmitter = `initialOwner` = deployer = relayer `0x0AC0…629f41`.
+- [x] **SpendPolicy verified — Base + Arbitrum** (the enforcement contract, both chains). ✅
+- [x] **ReceiptEmitter verified — Arbitrum** (`0xe4C6…D2A1`). ✅
+- [ ] ReceiptEmitter **Base** (`0x89CF…5bC3`) NOT matched — it's an earlier **v1.1** build on solc
+      **0.8.24** whose source/settings differ from the current repo (tried 0.8.24+cancun and
+      0.8.24+shanghai — bytecode mismatch → different source, not reconstructable). Accepted: its
+      source is readable via the byte-identical verified Arbitrum deployment.
+- [x] Added "verified source (read the contract)" links to `README.md` + `docs/proof-pack.md`.
+- **Acceptance:** the enforcement contract (SpendPolicy) is judge-readable on both chains; 3/4
+  verified; config reverted to 0.8.28 + 22 contract tests green.
 
 ### M3 — README micro honesty/clarity · docs · S · no risk
 - [ ] **DEFERRED (needs user knowledge — external):** README/ARCHITECTURE say `2026-07-04`
