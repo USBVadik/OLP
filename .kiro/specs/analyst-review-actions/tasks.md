@@ -79,13 +79,15 @@ DailyCapExceeded, TotalCapExceeded, NotPayer`.
   positioning is preserved; gate green; prod re-verified.
 
 ### M5 — P1: relayer hardening + adoption narrative · M · some flow risk (R16)
-- [ ] R16: segregate `RELAYER_PRIVATE_KEY` from `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` (distinct
-      funded key) and add a shared/persistent rate limiter (or honestly document the in-memory
-      guard's limits). Verify a within-cap charge still settles after the change.
-- [ ] Adoption: add ONE concrete named use case (e.g., an x402 API vendor capping an agent's
-      per-call spend) with a believable GTM line — landing adoption section + pitch. No overclaim.
-- **Acceptance:** relayer signer distinct from the attestor; charge still works; adoption section
-  names a concrete customer + GTM; gate green.
+- [ ] **DEFERRED (external):** R16 — segregate `RELAYER_PRIVATE_KEY` from
+      `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` (needs a NEW funded relayer key) + shared/persistent rate
+      limiter (needs Redis/Upstash). Currently both keys map to the same relayer `0x0AC0…629f41`
+      (verified). Left for the external batch.
+- [x] Adoption: added a concrete "Who adopts it" use case (x402 API vendor requires a mandate at
+      agent sign-up; also SaaS metering / marketplace budgets) to the landing adoption section —
+      honest capability framing, no fake customer.
+- **Acceptance:** relayer signer distinct from the attestor (deferred); charge still works; adoption
+  section names a concrete customer + GTM (done); gate green.
 
 ### M6 — Pitch ammo (verify-first) · docs · S
 - [x] Verified trust-gap sources via web: the analyst's ACI/YouGov 19%/59% could NOT be confirmed —

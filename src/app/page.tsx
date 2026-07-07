@@ -592,6 +592,13 @@ function IntegrateSection() {
           </div>
         ))}
       </div>
+      <p className="mt-6 max-w-2xl text-sm leading-relaxed text-muted">
+        <span className="font-semibold text-ink2">Who adopts it:</span> an x402 API vendor (data,
+        inference, compute) can require a OneLink mandate at agent sign-up &mdash; every calling
+        agent then has a hard, revocable per-day ceiling, so the vendor keeps its usage revenue
+        while the agent&rsquo;s owner holds a spend cap they can prove and pull. The same shape fits
+        a SaaS metering agent usage, or a marketplace handing each automation its own budget.
+      </p>
     </section>
   );
 }
