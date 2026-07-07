@@ -70,6 +70,12 @@ export const TRUST_STATS: TrustStat[] = [
     url: "https://www.marketscreener.com/news/two-thirds-of-consumers-are-ready-to-try-agentic-shopping-but-many-demand-human-approval-before-ai-ce7f5fdadc8df220",
     asOf: "2026-06",
   },
+  {
+    stat: "Distrust is rising, not falling: a majority (55%) are now uncomfortable letting AI agents make purchases — a reversal from the comfortable majority a year earlier.",
+    source: "Riskified",
+    url: "https://www.supermarketnews.com/grocery-technology/consumer-trust-in-ai-drops",
+    asOf: "2026-04",
+  },
 ];
 
 // Our framing (a conclusion, NOT a stat) — rendered distinctly so it is never read as data.

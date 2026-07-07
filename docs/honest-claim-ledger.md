@@ -125,4 +125,4 @@ public-facing artifact contains them, they must be removed before use.
 
 ## Risks closed (kept for trace)
 
-(see `docs/risk-register.md` — R2, R3, R7, R8, R15, R17, R18 closed 2026-06-21; R16 accepted for demo (distinct relayer key deployed + live-verified; shared limiter outstanding for non-demo prod); R19 closed 2026-06-21, re-confirmed on stable `2.0.3` 2026-07-04 (same-chain + cross-chain `/pay` live, RPC-verified); R21 (one-tap checkout) closed 2026-07-05 (one-tap same-chain + cross-chain `/pay` live, RPC-verified))
+(see `docs/risk-register.md` — R2, R3, R7, R8, R15, R17, R18 closed 2026-06-21; R16 accepted for demo (in-memory rolling-window guard bounds public charge gas; NOTE — after R26 (2026-07-06) the relayer key == the proof/attestor key `0x0AC0…9f41`, no longer distinct; a distinct funded relayer key + shared limiter remain for non-demo prod); R19 closed 2026-06-21, re-confirmed on stable `2.0.3` 2026-07-04 (same-chain + cross-chain `/pay` live, RPC-verified); R21 (one-tap checkout) closed 2026-07-05 (one-tap same-chain + cross-chain `/pay` live, RPC-verified))

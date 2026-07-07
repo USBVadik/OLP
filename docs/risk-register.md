@@ -482,10 +482,18 @@
   in-cap charges) with gas spent from it, proving prod settles charges via the dedicated key.
   Checklist steps 1–2 are done; only step 3 (shared/Redis limiter for multi-instance prod) remains,
   and is optional until a real multi-instance public deploy.
-- **mitigation_status:** accepted for the demo (code guards in place + build-verified; distinct
-  relayer key now deployed + live-verified). The shared limiter (step 3) remains only for a non-demo
-  multi-instance public deploy. NOTE: relayer key generation / rotation is a human ops step — not
-  performed autonomously.
+- **2026-07-06 — SUPERSEDED by R26 (honest correction).** R26 moved the ReceiptEmitter owner to the
+  RELAYER key `0x0AC0…9f41` (to make the attestor ≠ the merchant payee). So the charge-relayer key
+  and the proof/attestor key are now the SAME (`0x0AC0…9f41`) — the R16 split (relayer ≠ proof-owner)
+  NO LONGER HOLDS. Accepted demo tradeoff: the ReceiptEmitter holds no funds, so a relayer-key
+  compromise could forge proof *events* but cannot move funds or fake the trustless settlement. A
+  production deploy would use a THIRD dedicated key (distinct from both merchant and relayer) plus
+  the shared/Redis limiter (step 3). See R26.
+- **mitigation_status:** accepted for the demo (code guards in place; in-memory rolling-window guard
+  bounds public charge/delegation gas; simulate-first = blocked calls cost zero gas). NOTE: after
+  R26 (2026-07-06) the relayer key == the proof/attestor key `0x0AC0…9f41` — NOT distinct; a distinct
+  funded relayer key + a shared/persistent limiter remain for a non-demo multi-instance public
+  deploy. Key generation/rotation is a human ops step — not performed autonomously.
 - **owner:** builder
 - **review:** before any public (non-demo) deploy
 

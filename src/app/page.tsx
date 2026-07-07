@@ -136,14 +136,14 @@ export default function HomePage() {
               style={{ animationDelay: "340ms" }}
             >
               <Magnetic>
-                <Link href="/firewall" className="op-btn-primary">
-                  Try the live firewall
+                <Link href="/try" className="op-btn-primary">
+                  Watch an AI get blocked &mdash; no wallet
                   <IconArrowUpRight className="h-4 w-4" />
                 </Link>
               </Magnetic>
               <Magnetic>
-                <Link href="/agent" className="op-btn-secondary">
-                  See the agent demo
+                <Link href="/firewall" className="op-btn-secondary">
+                  Try the live firewall
                 </Link>
               </Magnetic>
               <Link href={`/success/${DEMO_REPLAY_PAYMENT_LINK.id}`} className="op-btn-ghost">
@@ -155,10 +155,9 @@ export default function HomePage() {
               className="op-animate-rise mt-3 max-w-xl text-xs leading-relaxed text-muted"
               style={{ animationDelay: "360ms" }}
             >
-              The live buttons run on our funded demo account. Exploring on your own?{" "}
-              <Link href="/demo-replay" className="op-link">Watch the 90-second replay</Link> or{" "}
-              <Link href="/try" className="op-link">trigger the on-chain block yourself</Link> — no
-              wallet needed.
+              The firewall and agent run on our funded demo account. No wallet needed for the block
+              above or the{" "}
+              <Link href="/demo-replay" className="op-link">90-second replay</Link>.
             </p>
             <p
               className="op-animate-rise mt-4 max-w-xl text-sm leading-relaxed text-muted"
