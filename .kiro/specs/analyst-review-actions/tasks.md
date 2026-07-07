@@ -88,12 +88,15 @@ DailyCapExceeded, TotalCapExceeded, NotPayer`.
   names a concrete customer + GTM; gate green.
 
 ### M6 — Pitch ammo (verify-first) · docs · S
-- [ ] Verify the primary sources for the trust-gap stats (ACI Worldwide / YouGov 19% & 59%;
-      Riskified 55% vs 30%) before any publication.
-- [ ] Add to `/trust` ONLY if each carries source + url + asOf (respects the `assertAllSourced`
-      unit test); otherwise keep them for the spoken pitch only.
-- [ ] Add market-context Q&A lines (x402 Foundation Apr-2026; AP2 v0.2 → FIDO; Coinbase Agentic
-      Wallets Feb-2026; MetaMask Advanced Permissions / ERC-7715) to the `demo-runbook` Skeptic Q&A.
+- [x] Verified trust-gap sources via web: the analyst's ACI/YouGov 19%/59% could NOT be confirmed —
+      dropped. Verified + used instead: Forrester (Jun 2026, ~75% uncomfortable EVEN with limits) +
+      Riskified (Apr 2026, 55% uncomfortable, vs ~30% late 2025), both with real URLs.
+- [x] Added verified market-context + trust stats to the `demo-runbook` Skeptic Q&A (+ sharpened the
+      Coinbase/MetaMask answer with Coinbase for Agents Jun-2026 + MetaMask Advanced Permissions
+      shipped on ERC-7715).
+- [ ] PROPOSED (needs "го" — public `/trust`): add Forrester "even with limits" + Riskified to the
+      `/trust` TRUST_STATS with source + url + asOf (must pass `assertAllSourced`). Held for user
+      sign-off — `/trust` is judge-facing curated copy.
 - **Acceptance:** any new `/trust` stat passes `assertAllSourced`; runbook Q&A is current; nothing
   unsourced ships to the app.
 
