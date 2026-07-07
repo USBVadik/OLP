@@ -1,6 +1,6 @@
 # OneLink Pay — Architecture & Roadmap
 
-> Reflects the current build (2026-06-21). Claims map to `docs/honest-claim-ledger.md`
+> Reflects the current build (last updated 2026-07-04). Claims map to `docs/honest-claim-ledger.md`
 > (`C…` ids below). The earlier MVP framing — an embeddable checkout with spend caps as a
 > "ZeroDev stretch" — is superseded: the **on-chain spend mandate (`SpendPolicy.sol`) is the
 > core**, and we deliberately do NOT use ZeroDev/session keys (our own auditable contract instead).
@@ -141,8 +141,8 @@ OneLink-Pay/
 │   │       ├── payments/[id]/mark-paid/route.ts  # On-chain verify → InvoicePaid
 │   │       ├── mandates/charge/route.ts # Relayer: simulate → charge SpendPolicy
 │   │       └── x402/[resource]/route.ts # x402 402 → serve on proof
-│   ├── components/                       # ui, mandate-card, budget-hud, agent-terminal,
-│   │                                     #   proof-receipt, cross-chain-route, …
+│   ├── components/                       # ui, mandate-card, permission-receipt, budget-hud,
+│   │                                     #   agent-terminal, proof-receipt, cross-chain-route, …
 │   ├── lib/
 │   │   ├── mandates/                    # PaymentMandate type, derive, EIP-712 typed data
 │   │   ├── contracts/spend-policy.ts    # SpendPolicy ABI + tuple helpers
@@ -174,7 +174,7 @@ OneLink-Pay/
 - [x] EIP-7702 delegation of the Magic EOA — C7
 - [x] Checkout + `ReceiptEmitter` InvoicePaid proof; public shareable `/receipt/[id]` — C8, C9, C20
 - [x] **Cross-chain settlement via Particle UA** (Base → Arbitrum, no manual bridge); live in prod — C21
-- [x] Live 7702 + cross-chain payment re-verified on the current prod `/pay` beta SDK — R19 closed
+- [x] Live 7702 + cross-chain payment re-verified on the current prod `/pay` stable SDK (`2.0.3`) — R19 closed
 - [x] Prior-art positioning (landing + README) — C19
 
 ### In progress / known risk
