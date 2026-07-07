@@ -60,33 +60,32 @@ DailyCapExceeded, TotalCapExceeded, NotPayer`.
   verified; config reverted to 0.8.28 + 22 contract tests green.
 
 ### M3 — README micro honesty/clarity · docs · S · no risk
-- [ ] **DEFERRED (needs user knowledge — external):** README/ARCHITECTURE say `2026-07-04`
-      ("R19 closed on stable" / cross-chain re-run), but the canonical public receipt `fc5adc83`
-      settled `2026-07-06` on-chain (`0x65ef…f72d`, RPC-verified). If 07-04 was a distinct earlier
-      stable run, both are correct — leave. If 07-04 is just an imprecise date for fc5adc83, align
-      to 07-06. NOT changing blindly (would risk erasing a real milestone or keeping a stale one).
+- [x] **RESOLVED — no change (honesty over agreement).** risk-register R19 shows `2026-07-04` was a
+      REAL distinct stable re-verify (invoices `580a1fd4` + `2cbb6ff6`), separate from `fc5adc83`
+      (07-06). Both dates are correct; no contradiction. User guessed "same run" but the ledger
+      disproves it — left the dates unchanged rather than erase a real milestone.
 - [x] Trim/drop the "Historical P0 Proof" Base Sepolia footnote (same hex as the Arbitrum
       ReceiptEmitter → confusion). DONE — whole section removed from the judge-facing README.
 - **Acceptance:** no date contradiction with proof-pack; no dual-chain-same-hex trap in README.
 
-### M4 — Landing: block-moment reachable first · UX · S–M · DESIGN DECISION
-- [ ] DECISION (user): (a) keep concept H1 "Give your AI a card. Not your wallet." and elevate
-      "Trigger the block yourself" (`/try`) to the FIRST / primary CTA **[recommended]**; or
-      (b) demo-first hero (autoplay block loop); or (c) leave as-is.
-- [ ] Implement per the decision; presentational only, don't break existing links/anchors.
-- **Acceptance:** the walletless block-moment is reachable in one click above the fold; the H1
-  positioning is preserved; gate green; prod re-verified.
+### M4 — Landing: block-moment reachable first · UX · DONE (a)
+- [x] DECISION (a): kept the concept H1 "Give your AI a card. Not your wallet." and elevated the
+      walletless block `/try` to the PRIMARY CTA ("Watch an AI get blocked — no wallet"); firewall
+      demoted to secondary; note copy updated (block above needs no wallet).
+- [x] Gate green; deployed; prod-verified — "Watch an AI get blocked" live on the landing.
+- **Acceptance:** the block-moment is the first CTA above the fold; H1 preserved. ✅
 
-### M5 — P1: relayer hardening + adoption narrative · M · some flow risk (R16)
-- [ ] **DEFERRED (external):** R16 — segregate `RELAYER_PRIVATE_KEY` from
-      `RECEIPT_EMITTER_OWNER_PRIVATE_KEY` (needs a NEW funded relayer key) + shared/persistent rate
-      limiter (needs Redis/Upstash). Currently both keys map to the same relayer `0x0AC0…629f41`
-      (verified). Left for the external batch.
+### M5 — P1: relayer hardening + adoption narrative · DONE (light)
+- [x] **R16 (light — done, user chose light):** honest documentation instead of full hardening.
+      Corrected the STALE "distinct relayer key deployed" claim in risk-register R16 + the ledger
+      closed-trace — after R26 (07-06) the relayer key == the proof/attestor key `0x0AC0…629f41`
+      (NOT distinct); the in-memory rolling-window guard bounds public charge/delegation gas; prod
+      needs a THIRD dedicated key + shared/Redis limiter. Full R16 (new funded key + Redis) deferred
+      to a non-demo public deploy.
 - [x] Adoption: added a concrete "Who adopts it" use case (x402 API vendor requires a mandate at
       agent sign-up; also SaaS metering / marketplace budgets) to the landing adoption section —
       honest capability framing, no fake customer.
-- **Acceptance:** relayer signer distinct from the attestor (deferred); charge still works; adoption
-  section names a concrete customer + GTM (done); gate green.
+- **Acceptance:** R16 honestly documented; charge still works; adoption names a concrete GTM. ✅
 
 ### M6 — Pitch ammo (verify-first) · docs · S
 - [x] Verified trust-gap sources via web: the analyst's ACI/YouGov 19%/59% could NOT be confirmed —
@@ -95,9 +94,9 @@ DailyCapExceeded, TotalCapExceeded, NotPayer`.
 - [x] Added verified market-context + trust stats to the `demo-runbook` Skeptic Q&A (+ sharpened the
       Coinbase/MetaMask answer with Coinbase for Agents Jun-2026 + MetaMask Advanced Permissions
       shipped on ERC-7715).
-- [ ] PROPOSED (needs "го" — public `/trust`): add Forrester "even with limits" + Riskified to the
-      `/trust` TRUST_STATS with source + url + asOf (must pass `assertAllSourced`). Held for user
-      sign-off — `/trust` is judge-facing curated copy.
+- [x] `/trust` DONE (user "go"): Forrester "even with limits" was ALREADY the top TRUST_STAT; added
+      Riskified (2026-04, "distrust is rising" trend) — sourced, passed `assertAllSourced`, deployed
+      + prod-verified ("Distrust is rising" live on `/trust`).
 - **Acceptance:** any new `/trust` stat passes `assertAllSourced`; runbook Q&A is current; nothing
   unsourced ships to the app.
 
