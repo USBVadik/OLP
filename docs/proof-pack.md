@@ -1,6 +1,6 @@
 # OneLink Pay — Proof Pack (cross-chain, verifiable)
 
-> Last updated: 2026-06-21 · One page a judge can open and verify independently.
+> Last updated: 2026-07-06 · One page a judge can open and verify independently.
 > Backs ledger claim **C21**. Every tx below is on a public mainnet explorer.
 
 ## The one claim we make (verbatim, ledger C21)
