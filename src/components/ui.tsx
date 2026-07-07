@@ -225,11 +225,11 @@ export function TxReference({
   if (!hash) return null;
   const inner = (
     <>
-      <span className="flex items-center gap-2 text-muted">
+      <span className="flex min-w-0 items-center gap-2 text-muted">
         <Dot tone="gold" />
         {label}
       </span>
-      <span className="flex items-center gap-1.5 font-mono text-xs text-ink2 group-hover:text-gold">
+      <span className="flex min-w-0 max-w-full items-center gap-1.5 break-all text-left font-mono text-xs text-ink2 group-hover:text-gold sm:text-right">
         {shortHash(hash)}
         {href ? <IconArrowUpRight className="h-3.5 w-3.5 text-faint group-hover:text-gold" /> : null}
       </span>
@@ -237,7 +237,7 @@ export function TxReference({
   );
 
   if (!href) {
-    return <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-paper2 px-3.5 py-2.5 text-sm">{inner}</div>;
+    return <div className="flex min-w-0 flex-col items-start gap-1 rounded-xl border border-line bg-paper2 px-3.5 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">{inner}</div>;
   }
 
   return (
@@ -245,7 +245,7 @@ export function TxReference({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="group flex items-center justify-between gap-3 rounded-xl border border-line bg-paper2 px-3.5 py-2.5 text-sm transition-colors hover:border-gold/40 hover:bg-gold-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+      className="group flex min-w-0 flex-col items-start gap-1 rounded-xl border border-line bg-paper2 px-3.5 py-2.5 text-sm transition-colors hover:border-gold/40 hover:bg-gold-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
     >
       {inner}
       <span className="sr-only">{label}: {hash} (opens {destinationLabel} in a new tab)</span>
@@ -272,7 +272,7 @@ export function Term({ children, def }: { children: string; def: string }) {
       </button>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-56 -translate-x-1/2 rounded-xl border border-line bg-paper p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-muted opacity-0 shadow-lift transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-line bg-paper p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-muted opacity-0 shadow-lift transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:block"
       >
         {def}
       </span>

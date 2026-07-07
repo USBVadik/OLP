@@ -142,7 +142,7 @@ export function UniversalBalanceCard({ summary, loading = false, error = null, o
 
       <p className="mt-3 flex items-center gap-1.5 text-[11px] text-faint">
         <IconBolt className="h-3 w-3 text-gold" />
-        Powered by Particle Universal Accounts — one balance, every chain.
+        Powered by Particle Universal Accounts — one balance across supported chains.
       </p>
     </div>
   );

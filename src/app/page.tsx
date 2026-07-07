@@ -285,9 +285,10 @@ export default function HomePage() {
                   <IconCheck className="h-3.5 w-3.5" /> Proven live · Base &rarr; Arbitrum
                 </span>
                 <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Funds are sourced from any chain where you hold USDC and settled where the merchant
-                  wants — the Universal Account routes it in one operation, with no manual bridge and
-                  the network fee paid in USDC. This is the exact cross-chain flow we proved on-chain.
+                  Funds are sourced from supported chains where you hold USDC and settled where the
+                  merchant wants — the Universal Account routes it in one operation, with no manual
+                  bridge and the network fee paid in USDC. This is the exact Base → Arbitrum flow we
+                  proved on-chain.
                 </p>
               </div>
               <CrossChainRoute status="settled" fromNames={["Base"]} toName="Arbitrum" amountLabel="1.00 USDC" />
@@ -482,7 +483,7 @@ function SponsorStrip() {
   const items: { name: string; advantage: string; accent?: boolean }[] = [
     {
       name: "Particle",
-      advantage: "Universal Accounts + EIP-7702 — one balance, every chain",
+      advantage: "Universal Accounts + EIP-7702 — one balance across supported chains",
       accent: true,
     },
     { name: "Magic", advantage: "Email / Google login — your wallet is your email" },

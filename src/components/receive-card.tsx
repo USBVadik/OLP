@@ -45,7 +45,7 @@ export function ReceiveCard({ address }: { address: string }) {
     <div className="op-card p-5">
       <div className="flex items-center justify-between gap-2">
         <span className="op-eyebrow">Receive</span>
-        <Chip tone="gold">any EVM chain &rarr; one balance</Chip>
+        <Chip tone="gold">supported EVM chains &rarr; one balance</Chip>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Send USDC to this address on any supported EVM chain — it lands as one Universal Account

@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 
 const BEATS = [
   { k: "Consent", h: "Sign one scoped mandate.", s: "Per-charge, daily, and total caps. One signature." },
-  { k: "Spend", h: "It pays — across any chain.", s: "Your agent draws from one Universal Account balance." },
+  { k: "Spend", h: "It routes across supported chains.", s: "Your agent draws from a Universal Account route when the rail is available." },
   { k: "Blocked", h: "It cannot overpay.", s: "Over-cap charges hit the wall and revert on-chain. Zero gas." },
   { k: "Proof", h: "Proof recorded. Revoke anytime.", s: "Every payment ships a verifiable receipt. You hold the kill switch." },
 ];

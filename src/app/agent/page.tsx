@@ -437,8 +437,8 @@ export default function AgentPage() {
               requests are refused before any funds move.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode — one balance across chains">
-                Particle · one balance, every chain
+              <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode — one balance across supported chains">
+                Particle · supported-chain balance
               </span>
               <span className="op-chip" title="Magic embedded wallet — email/Google login, your wallet is your email">
                 Magic · walletless login
@@ -586,11 +586,11 @@ export default function AgentPage() {
                   blocked before settlement.
                 </p>
                 <p className="text-[11px] leading-relaxed text-faint">
-                  The agent sees one balance across chains (Particle{" "}
+                  The agent sees one balance across supported chains (Particle{" "}
                   <Term def="A Particle account that gives you one balance across many chains — no bridging or picking a network.">Universal Account</Term>
                   ). Today
                   settlement runs on Arbitrum; Particle&apos;s cross-chain V2 extends the same flow to
-                  spend from every chain in one transaction.
+                  supported source chains.
                 </p>
               </div>
             </div>

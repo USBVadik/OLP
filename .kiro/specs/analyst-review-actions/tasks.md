@@ -22,8 +22,11 @@ Every item below was re-checked against the actual code / chain (not accepted on
 - Verify-first: confirm current state on-chain / in-code before editing.
 
 ## Verified-closed (no action needed)
-- [x] Landing overclaim "It pays — across any chain" — NOT present in current code (grep clean);
-      the analyst reviewed a stale deploy. H1 is the containment hook; subhead is accurate. Closed.
+- [x] Landing overclaim "It pays — across any chain" — WAS present after all (in
+      `scroll-narrative.tsx` + "every/any chain" chips in agent/sponsor/receive/balance). My earlier
+      "not present" call was a FALSE NEGATIVE from a flaky grep — the analyst was RIGHT. Found + fixed
+      in the mobile-QA pass: "any/every chain" → "supported chains", "It pays across any chain" → "It
+      routes across supported chains", "exact cross-chain flow" → "exact Base → Arbitrum flow". Honest now.
 - [x] Headline on-chain proofs + attestor-split (R26) — re-verified Success on arbiscan/basescan.
 - [x] SpendPolicy real error set confirmed by reading the contract (9 errors) — feeds M1.
 

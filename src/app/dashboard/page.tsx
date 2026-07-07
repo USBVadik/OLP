@@ -37,6 +37,7 @@ function DashboardContent() {
   const [links, setLinks] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, failed: 0 });
+  const [loading, setLoading] = useState(false);
   const [newLink, setNewLink] = useState({ amount: "", token: "USDC", label: "", merchantAddress: "" });
   const [adminCreateToken, setAdminCreateToken] = useState("");
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
@@ -44,15 +45,20 @@ function DashboardContent() {
   const fetchData = useCallback(async () => {
     if (!merchantId) return;
     const demoQuery = isDemoReplay ? "&demo=replay" : "";
-    const [linksRes, paymentsRes] = await Promise.all([
-      fetch(`/api/payment-links?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
-      fetch(`/api/payments?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
-    ]);
-    const linksData = await linksRes.json();
-    const paymentsData = await paymentsRes.json();
-    setLinks(linksData.links || []);
-    setPayments(paymentsData.payments || []);
-    setStats(paymentsData.stats || { total: 0, completed: 0, pending: 0, failed: 0 });
+    setLoading(true);
+    try {
+      const [linksRes, paymentsRes] = await Promise.all([
+        fetch(`/api/payment-links?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
+        fetch(`/api/payments?merchantId=${merchantId}${demoQuery}`, { cache: "no-store" }),
+      ]);
+      const linksData = await linksRes.json();
+      const paymentsData = await paymentsRes.json();
+      setLinks(linksData.links || []);
+      setPayments(paymentsData.payments || []);
+      setStats(paymentsData.stats || { total: 0, completed: 0, pending: 0, failed: 0 });
+    } finally {
+      setLoading(false);
+    }
   }, [merchantId, isDemoReplay]);
 
   async function createLink() {
@@ -271,7 +277,14 @@ function DashboardContent() {
             <Stat label="Failed" value={stats.failed} tone="danger" />
           </div>
 
-          {links.length === 0 ? (
+          {loading ? (
+            <div className="mt-6 rounded-2xl border border-line bg-paper2 p-8 text-center">
+              <p className="text-sm font-medium text-ink2">Loading payment links…</p>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
+                Pulling the latest payment and proof status for this merchant.
+              </p>
+            </div>
+          ) : links.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-line2 bg-paper2 p-8 text-center">
               <p className="text-sm font-medium text-ink2">No payment links yet</p>
               <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
