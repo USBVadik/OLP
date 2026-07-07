@@ -64,7 +64,7 @@ Payer signs an EIP-712 PaymentMandate (per-charge / daily / total caps + expiry 
 Merchant or agent requests a charge
   → POST /api/mandates/charge → relayer SIMULATES SpendPolicy.charge(...)
      ├─ within caps  → relayer submits; USDC pulled payer → merchant; MandateCharged
-     └─ outside caps → reverts (PerChargeExceeded / DailyCap / TotalCap / Expired / Revoked)
+     └─ outside caps → reverts (PerChargeExceeded / DailyCapExceeded / TotalCapExceeded / MandateExpired / MandateIsRevoked)
                        in simulation — NO funds move, ZERO gas
 Budget HUD drains from live on-chain state; payer can revoke at any time (kills future charges)
 ```

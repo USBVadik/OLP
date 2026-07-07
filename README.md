@@ -130,18 +130,6 @@ cd contracts
 BASE_MAINNET_RPC_URL=... RECEIPT_EMITTER_OWNER_PRIVATE_KEY=... corepack pnpm hardhat run scripts/deploy.ts --network base
 ```
 
-## Historical P0 Proof
-
-The previous transfer-only P0 proved Magic + Particle UA can move real USDC on Base, but it did not call the receipt contract. That path is now historical.
-
-Historical Base Sepolia ReceiptEmitter v0:
-
-- Address: `0xe4C6656B6c248B20Bd2C5ddf9168A4531AAbD2A1`
-- Explorer: `https://sepolia.basescan.org/address/0xe4C6656B6c248B20Bd2C5ddf9168A4531AAbD2A1`
-- Deploy tx: `0x351db8dfa40cd5c70423510524133b186fe995b5ac7f52d6704ce09ea4d64fcc`
-
-This is the same hex address as the previous Base mainnet v1 deployment, but it is a different contract on a different chain.
-
 ## SDK Versions
 
 Pinned to what's installed (verified against the lockfile). The Universal Account SDK is on the pinned **stable** release (`2.0.3`) — real EIP-7702 + cross-chain; the other crypto SDKs are on their latest releases.
