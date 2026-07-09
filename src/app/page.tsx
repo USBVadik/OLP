@@ -43,26 +43,26 @@ export default function HomePage() {
         {/* Top bar */}
         <header className="flex flex-wrap items-center justify-between gap-y-2 py-6">
           <Wordmark href="/" />
-          <nav className="flex flex-wrap items-center gap-1 text-sm">
-            <Link href="/pitch" className="op-btn-ghost px-3 py-2.5">
+          <nav className="flex flex-nowrap items-center gap-1 overflow-x-auto text-sm sm:flex-wrap sm:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Link href="/pitch" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Pitch
             </Link>
-            <Link href="/firewall" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/firewall" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Firewall
             </Link>
-            <Link href="/agent" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/agent" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Agent
             </Link>
-            <Link href="/wallet" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/wallet" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Wallet
             </Link>
-            <Link href="/demo-replay" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/demo-replay" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Demo
             </Link>
-            <Link href="/dashboard" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/dashboard" className="op-btn-ghost shrink-0 px-3 py-2.5">
               Merchant
             </Link>
-            <Link href="/trust" className="op-btn-ghost px-3 py-2.5">
+            <Link href="/trust" className="op-btn-ghost shrink-0 px-3 py-2.5">
               What&rsquo;s real
             </Link>
           </nav>
@@ -80,20 +80,14 @@ export default function HomePage() {
           <ParticleField density={1.15} />
           <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
-            <span
-              className="op-eyebrow op-animate-rise inline-flex items-center gap-2"
-              style={{ animationDelay: "60ms" }}
-            >
+            <span className="op-eyebrow inline-flex items-center gap-2">
               <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-verify opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-verify" />
               </span>
               On-chain spending limits for the agent era
             </span>
-            <h1
-              className="op-animate-rise mt-4 font-display text-[2.9rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]"
-              style={{ animationDelay: "140ms" }}
-            >
+            <h1 className="mt-4 font-display text-[2.9rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]">
               Give your AI a card.
               <br />
               <span className="relative inline-block text-gold">
@@ -104,10 +98,7 @@ export default function HomePage() {
                 />
               </span>
             </h1>
-            <p
-              className="op-animate-rise mt-4 font-display text-xl font-medium text-ink sm:text-2xl"
-              style={{ animationDelay: "200ms" }}
-            >
+            <p className="mt-4 font-display text-xl font-medium text-ink sm:text-2xl">
               Trust before you pay. Proof after it settles.
             </p>
             <p

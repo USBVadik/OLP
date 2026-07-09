@@ -300,7 +300,7 @@ export function AppNav({ active, className = "" }: { active?: string; className?
   return (
     <nav
       aria-label="Sections"
-      className={`flex flex-wrap items-center gap-1 border-b border-line ${className}`}
+      className={`flex flex-nowrap items-center gap-1 overflow-x-auto border-b border-line sm:flex-wrap sm:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       {APP_NAV_SECTIONS.map((s) => {
         const isActive = s.href === active;
@@ -309,7 +309,7 @@ export function AppNav({ active, className = "" }: { active?: string; className?
             key={s.href}
             href={s.href}
             aria-current={isActive ? "page" : undefined}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+            className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
               isActive
                 ? "border-gold font-semibold text-ink"
                 : "border-transparent text-muted hover:text-ink"

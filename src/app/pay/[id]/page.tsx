@@ -22,6 +22,7 @@ import {
 import {
   Wordmark,
   Chip,
+  ConceptTag,
   Dot,
   Disclosure,
   VerifiedSeal,
@@ -1382,16 +1383,34 @@ function PreviewStep({
     <div className="space-y-4">
       <PaymentSummary paymentLink={paymentLink} address={address} />
 
-      <PermissionFirewall
-        merchantAddress={paymentLink.merchant_address}
-        tokenAddress={previewTokenAddress}
-        chainId={paymentLink.destination_chain_id}
-        amountAtomic={paymentLink.amount}
-        symbol={previewToken.symbol}
-        decimals={previewToken.decimals}
-        payerAddress={address}
-        conceptMode
-      />
+      <Disclosure
+        summary={
+          <span className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gold-soft text-gold">
+              <IconShield className="h-4 w-4" />
+            </span>
+            <span className="flex flex-col">
+              <span className="flex items-center gap-2 font-semibold text-ink">
+                Spend Caps <ConceptTag>Concept mode</ConceptTag>
+              </span>
+              <span className="text-xs font-normal text-muted">
+                Preview of the permission you&rsquo;d grant before automation
+              </span>
+            </span>
+          </span>
+        }
+      >
+        <PermissionFirewall
+          merchantAddress={paymentLink.merchant_address}
+          tokenAddress={previewTokenAddress}
+          chainId={paymentLink.destination_chain_id}
+          amountAtomic={paymentLink.amount}
+          symbol={previewToken.symbol}
+          decimals={previewToken.decimals}
+          payerAddress={address}
+          conceptMode
+        />
+      </Disclosure>
 
       {/* Balances */}
       <div className="rounded-2xl border border-line bg-paper p-4">
