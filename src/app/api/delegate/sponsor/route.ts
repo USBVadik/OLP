@@ -7,6 +7,7 @@ import {
   isSponsoredDelegationEnabled,
   validateSponsorRequest,
 } from "@/lib/particle/sponsored-delegation";
+import { DEMO_PAYER_FALLBACK, isAllowlisted } from "@/lib/relayer/allowlist";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const { payer, chainId, authorization } = validation.value;
+
+    // R16 hardening: only sponsor the demo payer's delegation (env-overridable via
+    // SPONSOR_PAYER_ALLOWLIST; "*" opens to any). Prevents arbitrary callers from draining relayer
+    // gas via sponsored Type-4 submissions.
+    if (!isAllowlisted(payer, process.env.SPONSOR_PAYER_ALLOWLIST, DEMO_PAYER_FALLBACK)) {
+      return NextResponse.json(
+        { error: "Sponsored delegation is limited to the demo payer." },
+        { status: 403 },
+      );
+    }
 
     if (!tryConsumeDelegationBudget()) {
       return NextResponse.json(

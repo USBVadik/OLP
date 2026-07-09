@@ -196,10 +196,21 @@
 - **impact:** low (a paid proof could re-fetch a resource twice in the demo)
 - **mitigation:**
   1. Documented limitation in spec `x402-mandate-gateway` design §9.
-  2. A production version needs a consumed-proof / nonce store; out of scope for the hackathon.
-- **mitigation_status:** accepted (documented; not a demo-blocking issue)
+  2. **CLOSED in code (security-hardening-v2, 2026-07-07):** `/api/x402/[resource]` now claims each
+     verified proof in a Supabase consume-store (`x402_consumed`, `UNIQUE(tx_hash)`) BEFORE delivering.
+     A replayed proof collides → 402; the store is **fail-CLOSED** (any store error → 503, never
+     deliver) so "replay is closed" stays honest. Uniqueness is on `tx_hash` ALONE (not
+     `tx_hash+resource`) because on-chain `MandateCharged` does not bind to a resource id — so one paid
+     tx unlocks ONE resource, closing the audit-pass-2 "one charge satisfies a different resource"
+     sharpening (F2). Pure decision logic unit-tested (`src/lib/x402/consume.ts`: fresh/replayed/
+     unavailable + the fail-closed 200/402/503 table).
+- **REQUIRED deploy step:** apply the `x402_consumed` migration (in `supabase/schema.sql`) in Supabase
+  BEFORE relying on x402 — fail-closed means `/api/x402/*` (and the `/agent` x402 loop) return 503
+  until the table exists.
+- **mitigation_status:** closed in code + unit-tested (gate green); **pending** the Supabase migration
+  applied in prod + one live x402 buy (fresh→deliver) and a manual replay (→402). Was: accepted.
 - **owner:** builder
-- **review:** n/a (accepted)
+- **review:** apply migration; then one live `/agent` x402 buy + a manual replay of the same proof
 
 ### R11 — x402 resource feels laggy (on-chain proof verification + mining wait)
 
@@ -465,6 +476,14 @@
   2. In-memory rolling-window budget caps gas-spending sends (`RELAYER_MAX_CHARGES_PER_WINDOW`,
      default 30 / 10 min); simulation-only "blocked" calls stay unthrottled. ✅ shipped (right-sized
      for the demo — production needs a shared limiter, e.g. Redis)
+  3. **security-hardening-v2 (2026-07-07):** merchant + payer allowlists on the GAS-SPENDING path of
+     `/api/mandates/charge` (and a payer allowlist on `/api/delegate/sponsor`). Placed AFTER the
+     simulation, so the zero-gas over-cap "blocked" demo stays open to any wallet; only the actual
+     relayer send is gated. Closes the "fund a throwaway payer, spam micro-charges to the demo
+     merchant to burn relayer gas" vector (audit-pass-2 sharpening of F4). Default = demo payer/
+     merchant, env-overridable (`CHARGE_MERCHANT_ALLOWLIST` / `CHARGE_PAYER_ALLOWLIST` /
+     `SPONSOR_PAYER_ALLOWLIST`; literal `"*"` opens to any). Pure allowlist logic unit-tested
+     (`src/lib/relayer/allowlist.ts`). ✅ shipped (code + gate green)
 - **code status:** COMPLETE — both code mitigations are shipped + build-verified (the charge route
   reads an optional dedicated `RELAYER_PRIVATE_KEY`, an in-memory global window caps relayer-gas
   sends, and simulate-first means blocked calls cost zero gas). The remainder is OPS/INFRA, not code.
@@ -639,6 +658,31 @@
 - **F8 (`<img>` lint warning):** fixed in `audit-remediation-pass2` — the misplaced
   `eslint-disable-next-line` was moved onto the `<img>` line with a justification; the `viem/ox`
   dynamic-dependency build note is accepted (dependency characteristic, non-blocker).
+
+## Security hardening v2 (2026-07-07)
+
+> Third external review. Each finding re-verified in code (two confirmed real, one refuted — the
+> visible cross-chain badge is driven by server-verified funding `crossChain`, NOT `isCrossChain`
+> (which only drives the accurate "Proof anchored on Base" chip), so it is not a mislabel). Fixes in
+> spec `security-hardening-v2`. Code-complete + gate-verified (typecheck / lint / unit / build); the
+> Supabase migration + live verification are pending ops/"go" steps.
+>
+> - **x402 replay** → now fail-CLOSED + `UNIQUE(tx_hash)` consume-store. See **R10** (updated).
+> - **relayer gas-drain** → merchant + payer allowlists on the gas-spending send. See **R16** (updated).
+
+### R27 — Internal strategy/research notes (`kiro-import/`) tracked in the public repo
+
+- **likelihood:** high (confirmed: 6 files, ~548K, tracked in Git)
+- **impact:** low (no secrets — the 64-hex strings inside are public tx / rootHash / userOp hashes,
+  not keys; not referenced by `src/`). Exposure is judge-facing NOISE + an unnecessary question surface.
+- **found_by:** external review (2026-07)
+- **mitigation:**
+  1. `.gitignore` now ignores `kiro-import/`. ✅ shipped
+  2. `git rm -r --cached kiro-import` (keeps the files locally, drops them from the repo tree) runs in
+     the commit step. ⏳ pending — `.gitignore` alone does NOT untrack already-tracked files.
+- **mitigation_status:** in_progress — ignore rule shipped; the `git rm --cached` + commit is the ship step.
+- **owner:** builder
+- **review:** confirm `git ls-files | grep kiro-import` is empty after the commit
 
 ## Risks closed (kept for trace)
 

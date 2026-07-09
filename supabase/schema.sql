@@ -128,3 +128,30 @@ alter table public.payments       enable row level security;
 --   1. With the ANON key, `select * from payments limit 1` must return 0 rows (RLS denies).
 --   2. The public /receipt/[id] page (server-rendered via service_role) must still render a
 --      completed payment.
+
+-- ── x402 replay protection (audit: x402 consume-store) ───────────────────────────────────────────
+-- A verified proof (settlement tx_hash) unlocks ONE x402 resource exactly once. The route inserts
+-- the tx_hash here BEFORE delivering; UNIQUE(tx_hash) makes a replayed OR cross-resource reuse of
+-- the same proof collide and get rejected (on-chain MandateCharged does not bind to a resource id,
+-- so uniqueness is on tx_hash alone). Written only by the server-side service_role client.
+create table if not exists x402_consumed (
+  id uuid primary key default gen_random_uuid(),
+  tx_hash text not null,
+  resource text not null,
+  consumed_at timestamptz default now(),
+  unique (tx_hash)
+);
+
+grant select, insert on public.x402_consumed to service_role;
+alter table public.x402_consumed enable row level security;
+
+-- ── Apply on an EXISTING Supabase project (run once in the SQL editor) ────────────────────────────
+--   create table if not exists x402_consumed (
+--     id uuid primary key default gen_random_uuid(),
+--     tx_hash text not null,
+--     resource text not null,
+--     consumed_at timestamptz default now(),
+--     unique (tx_hash)
+--   );
+--   grant select, insert on public.x402_consumed to service_role;
+--   alter table public.x402_consumed enable row level security;

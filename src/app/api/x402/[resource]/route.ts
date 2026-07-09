@@ -17,6 +17,8 @@ import {
   decodePaymentHeader,
 } from "@/lib/x402/requirements";
 import { isPaymentSufficient } from "@/lib/x402/verify";
+import { supabaseAdmin } from "@/lib/supabase/client";
+import { classifyConsume, x402DeliveryDecision, type ConsumeResult } from "@/lib/x402/consume";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +93,25 @@ async function verifyOnChainPayment(
   return { ok: true };
 }
 
+// x402 replay protection: claim the settlement tx in the consume-store (UNIQUE(tx_hash)) BEFORE
+// delivering. A replayed proof collides and is rejected; any store error fails CLOSED (see
+// x402DeliveryDecision) so we never hand out a paid resource we could not de-duplicate.
+async function consumeProof(txHash: string, resource: string): Promise<ConsumeResult> {
+  try {
+    const { error } = await supabaseAdmin
+      .from("x402_consumed")
+      .insert({ tx_hash: txHash.toLowerCase(), resource });
+    const result = classifyConsume(error);
+    if (result === "unavailable") {
+      console.warn("[x402] consume-store unavailable (failing CLOSED):", error?.message);
+    }
+    return result;
+  } catch (e) {
+    console.warn("[x402] consume-store threw (failing CLOSED):", e);
+    return "unavailable";
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { resource: string } }
@@ -130,12 +151,23 @@ export async function GET(
     return NextResponse.json(build402Response(reqs, onChain.reason), { status: 402 });
   }
 
-  // Paid + verified -> deliver the resource.
+  // Replay guard (fail-CLOSED): a verified proof unlocks ONE resource exactly once. A reused proof
+  // is rejected (402); if the consume-store is unavailable we return 503 rather than risk a replay.
+  const consumed = await consumeProof(proof.txHash, resource.id);
+  const decision = x402DeliveryDecision(consumed);
+  if (!decision.deliver) {
+    const body =
+      decision.status === 402 ? build402Response(reqs, decision.reason) : { error: decision.reason };
+    return NextResponse.json(body, { status: decision.status });
+  }
+
+  // Paid + verified + freshly consumed -> deliver the resource.
   return NextResponse.json({
     resource: resource.id,
     title: resource.title,
     paidTx: proof.txHash,
     settledVia: "spend-mandate",
+    replayProtected: true,
     data: resource.payload(),
   });
 }

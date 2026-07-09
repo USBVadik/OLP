@@ -14,6 +14,7 @@ import { z } from "zod";
 import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
 import { fromRawMandate, getSpendPolicyAddress } from "@/lib/mandates/mandate";
 import { type PaymentMandateRaw } from "@/lib/mandates/types";
+import { DEMO_MERCHANT_FALLBACK, DEMO_PAYER_FALLBACK, isAllowlisted } from "@/lib/relayer/allowlist";
 
 export const dynamic = "force-dynamic";
 
@@ -168,6 +169,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, blocked: false, error: humanizeChargeFailure(info.detail) });
       }
       throw simErr;
+    }
+
+    // R16 hardening: gate the GAS-SPENDING send (not the simulation above). The over-cap "blocked"
+    // demo is a zero-gas simulation and stays open to any wallet — only an actual relayer tx is
+    // restricted. The payer's FUNDS are already bound by the signed mandate + on-chain caps; these
+    // allowlists protect the relayer's GAS from an arbitrary payee/payer. Both default to the demo
+    // addresses, env-overridable ("*" opens to any). Invisible to the live demo (demo payer -> demo
+    // merchant). See CHARGE_MERCHANT_ALLOWLIST / CHARGE_PAYER_ALLOWLIST.
+    if (
+      !isAllowlisted(
+        parsed.mandate.merchant,
+        process.env.CHARGE_MERCHANT_ALLOWLIST,
+        process.env.NEXT_PUBLIC_DEMO_MERCHANT ?? DEMO_MERCHANT_FALLBACK
+      )
+    ) {
+      return NextResponse.json(
+        { error: "This relayer only settles charges to the demo merchant." },
+        { status: 403 }
+      );
+    }
+    if (!isAllowlisted(parsed.mandate.payer, process.env.CHARGE_PAYER_ALLOWLIST, DEMO_PAYER_FALLBACK)) {
+      return NextResponse.json(
+        { error: "This relayer only settles charges from the demo payer." },
+        { status: 403 }
+      );
     }
 
     if (!tryConsumeChargeBudget()) {
