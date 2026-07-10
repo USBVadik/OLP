@@ -204,13 +204,17 @@
      tx unlocks ONE resource, closing the audit-pass-2 "one charge satisfies a different resource"
      sharpening (F2). Pure decision logic unit-tested (`src/lib/x402/consume.ts`: fresh/replayed/
      unavailable + the fail-closed 200/402/503 table).
-- **REQUIRED deploy step:** apply the `x402_consumed` migration (in `supabase/schema.sql`) in Supabase
-  BEFORE relying on x402 — fail-closed means `/api/x402/*` (and the `/agent` x402 loop) return 503
-  until the table exists.
-- **mitigation_status:** closed in code + unit-tested (gate green); **pending** the Supabase migration
-  applied in prod + one live x402 buy (fresh→deliver) and a manual replay (→402). Was: accepted.
+- **DEPLOY step (DONE 2026-07-07):** the `x402_consumed` migration (in `supabase/schema.sql`) is
+  applied in prod Supabase (free tier). Still required-before-deploy for any FRESH environment —
+  fail-closed means `/api/x402/*` (and the `/agent` x402 loop) return 503 until the table exists.
+- **mitigation_status:** **CLOSED, live-verified on prod (2026-07-07, commit `8e8ada8`).** A live
+  `/agent` buy ran the full x402 handshake — `402 → charge 0.05 USDC → 200 + resource` — so a fresh
+  proof delivers (the consume-store insert + migration work). Replaying that exact proof (charge tx
+  `0x11a03299…fab5cc`) against prod returned `402 "payment proof already used"` on repeat calls — the
+  `UNIQUE(tx_hash)` guard rejects reuse, and a `402` (not `503`) confirms the store is healthy.
+  Was: accepted (demo-only).
 - **owner:** builder
-- **review:** apply migration; then one live `/agent` x402 buy + a manual replay of the same proof
+- **review:** n/a — closed, live-verified 2026-07-07 (fresh→deliver + replay→402).
 
 ### R11 — x402 resource feels laggy (on-chain proof verification + mining wait)
 
