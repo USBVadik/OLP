@@ -635,6 +635,16 @@
   `1e1b231`): the receipt links the on-chain source-leg debit (BaseScan) so the source USDC movement
   is independently inspectable. Route linkage is still via Particle activity (vendor), so we stop
   short of claiming "on-chain proven" — but every leg is now on-chain-inspectable. Fully resolved.
+- **2026-07-07 — external audit pass 3 (F1) + payment-code FREEZE:** the reviewer flagged that the
+  funding attribution is bound by `ua_transaction_id` (a payer→merchant activity), NOT by the exact
+  settlement tx hash from the activity's `userOps` — so in principle a DIFFERENT completed activity of
+  the same payer→merchant could be mis-attributed as the funding route. ACCEPTED & DOCUMENTED, not
+  code-fixed, because (a) the payment FACT is not fakeable — USDC settlement + InvoicePaid are
+  independently on-chain-verified, so F1 is attribution PRECISION, not payment validity; and (b) we are
+  FREEZING payment / `mark-paid` / funding-route code before submission to protect the working demo
+  (the auditor's own advice). Future hardening (post-hackathon): bind the funding snapshot to the
+  settlement userOp hash and persist it immutably at mark-paid time. Label stays "verified by Particle
+  activity" (vendor), never "on-chain proven".
 - **owner:** builder
 - **review:** n/a — funding-route L0/L2/L3 shipped + live-verified 2026-07-06 (`fc5adc83`).
 

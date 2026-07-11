@@ -36,4 +36,4 @@
 - **UX excellence (40%):** walletless 10-second "block moment"; legible Trust Preview vs blind signature; live Budget HUD; one-tap revoke; shareable Proof Receipt.
 - **Universal Accounts + EIP-7702 (30%):** own EOA delegated in 7702 mode → Particle UA; cross-chain USDC (Base → Arbitrum) proven live; account-level mandate enforcement.
 - **Adoption (20%):** an API layer (walletless firewall verdict JSON); a concrete use case (x402 vendor caps agent spend); integrate-in-one-call.
-- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 181 unit tests; typed end to end; claim-discipline `/trust`.
+- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 191 unit tests; typed end to end; claim-discipline `/trust`.
