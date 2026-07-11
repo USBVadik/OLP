@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:unit": "tsx --test \"src/**/*.test.ts\"",
+    "test:smoke": "tsx --test e2e/smoke.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -56,7 +56,7 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 
 ## What is live and proven
 
-- **Magic email / Google login -> Particle UA in EIP-7702 mode.** EOA delegated in place (same address), across Base + Arbitrum + Optimism.
+- **Magic email / Google login -> Particle UA in EIP-7702 mode.** EOA delegated in place (same address), across Base + Arbitrum.
 - **Permission Firewall — real on-chain enforcement (live on Base and Arbitrum).** `SpendPolicy` enforces per-charge / daily / total caps + expiry + merchant-only recipient + revoke. Off-scope or over-cap charges revert.
 - **Walletless self-serve block — `/try` (C24).** Anyone — no wallet, no login — taps once and triggers the real on-chain over-cap revert (`PerChargeExceeded`, no funds moved, zero gas), simulated against the live Arbitrum `SpendPolicy`. Lets a skeptical judge drive the wow themselves.
 - **Cross-chain settlement via the Universal Account (C21).** USDC sourced from Base, settled to the merchant on Arbitrum in one operation — no manual bridge. Proven live + deployed.
@@ -183,7 +183,7 @@ Accounts:
 ## Judging-criteria map
 
 - **UX excellence (40%):** email onboarding; **zero-gas first payment** (sponsored delegation); legible consent vs blind signature; live agent budget; visceral "overcharge blocked"; one-tap revoke; shareable proof receipt; **self-custody** (own EOA + key export + reversible delegation).
-- **Universal Accounts + EIP-7702 (30%):** UA in 7702 mode; same address delegated across 3 chains; account-level mandate enforcement; directly addresses the documented 7702 drainer risk.
+- **Universal Accounts + EIP-7702 (30%):** UA in 7702 mode; same address delegated across Base + Arbitrum; account-level mandate enforcement; directly addresses the documented 7702 drainer risk.
 - **Adoption potential (20%):** plugs into the real agentic economy (x402 + AWS, AP2 + Google/FIDO); concrete markets in subscriptions and AI-agent spending.
 - **Technical quality / polish (10%):** SpendPolicy covered by 22 passing tests; typed end to end; EIP-712 mandate byte-identical between contract and frontend.
 
