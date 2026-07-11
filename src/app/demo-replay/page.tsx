@@ -18,6 +18,7 @@ import {
 
 const ACTIVE_CHAIN = BASE_CHAIN;
 const PAYMENT_MODE_LABEL = getPaymentModeLabel();
+const CROSS_CHAIN_RECEIPT_ID = "fc5adc83-3b17-4004-8902-a5a40a178dd5";
 
 function formatAmount() {
   const token = resolvePaymentToken(DEMO_REPLAY_PAYMENT_LINK.token, DEMO_REPLAY_PAYMENT_LINK.destination_chain_id);
@@ -61,6 +62,28 @@ export default function DemoReplayPage() {
             <Chip>No gas spent</Chip>
             <Chip>Everything verifiable on-chain</Chip>
           </div>
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-verify/25 bg-verify-soft/70 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-verify">
+              Main-track proof
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
+              Base funded. Arbitrum settled.
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink2">
+              Inspect the real 2 USDC Universal Account payment, its Base debit, Arbitrum merchant
+              settlement, and the anchored InvoicePaid proof.
+            </p>
+          </div>
+          <Link
+            href={`/receipt/${CROSS_CHAIN_RECEIPT_ID}`}
+            className="op-btn-primary mt-4 shrink-0 sm:mt-0"
+          >
+            Verify cross-chain receipt
+            <IconArrowUpRight className="h-4 w-4" />
+          </Link>
         </section>
 
         {/* Three moments */}
@@ -113,8 +136,9 @@ export default function DemoReplayPage() {
         </section>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          Honest scope: this replay shows a real, same-chain payment and its on-chain proof. The
-          Permission Firewall above is live and enforced on-chain.
+          Honest scope: the walkthrough card uses a real same-chain payment. The main-track receipt
+          above is a separate real Base-to-Arbitrum Universal Account settlement. No transaction is
+          created by this replay.
         </p>
       </div>
     </main>

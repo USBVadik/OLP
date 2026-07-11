@@ -11,9 +11,9 @@ import {
   IconArrowUpRight,
   IconCheck,
   Term,
+  AppNav,
 } from "@/components/ui";
 import { ParticleField } from "@/components/particle-field";
-import { CustomCursor } from "@/components/custom-cursor";
 import { Magnetic } from "@/components/magnetic";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { Reveal } from "@/components/reveal";
@@ -37,39 +37,16 @@ export default function HomePage() {
   return (
     <main className="op-shell">
       <SmoothScroll />
-      <CustomCursor />
       <div className="op-grain" aria-hidden="true" />
       <div className="mx-auto max-w-6xl px-5">
         {/* Top bar */}
-        <header className="flex flex-wrap items-center justify-between gap-y-2 py-6">
+        <header className="flex items-center justify-between gap-4 py-5 sm:py-6">
           <Wordmark href="/" />
-          <nav className="flex flex-nowrap items-center gap-1 overflow-x-auto text-sm sm:flex-wrap sm:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Link href="/pitch" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Pitch
-            </Link>
-            <Link href="/firewall" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Firewall
-            </Link>
-            <Link href="/agent" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Agent
-            </Link>
-            <Link href="/wallet" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Wallet
-            </Link>
-            <Link href="/demo-replay" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Demo
-            </Link>
-            <Link href="/dashboard" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              Merchant
-            </Link>
-            <Link href="/trust" className="op-btn-ghost shrink-0 px-3 py-2.5">
-              What&rsquo;s real
-            </Link>
-          </nav>
+          <AppNav className="w-28 sm:w-auto" />
         </header>
 
         {/* Hero */}
-        <section className="relative pt-10 lg:pt-16">
+        <section className="relative pt-5 sm:pt-8 lg:pt-12">
           <div
             className="pointer-events-none absolute -inset-x-10 -top-28 bottom-0 overflow-hidden"
             aria-hidden="true"
@@ -87,7 +64,7 @@ export default function HomePage() {
               </span>
               On-chain spending limits for the agent era
             </span>
-            <h1 className="mt-4 font-display text-[2.9rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]">
+            <h1 className="mt-4 font-display text-[2.3rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]">
               Give your AI a card.
               <br />
               <span className="relative inline-block text-gold">
@@ -102,77 +79,38 @@ export default function HomePage() {
               Trust before you pay. Proof after it settles.
             </p>
             <p
-              className="op-animate-rise mt-5 max-w-xl text-lg leading-relaxed text-ink2"
+              className="op-animate-rise mt-4 max-w-lg text-base leading-relaxed text-ink2 sm:text-lg"
               style={{ animationDelay: "240ms" }}
             >
-              Let an app, script, or AI agent touch your money{" "}
-              <span className="font-medium text-ink">without handing over your wallet</span>. Sign
-              one scoped mandate — it can spend USDC only within your per-charge, daily, and total
-              caps, only to one merchant, until it expires, and you can revoke anytime. Over-limit
-              charges revert on-chain; every payment ships a verifiable proof receipt.
-            </p>
-
-            <p
-              className="op-animate-rise mt-3 max-w-xl text-sm leading-relaxed text-muted"
-              style={{ animationDelay: "290ms" }}
-            >
-              In plain words: full wallet access is dangerous and approving every payment by hand is
-              slow — so OneLink gives each app a{" "}
-              <span className="font-medium text-ink2">budget it physically can&rsquo;t exceed</span>,
-              and you can safely let software pay.
+              Set a USDC budget software cannot exceed. One merchant, clear caps, instant revoke,
+              and a public proof receipt.
             </p>
 
             <div
-              className="op-animate-rise mt-8 flex flex-wrap gap-3"
+              className="op-animate-rise mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3"
               style={{ animationDelay: "340ms" }}
             >
               <Magnetic>
-                <Link href="/try" className="op-btn-primary">
-                  Watch an AI get blocked &mdash; no wallet
+                <Link href="/try" className="op-btn-primary w-full sm:w-auto">
+                  Watch the firewall hold
                   <IconArrowUpRight className="h-4 w-4" />
                 </Link>
               </Magnetic>
-              <Magnetic>
-                <Link href="/firewall" className="op-btn-secondary">
-                  Try the live firewall
-                </Link>
-              </Magnetic>
-              <Link href={`/success/${DEMO_REPLAY_PAYMENT_LINK.id}`} className="op-btn-ghost">
-                View a proof receipt
+              <Link
+                href="/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5"
+                className="op-btn-secondary w-full sm:w-auto"
+              >
+                Verify cross-chain proof
               </Link>
             </div>
 
             <p
-              className="op-animate-rise mt-3 max-w-xl text-xs leading-relaxed text-muted"
+              className="op-animate-rise mt-3 max-w-lg text-xs leading-relaxed text-muted"
               style={{ animationDelay: "360ms" }}
             >
-              The firewall and agent run on our funded demo account. No wallet needed for the block
-              above or the{" "}
-              <Link href="/demo-replay" className="op-link">90-second replay</Link>.
+              No wallet needed for the live block. The receipt opens independently on Base,
+              Arbitrum, and UniversalX.
             </p>
-            <p
-              className="op-animate-rise mt-4 max-w-xl text-sm leading-relaxed text-muted"
-              style={{ animationDelay: "400ms" }}
-            >
-              <span className="font-semibold text-ink2">The 90-second path:</span> arm an agent
-              budget, clear one charge, watch an over-cap charge get blocked on-chain, revoke in one
-              click, then open the proof receipt.
-            </p>
-
-            <div
-              className="op-animate-rise mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted"
-              style={{ animationDelay: "480ms" }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <IconCheck className="h-4 w-4 text-verify" /> Live on Base + Arbitrum
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <IconCheck className="h-4 w-4 text-verify" /> EIP-712 mandates · enforced by SpendPolicy
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <IconCheck className="h-4 w-4 text-verify" /> On-chain proof receipts
-              </span>
-            </div>
           </div>
 
           {/* Product peek: a Trust Preview card */}

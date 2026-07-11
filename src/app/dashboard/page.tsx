@@ -159,9 +159,124 @@ function DashboardContent() {
           </div>
         )}
 
+        <section className="op-card p-6">
+          <h1 className="font-display text-2xl font-semibold text-ink">Merchant receipts</h1>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            Verified payments and proof receipts in one place.
+          </p>
+
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stat label="Total" value={stats.total} />
+            <Stat label="Paid" value={stats.completed} tone="verify" />
+            <Stat label="Pending" value={stats.pending} tone="gold" />
+            <Stat label="Failed" value={stats.failed} tone="danger" />
+          </div>
+
+          <div className="mt-5">
+            <label htmlFor="op-view-merchant" className="mb-1 block text-sm font-medium text-ink">
+              Viewing merchant
+            </label>
+            <input
+              id="op-view-merchant"
+              placeholder="Enter a merchant address to view links"
+              value={merchantId}
+              onChange={(e) => setMerchantId(e.target.value)}
+              className="op-input font-mono"
+            />
+          </div>
+
+          {loading ? (
+            <div className="mt-6 rounded-2xl border border-line bg-paper2 p-8 text-center">
+              <p className="text-sm font-medium text-ink2">Loading payment links…</p>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
+                Pulling the latest payment and proof status for this merchant.
+              </p>
+            </div>
+          ) : links.length === 0 ? (
+            <div className="mt-6 rounded-2xl border border-dashed border-line2 bg-paper2 p-8 text-center">
+              <p className="text-sm font-medium text-ink2">No payment links yet</p>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
+                {merchantId
+                  ? "This merchant address has no payment links. Create one above to start accepting payments."
+                  : "Enter a merchant address above to view its payment links, statuses, and on-chain proofs."}
+              </p>
+            </div>
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {links.map((l: any) => {
+                const completedPayment = getCompletedPaymentForLink(l.id);
+                const isPaid = l.status === "completed";
+                return (
+                  <li key={l.id} className="rounded-2xl border border-line bg-paper p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink">{l.label || l.id.slice(0, 8)}</p>
+                        <p className="mt-0.5 text-sm text-muted">
+                          {formatLinkAmount(l)} on {chainForId(l.destination_chain_id).name}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="op-chip-concept">{PAYMENT_MODE_LABEL}</span>
+                          {l.registered_tx_hash && (
+                            <span className="op-chip-concept">On-chain invoice</span>
+                          )}
+                        </div>
+                        {isDemoReplay && isPaid && (
+                          <a
+                            href={`/success/${l.id}`}
+                            className="op-link mt-2 inline-flex items-center gap-1 text-xs"
+                          >
+                            Open proof receipt <IconArrowUpRight className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {isPaid ? (
+                          <span className="op-chip-verify">
+                            <IconCheck className="h-3.5 w-3.5" /> PAID
+                          </span>
+                        ) : (
+                          <span className="op-chip capitalize">{l.status}</span>
+                        )}
+                        {isPaid && (
+                          <p className="mt-1.5 text-xs font-medium">
+                            {completedPayment?.receipt_tx_hash ? (
+                              <span className="text-verify">proof recorded</span>
+                            ) : (
+                              <span className="text-muted">proof pending</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {completedPayment && (
+                      <div className="mt-3 space-y-2 border-t border-line pt-3">
+                        <p className="op-eyebrow">Verified payment proof</p>
+                        {/* tx_hash is the SETTLEMENT tx on the destination chain — link it there.
+                            source_chain_id is the cross-chain FUNDING source (used only by the
+                            receipt's "funded from" badge), so it must NOT drive this explorer link. */}
+                        <TxLink
+                          hash={completedPayment.tx_hash}
+                          label="Payment transaction"
+                          chain={chainForId(completedPayment.destination_chain_id ?? l.destination_chain_id)}
+                        />
+                        <TxLink
+                          hash={completedPayment.receipt_tx_hash}
+                          label="Proof transaction"
+                          chain={PROOF_CHAIN}
+                        />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
         {!isDemoReplay && (
-          <section className="op-card mb-6 p-6">
+          <section className="op-card mt-6 p-6">
             <h2 className="font-display text-lg font-semibold text-ink">Create payment link</h2>
+            <p className="mt-1 text-sm text-muted">Set the amount, then share one clear checkout.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="op-merchant" className="mb-1 block text-sm font-medium text-ink">
@@ -254,116 +369,6 @@ function DashboardContent() {
               ))}
           </section>
         )}
-
-        <section className="op-card p-6">
-          <h2 className="font-display text-lg font-semibold text-ink">Payment links</h2>
-          <div className="mt-4">
-            <label htmlFor="op-view-merchant" className="mb-1 block text-sm font-medium text-ink">
-              Merchant address
-            </label>
-            <input
-              id="op-view-merchant"
-              placeholder="Enter a merchant address to view links"
-              value={merchantId}
-              onChange={(e) => setMerchantId(e.target.value)}
-              className="op-input font-mono"
-            />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Stat label="Total" value={stats.total} />
-            <Stat label="Paid" value={stats.completed} tone="verify" />
-            <Stat label="Pending" value={stats.pending} tone="gold" />
-            <Stat label="Failed" value={stats.failed} tone="danger" />
-          </div>
-
-          {loading ? (
-            <div className="mt-6 rounded-2xl border border-line bg-paper2 p-8 text-center">
-              <p className="text-sm font-medium text-ink2">Loading payment links…</p>
-              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
-                Pulling the latest payment and proof status for this merchant.
-              </p>
-            </div>
-          ) : links.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-dashed border-line2 bg-paper2 p-8 text-center">
-              <p className="text-sm font-medium text-ink2">No payment links yet</p>
-              <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-muted">
-                {merchantId
-                  ? "This merchant address has no payment links. Create one above to start accepting payments."
-                  : "Enter a merchant address above to view its payment links, statuses, and on-chain proofs."}
-              </p>
-            </div>
-          ) : (
-            <ul className="mt-5 space-y-3">
-              {links.map((l: any) => {
-                const completedPayment = getCompletedPaymentForLink(l.id);
-                const isPaid = l.status === "completed";
-                return (
-                  <li key={l.id} className="rounded-2xl border border-line bg-paper p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-ink">{l.label || l.id.slice(0, 8)}</p>
-                        <p className="mt-0.5 text-sm text-muted">
-                          {formatLinkAmount(l)} on {chainForId(l.destination_chain_id).name}
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="op-chip-concept">{PAYMENT_MODE_LABEL}</span>
-                          {l.registered_tx_hash && (
-                            <span className="op-chip-concept">On-chain invoice</span>
-                          )}
-                        </div>
-                        {isDemoReplay && isPaid && (
-                          <a
-                            href={`/success/${l.id}`}
-                            className="op-link mt-2 inline-flex items-center gap-1 text-xs"
-                          >
-                            Open proof receipt <IconArrowUpRight className="h-3 w-3" />
-                          </a>
-                        )}
-                      </div>
-                      <div className="shrink-0 text-right">
-                        {isPaid ? (
-                          <span className="op-chip-verify">
-                            <IconCheck className="h-3.5 w-3.5" /> PAID
-                          </span>
-                        ) : (
-                          <span className="op-chip capitalize">{l.status}</span>
-                        )}
-                        {isPaid && (
-                          <p className="mt-1.5 text-xs font-medium">
-                            {completedPayment?.receipt_tx_hash ? (
-                              <span className="text-verify">proof recorded</span>
-                            ) : (
-                              <span className="text-muted">proof pending</span>
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {completedPayment && (
-                      <div className="mt-3 space-y-2 border-t border-line pt-3">
-                        <p className="op-eyebrow">Verified payment proof</p>
-                        {/* tx_hash is the SETTLEMENT tx on the destination chain — link it there.
-                            source_chain_id is the cross-chain FUNDING source (used only by the
-                            receipt's "funded from" badge), so it must NOT drive this explorer link. */}
-                        <TxLink
-                          hash={completedPayment.tx_hash}
-                          label="Payment transaction"
-                          chain={chainForId(completedPayment.destination_chain_id ?? l.destination_chain_id)}
-                        />
-                        <TxLink
-                          hash={completedPayment.receipt_tx_hash}
-                          label="Proof transaction"
-                          chain={PROOF_CHAIN}
-                        />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
       </div>
     </main>
   );

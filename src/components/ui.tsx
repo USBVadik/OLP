@@ -83,7 +83,7 @@ export function Wordmark({ className = "", href }: { className?: string; href?: 
       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink text-cream shadow-sm">
         <span className="font-display text-[15px] font-semibold leading-none">O</span>
       </span>
-      <span className="text-[15px] font-semibold tracking-tight text-ink">
+      <span className="whitespace-nowrap text-[15px] font-semibold tracking-tight text-ink">
         OneLink <span className="text-gold">Pay</span>
       </span>
     </span>
@@ -297,28 +297,61 @@ const APP_NAV_SECTIONS: { href: string; label: string }[] = [
  * home page. Pass the current section's href as `active`.
  */
 export function AppNav({ active, className = "" }: { active?: string; className?: string }) {
+  const activeSection = APP_NAV_SECTIONS.find((section) => section.href === active);
+
   return (
-    <nav
-      aria-label="Sections"
-      className={`flex flex-nowrap items-center gap-1 overflow-x-auto border-b border-line sm:flex-wrap sm:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
-    >
-      {APP_NAV_SECTIONS.map((s) => {
-        const isActive = s.href === active;
-        return (
-          <Link
-            key={s.href}
-            href={s.href}
-            aria-current={isActive ? "page" : undefined}
-            className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
-              isActive
-                ? "border-gold font-semibold text-ink"
-                : "border-transparent text-muted hover:text-ink"
-            }`}
-          >
-            {s.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className={className}>
+      <details className="group relative sm:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm font-semibold text-ink shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 [&::-webkit-details-marker]:hidden">
+          <span>{activeSection?.label ?? "Menu"}</span>
+          <IconChevronDown className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-180" />
+        </summary>
+        <nav
+          aria-label="Sections"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-40 grid w-[min(18rem,calc(100vw-2.5rem))] grid-cols-2 gap-1 rounded-2xl border border-line bg-paper p-2 shadow-lift"
+        >
+          {APP_NAV_SECTIONS.map((section) => {
+            const isActive = section.href === active;
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+                  isActive
+                    ? "bg-gold-soft font-semibold text-ink"
+                    : "text-muted hover:bg-paper2 hover:text-ink"
+                }`}
+              >
+                {section.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </details>
+
+      <nav
+        aria-label="Sections"
+        className="hidden flex-wrap items-center gap-1 border-b border-line sm:flex"
+      >
+        {APP_NAV_SECTIONS.map((section) => {
+          const isActive = section.href === active;
+          return (
+            <Link
+              key={section.href}
+              href={section.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+                isActive
+                  ? "border-gold font-semibold text-ink"
+                  : "border-transparent text-muted hover:text-ink"
+              }`}
+            >
+              {section.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
