@@ -18,13 +18,17 @@ export type TokenBalance = {
   byChain: ChainBalance[];
 };
 
+export type ChainHolding = { chainId: number; usd: number };
+
 export type UniversalBalanceSummary = {
   totalUsd: number;
   tokens: TokenBalance[];
   chainIds: number[];
+  /** Chains ordered by held USD descending; $0 chains trail in stable numeric order. */
+  chains: ChainHolding[];
 };
 
-const EMPTY: UniversalBalanceSummary = { totalUsd: 0, tokens: [], chainIds: [] };
+const EMPTY: UniversalBalanceSummary = { totalUsd: 0, tokens: [], chainIds: [], chains: [] };
 
 function num(v: unknown): number {
   const n = typeof v === "bigint" ? Number(v) : Number(v);
@@ -45,6 +49,7 @@ export function summarizeUniversalBalance(raw: unknown): UniversalBalanceSummary
 
   const tokens: TokenBalance[] = [];
   const chainSet = new Set<number>();
+  const usdByChain = new Map<number, number>();
 
   for (const entry of arr) {
     if (!entry || typeof entry !== "object") continue;
@@ -64,6 +69,7 @@ export function summarizeUniversalBalance(raw: unknown): UniversalBalanceSummary
       if (!chainId) continue; // drop entries without a chain
       byChain.push({ chainId, amount: num(cc.amount), amountInUSD: num(cc.amountInUSD) });
       chainSet.add(chainId);
+      usdByChain.set(chainId, (usdByChain.get(chainId) ?? 0) + num(cc.amountInUSD));
     }
 
     const chainUsd = byChain.reduce((sum, c) => sum + c.amountInUSD, 0);
@@ -77,8 +83,23 @@ export function summarizeUniversalBalance(raw: unknown): UniversalBalanceSummary
   tokens.sort((a, b) => b.amountInUSD - a.amountInUSD);
   const totalUsd = tokens.reduce((sum, t) => sum + t.amountInUSD, 0);
   const chainIds = Array.from(chainSet).sort((a, b) => a - b);
+  const chains = Array.from(usdByChain.entries())
+    .map(([chainId, usd]) => ({ chainId, usd }))
+    .sort((a, b) => b.usd - a.usd || a.chainId - b.chainId);
 
-  return { totalUsd, tokens, chainIds };
+  return { totalUsd, tokens, chainIds, chains };
+}
+
+/**
+ * Split token rows into the held set and a "$0 tail" count, so the HUD can lead with what the
+ * account actually holds and compress the empty rows into one quiet line.
+ */
+export function splitHeldTokens(tokens: TokenBalance[]): {
+  held: TokenBalance[];
+  zeroCount: number;
+} {
+  const held = tokens.filter((t) => t.amount > 0);
+  return { held, zeroCount: tokens.length - held.length };
 }
 
 const CHAIN_LABELS: Record<number, string> = {

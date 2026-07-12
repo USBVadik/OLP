@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   chainLabel,
+  splitHeldTokens,
   type ChainBalance,
   type UniversalBalanceSummary,
 } from "@/lib/particle/assets";
@@ -75,20 +76,40 @@ function breakdown(byChain: ChainBalance[], fallbackUsd: number): string {
  */
 export function UniversalBalanceCard({ summary, loading = false, error = null, onRetry }: Props) {
   const animatedTotal = useCountUp(summary?.totalUsd ?? 0);
+  const heldChains = summary?.chains.filter((c) => c.usd > 0) ?? [];
+  const zeroChainCount = (summary?.chains.length ?? 0) - heldChains.length;
   return (
     <div className="rounded-2xl border border-gold/30 bg-gold-soft/30 p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="op-eyebrow">Universal Account balance</p>
-        {summary && summary.chainIds.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1">
-            {summary.chainIds.map((id) => (
-              <span
-                key={id}
-                className="rounded-full border border-line2 bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted"
-              >
-                {chainLabel(id)}
-              </span>
-            ))}
+        {summary && summary.chains.length > 0 ? (
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            {heldChains.length > 0 ? (
+              <>
+                {heldChains.map((c) => (
+                  <span
+                    key={c.chainId}
+                    className="rounded-full border border-gold/40 bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink"
+                  >
+                    {chainLabel(c.chainId)} <span className="text-muted">{usd(c.usd)}</span>
+                  </span>
+                ))}
+                {zeroChainCount > 0 ? (
+                  <span className="rounded-full border border-line2 bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-faint">
+                    +{zeroChainCount} more at $0
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              summary.chains.map((c) => (
+                <span
+                  key={c.chainId}
+                  className="rounded-full border border-line2 bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted"
+                >
+                  {chainLabel(c.chainId)}
+                </span>
+              ))
+            )}
           </div>
         ) : null}
       </div>
@@ -122,18 +143,30 @@ export function UniversalBalanceCard({ summary, loading = false, error = null, o
           </div>
 
           {summary.tokens.length > 0 ? (
-            <dl className="mt-3 space-y-1.5">
-              {summary.tokens.map((t) => (
-                <div key={t.symbol} className="flex items-baseline justify-between gap-3 text-sm">
-                  <dt className="font-medium text-ink">
-                    {amt(t.amount)} <span className="text-muted">{t.symbol}</span>
-                  </dt>
-                  <dd className="text-right text-xs text-muted">
-                    {breakdown(t.byChain, t.amountInUSD)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            (() => {
+              const { held, zeroCount } = splitHeldTokens(summary.tokens);
+              const rows = held.length > 0 ? held : summary.tokens;
+              const tail = held.length > 0 ? zeroCount : 0;
+              return (
+                <dl className="mt-3 space-y-1.5">
+                  {rows.map((t) => (
+                    <div key={t.symbol} className="flex items-baseline justify-between gap-3 text-sm">
+                      <dt className="font-medium text-ink">
+                        {amt(t.amount)} <span className="text-muted">{t.symbol}</span>
+                      </dt>
+                      <dd className="text-right text-xs text-muted">
+                        {breakdown(t.byChain, t.amountInUSD)}
+                      </dd>
+                    </div>
+                  ))}
+                  {tail > 0 ? (
+                    <div className="text-xs text-faint">
+                      +{tail} more {tail === 1 ? "token" : "tokens"} at $0
+                    </div>
+                  ) : null}
+                </dl>
+              );
+            })()
           ) : null}
         </>
       ) : (

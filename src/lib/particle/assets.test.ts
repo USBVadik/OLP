@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { summarizeUniversalBalance, chainLabel } from "./assets";
+import { summarizeUniversalBalance, splitHeldTokens, chainLabel } from "./assets";
 
 // A realistic getPrimaryAssets() result: USDC split across Arbitrum + Base, plus a little ETH.
 const FIXTURE = {
@@ -120,6 +120,59 @@ test("chain entries without a chainId are dropped", () => {
     ],
   });
   assert.deepEqual(s.chainIds, [42161]);
+});
+
+test("chains are ordered by held USD descending (funding chains lead the chips)", () => {
+  const s = summarizeUniversalBalance(FIXTURE);
+  // Arbitrum holds $1.60, Base holds $0.35 + $1.20 = $1.55 — Arbitrum leads.
+  assert.deepEqual(
+    s.chains.map((c) => c.chainId),
+    [42161, 8453]
+  );
+  assert.ok(Math.abs(s.chains[0].usd - 1.6) < 1e-9);
+  assert.ok(Math.abs(s.chains[1].usd - 1.55) < 1e-9);
+});
+
+test("zero-held chains sort after held chains, in stable numeric order", () => {
+  const s = summarizeUniversalBalance({
+    assets: [
+      {
+        tokenType: "usdc",
+        chainAggregation: [
+          { token: { chainId: 56 }, amount: 0, amountInUSD: 0 },
+          { token: { chainId: 42161 }, amount: 1, amountInUSD: 1 },
+          { token: { chainId: 1 }, amount: 0, amountInUSD: 0 },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(
+    s.chains.map((c) => c.chainId),
+    [42161, 1, 56]
+  );
+});
+
+test("garbage input yields empty chains", () => {
+  assert.deepEqual(summarizeUniversalBalance(null).chains, []);
+});
+
+test("splitHeldTokens separates held rows from the zero tail", () => {
+  const s = summarizeUniversalBalance(FIXTURE);
+  const zeroToken = { symbol: "USDT", amount: 0, amountInUSD: 0, byChain: [] };
+  const { held, zeroCount } = splitHeldTokens([...s.tokens, zeroToken, { ...zeroToken, symbol: "BNB" }]);
+  assert.deepEqual(
+    held.map((t) => t.symbol),
+    ["USDC", "ETH"]
+  );
+  assert.equal(zeroCount, 2);
+});
+
+test("splitHeldTokens with nothing held reports every row in the zero tail", () => {
+  const { held, zeroCount } = splitHeldTokens([
+    { symbol: "USDT", amount: 0, amountInUSD: 0, byChain: [] },
+  ]);
+  assert.deepEqual(held, []);
+  assert.equal(zeroCount, 1);
 });
 
 test("chainLabel maps known chains and falls back gracefully", () => {
