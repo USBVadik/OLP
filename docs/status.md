@@ -127,7 +127,24 @@ The primary adoption story is now a concrete outcome rather than a generic payme
 4. An unexpected `0.20 USDC` premium export is rejected with `PerChargeExceeded` before broadcast; no funds move and no gas is spent on the blocked attempt.
 5. The user revokes the budget on-chain; the `/agent` run control is disabled and later charges are contractually invalid.
 
-Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the verified gate is 207 unit tests, 22 contract tests, production build, and 6/6 HTTP smoke checks.
+Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current verified gate is 231 unit tests, 22 contract tests, production build, and 7/7 HTTP smoke checks.
+
+### Experimental UA-funded arm path (default off)
+
+`NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=true` connects the Research Agent consent directly to the
+Particle cross-chain rail. After Magic login, `/agent` builds a live unsigned preview for making the
+`2 USDC` daily budget available on Arbitrum and approving that amount to SpendPolicy. The consent
+surface shows the real Particle source chains and fee quote.
+
+The explicit execution path is implemented fail-closed: sign mandate -> ensure every routed chain
+is delegated -> rebuild fresh -> stop for renewed consent if route/fee materially changes -> sign
+Particle root -> send once -> wait for Particle `FINISHED` -> read-verify Arbitrum USDC balance and
+allowance -> arm. The current direct Arbitrum approval remains the default rollback while the flag
+is false.
+
+This integration has **not** been broadcast live yet. The successful evidence is an unsigned
+`Arbitrum + Base -> Arbitrum` preview only; do not claim that the Expense Card itself was funded
+cross-chain until the separately approved live gate is complete.
 
 ## Known Risk (resolved -> residual)
 

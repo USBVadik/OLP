@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatUnits, type Address } from "viem";
-import { ARBITRUM_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
+import { createPublicClient, formatUnits, http, type Address } from "viem";
+import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
 import { ERC20_APPROVE_ABI } from "@/lib/contracts/receipt-emitter";
 import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
 import {
@@ -38,6 +38,20 @@ import {
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
 import { FundUsdcNotice } from "@/components/fund-usdc-notice";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
+import { chainLabel } from "@/lib/particle/assets";
+import { buildExpenseCardArmIntent } from "@/lib/particle/expense-card-arm";
+import {
+  assertExpenseCardReadiness,
+  getExpenseCardFundingAmount,
+  hasMaterialExpenseCardPreviewChange,
+  prepareExpenseCardFundingTransaction,
+  sendExpenseCardFundingTransaction,
+  summarizeExpenseCardFundingPreview,
+  waitForExpenseCardFunding,
+  type ExpenseCardFundingPreview,
+} from "@/lib/particle/expense-card-funding";
+import { sponsoredDelegateChain } from "@/lib/particle/delegation";
+import { ExpenseCardFundingConsent } from "@/components/expense-card-funding-consent";
 import { AgentMissionCard } from "@/components/agent-mission-card";
 import { AgentTaskResult } from "@/components/agent-task-result";
 import {
@@ -53,9 +67,34 @@ const CHAIN = ARBITRUM_CHAIN;
 const USDC = CHAIN.usdcAddress;
 const DEMO_MERCHANT: Address = "0x8C54783849A2C042544efc37c4657Ee98a411Fb7";
 const AGENT_BASIS = 100_000n; // 0.10 USDC per-charge basis -> agent_budget caps
+const ERC20_READ_ABI = [
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+// Experimental product integration of the successful build-only probe. Literal access is required
+// for Next to inline this value in the client bundle. Default OFF preserves the proven direct
+// Arbitrum approval path until one explicitly approved live verification succeeds.
+const UA_FUNDED_AGENT = process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT === "true";
+const SPONSORED_DELEGATION = process.env.NEXT_PUBLIC_SPONSORED_DELEGATION === "true";
 
 let Magic: any = null;
 let OAuthExtension: any = null;
+let EVMExtension: any = null;
 async function loadMagic() {
   if (!Magic) {
     const m = await import("magic-sdk");
@@ -64,6 +103,10 @@ async function loadMagic() {
   if (!OAuthExtension) {
     const o = await import("@magic-ext/oauth2");
     OAuthExtension = o.OAuthExtension;
+  }
+  if (UA_FUNDED_AGENT && !EVMExtension) {
+    const e = await import("@magic-ext/evm");
+    EVMExtension = e.EVMExtension;
   }
 }
 let UniversalAccount: any = null;
@@ -77,7 +120,49 @@ async function loadParticle() {
 }
 async function loadEthers() {
   const e = await import("ethers");
-  return { BrowserProvider: e.BrowserProvider, Contract: e.Contract };
+  return {
+    BrowserProvider: e.BrowserProvider,
+    Contract: e.Contract,
+    Signature: e.Signature,
+    getBytes: e.getBytes,
+  };
+}
+
+async function delegateAgentChain7702(
+  magic: any,
+  ua: any,
+  ownerAddress: string,
+  chainId: number,
+): Promise<void> {
+  const deployments = await ua.getEIP7702Deployments();
+  if ((deployments ?? []).find((deployment: any) => deployment?.chainId === chainId)?.isDelegated) {
+    return;
+  }
+
+  await magic.evm.switchChain(chainId);
+  const [auth] = await ua.getEIP7702Auth([chainId]);
+  if (!auth?.address || !Number.isInteger(Number(auth?.nonce))) {
+    throw new Error(`Particle did not return a valid EIP-7702 authorization for chain ${chainId}`);
+  }
+  const authorization = await magic.wallet.sign7702Authorization({
+    contractAddress: auth.address,
+    chainId,
+    nonce: Number(auth.nonce) + 1,
+  });
+  await magic.wallet.send7702Transaction({
+    to: ownerAddress,
+    data: "0x",
+    authorizationList: [authorization],
+  });
+
+  for (let attempt = 0; attempt < 15; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    const fresh = await ua.getEIP7702Deployments();
+    if ((fresh ?? []).find((deployment: any) => deployment?.chainId === chainId)?.isDelegated) {
+      return;
+    }
+  }
+  throw new Error(`EIP-7702 delegation was not confirmed on chain ${chainId}`);
 }
 
 async function resolveEoa(magic: any): Promise<string | null> {
@@ -126,6 +211,11 @@ export default function AgentPage() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [balanceReloadKey, setBalanceReloadKey] = useState(0);
+  const [ua, setUa] = useState<any>(null);
+  const [fundingPreview, setFundingPreview] = useState<any>(null);
+  const [fundingPreviewSummary, setFundingPreviewSummary] = useState<ExpenseCardFundingPreview | null>(null);
+  const [fundingPreviewLoading, setFundingPreviewLoading] = useState(false);
+  const [fundingPreviewError, setFundingPreviewError] = useState<string | null>(null);
 
   const append = useCallback(
     (source: LogSource, message: string, tone: LogTone, txUrl?: string) => {
@@ -186,12 +276,21 @@ export default function AgentPage() {
     if (typeof window === "undefined" || !deployed) return;
     loadMagic().then(() => {
       const key = process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY!;
-      setMagic(
-        new Magic(key, {
-          network: { rpcUrl: getPublicRpcUrl(CHAIN), chainId: CHAIN.chainId },
-          extensions: [new OAuthExtension()],
-        })
-      );
+      const instance = UA_FUNDED_AGENT
+        ? new Magic(key, {
+            extensions: [
+              new EVMExtension([
+                { rpcUrl: getPublicRpcUrl(ARBITRUM_CHAIN), chainId: ARBITRUM_CHAIN.chainId, default: true },
+                { rpcUrl: getPublicRpcUrl(BASE_CHAIN), chainId: BASE_CHAIN.chainId },
+              ]),
+              new OAuthExtension(),
+            ],
+          })
+        : new Magic(key, {
+            network: { rpcUrl: getPublicRpcUrl(CHAIN), chainId: CHAIN.chainId },
+            extensions: [new OAuthExtension()],
+          });
+      setMagic(instance);
     });
   }, [deployed]);
 
@@ -217,7 +316,10 @@ export default function AgentPage() {
   // Read-only Particle Universal Account balance (the chain-abstraction showcase).
   // getPrimaryAssets aggregates the wallet's balance across chains — no tx, no gas.
   useEffect(() => {
-    if (!address) return;
+    if (!address) {
+      setUa(null);
+      return;
+    }
     let cancelled = false;
     setBalanceLoading(true);
     setBalanceError(null);
@@ -236,11 +338,15 @@ export default function AgentPage() {
           },
           tradeConfig: { slippageBps: 100, universalGas: false },
         });
+        if (!cancelled) setUa(ua);
         const raw = await ua.getPrimaryAssets();
         if (cancelled) return;
         setBalanceSummary(summarizeUniversalBalance(raw));
       } catch (e: any) {
-        if (!cancelled) setBalanceError(e?.message ?? "balance unavailable");
+        if (!cancelled) {
+          setUa(null);
+          setBalanceError(e?.message ?? "balance unavailable");
+        }
       } finally {
         if (!cancelled) setBalanceLoading(false);
       }
@@ -249,6 +355,49 @@ export default function AgentPage() {
       cancelled = true;
     };
   }, [address, balanceReloadKey]);
+
+  const fundingAmount = useMemo(
+    () => (chosen ? getExpenseCardFundingAmount(chosen) : 0n),
+    [chosen],
+  );
+
+  const buildFundingTransaction = useCallback(async () => {
+    if (!ua || !chosen) throw new Error("Universal Account or mandate is not ready");
+    const intent = buildExpenseCardArmIntent({
+      chainId: CHAIN.chainId,
+      tokenAddress: USDC,
+      spendPolicyAddress: spendPolicy,
+      amountAtomic: fundingAmount,
+      totalCapAtomic: chosen.totalCap,
+    });
+    return ua.createUniversalTransaction(intent.request, intent.options);
+  }, [ua, chosen, spendPolicy, fundingAmount]);
+
+  const refreshFundingPreview = useCallback(async () => {
+    if (!UA_FUNDED_AGENT || !ua || !chosen) return;
+    setFundingPreviewLoading(true);
+    setFundingPreviewError(null);
+    try {
+      const transaction = await buildFundingTransaction();
+      const summary = summarizeExpenseCardFundingPreview(transaction);
+      if (!summary.rootHashPresent) throw new Error("Particle preview is missing rootHash");
+      setFundingPreview(transaction);
+      setFundingPreviewSummary(summary);
+    } catch (cause: any) {
+      setFundingPreview(null);
+      setFundingPreviewSummary(null);
+      setFundingPreviewError(cause?.message ?? "Particle funding preview is unavailable");
+    } finally {
+      setFundingPreviewLoading(false);
+    }
+  }, [ua, chosen, buildFundingTransaction]);
+
+  // Preview is read-only: no wallet prompt, delegation, signature, or send. It becomes the consent
+  // material shown beside the signed mandate before the user chooses to fund and arm the card.
+  useEffect(() => {
+    if (!UA_FUNDED_AGENT || !ua || !chosen) return;
+    void refreshFundingPreview();
+  }, [ua, chosen, refreshFundingPreview]);
 
   const connect = useCallback(async () => {
     if (!magic || !email) return;
@@ -268,10 +417,14 @@ export default function AgentPage() {
 
   const arm = useCallback(async () => {
     if (!magic || !address || !chosen) return;
-    setBusy("Arming: sign mandate + approve SpendPolicy…");
+    if (UA_FUNDED_AGENT && (!ua || !fundingPreview || !fundingPreviewSummary)) return;
+    const reviewedFundingPreview = fundingPreview;
+    const reviewedFundingSummary = fundingPreviewSummary;
+    setBusy(UA_FUNDED_AGENT ? "Reviewing and signing your limits…" : "Arming: sign mandate + approve SpendPolicy…");
     setError(null);
+    if (UA_FUNDED_AGENT) setAgentLog([]);
     try {
-      const { BrowserProvider, Contract } = await loadEthers();
+      const { BrowserProvider, Contract, Signature, getBytes } = await loadEthers();
       const provider = new BrowserProvider(magic.rpcProvider);
       const signer = await provider.getSigner();
 
@@ -282,13 +435,108 @@ export default function AgentPage() {
         typed.message
       );
 
-      const usdc = new Contract(USDC, ERC20_APPROVE_ABI as any, signer);
-      const tx = await usdc.approve(spendPolicy, chosen.totalCap);
-      await tx.wait();
+      if (UA_FUNDED_AGENT) {
+        setBusy("Preparing the Particle funding route…");
+        const prepared = await prepareExpenseCardFundingTransaction({
+          initialTransaction: reviewedFundingPreview,
+          buildTransaction: buildFundingTransaction,
+          ensureDelegated: async (chainId) => {
+            setBusy(`Preparing your account on ${chainLabel(chainId)}…`);
+            if (SPONSORED_DELEGATION) {
+              try {
+                await sponsoredDelegateChain(magic, ua, address, chainId);
+                return;
+              } catch {
+                // Preserve the proven self-paid delegation fallback. This is still an explicit
+                // wallet action inside the user-triggered Fund & arm flow, never an auto-send.
+              }
+            }
+            await delegateAgentChain7702(magic, ua, address, chainId);
+          },
+        });
+
+        const freshSummary = summarizeExpenseCardFundingPreview(prepared.transaction);
+        if (!reviewedFundingSummary) throw new Error("Reviewed Particle funding preview is missing");
+        if (hasMaterialExpenseCardPreviewChange(reviewedFundingSummary, freshSummary)) {
+          setFundingPreview(prepared.transaction);
+          setFundingPreviewSummary(freshSummary);
+          throw new Error(
+            "Particle changed the funding route or fee after account preparation. Review the refreshed preview, then confirm again.",
+          );
+        }
+
+        setBusy("Confirming the Particle funding transaction…");
+        const sent = await sendExpenseCardFundingTransaction({
+          transaction: prepared.transaction,
+          signAuthorization: async ({ contractAddress, chainId, legChainId, nonce }) => {
+            await magic.evm.switchChain(legChainId);
+            const authorization = await magic.wallet.sign7702Authorization({
+              contractAddress,
+              chainId,
+              nonce,
+            });
+            const recovery =
+              authorization.v !== undefined
+                ? Number(authorization.v)
+                : Number(authorization.yParity) + 27;
+            return Signature.from({
+              r: authorization.r,
+              s: authorization.s,
+              v: recovery,
+            }).serialized;
+          },
+          signRootHash: async (rootHash) => signer.signMessage(getBytes(rootHash)),
+          sendTransaction: async (transaction, rootSignature, authorizations) =>
+            ua.sendTransaction(transaction, rootSignature, authorizations),
+        });
+
+        const transactionId = prepared.transaction.transactionId ?? sent?.transactionId;
+        if (!transactionId) throw new Error("Particle did not return a funding transactionId");
+        setBusy("Waiting for the daily budget to become available…");
+        await waitForExpenseCardFunding({
+          transactionId,
+          getTransaction: (id) => ua.getTransaction(id),
+          onStatus: (status) => setBusy(`Funding the card · Particle status ${status}…`),
+        });
+
+        setBusy("Verifying the card balance and allowance on Arbitrum…");
+        const arbitrumClient = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
+        const [balance, allowance] = await Promise.all([
+          arbitrumClient.readContract({
+            address: USDC,
+            abi: ERC20_READ_ABI,
+            functionName: "balanceOf",
+            args: [address as Address],
+          }),
+          arbitrumClient.readContract({
+            address: USDC,
+            abi: ERC20_READ_ABI,
+            functionName: "allowance",
+            args: [address as Address, spendPolicy],
+          }),
+        ]);
+        assertExpenseCardReadiness({
+          balance: BigInt(balance),
+          allowance: BigInt(allowance),
+          required: fundingAmount,
+        });
+        append(
+          "USER",
+          `${fmt(fundingAmount)} daily budget funded through Particle and approved on Arbitrum.`,
+          "ok",
+        );
+        setBalanceReloadKey((key) => key + 1);
+      } else {
+        // Proven rollback path: direct Arbitrum approval remains unchanged while the UA-funded
+        // integration flag is off.
+        const usdc = new Contract(USDC, ERC20_APPROVE_ABI as any, signer);
+        const tx = await usdc.approve(spendPolicy, chosen.totalCap);
+        await tx.wait();
+        setAgentLog([]);
+      }
 
       setArmed({ mandate: chosen, signature });
       setRevoked(false);
-      setAgentLog([]);
       setBought({});
       setTaskOutcomes([]);
       append(
@@ -301,7 +549,18 @@ export default function AgentPage() {
     } finally {
       setBusy(null);
     }
-  }, [magic, address, chosen, spendPolicy, append]);
+  }, [
+    magic,
+    address,
+    chosen,
+    spendPolicy,
+    append,
+    ua,
+    fundingPreview,
+    fundingPreviewSummary,
+    buildFundingTransaction,
+    fundingAmount,
+  ]);
 
   // Revoke the budget on-chain (mirrors the proven /firewall flow). SpendPolicy.revoke marks the
   // mandate revoked; any later charge then reverts with MandateIsRevoked. No new payment logic.
@@ -607,9 +866,33 @@ export default function AgentPage() {
                 targetUsdcAddress={USDC}
               />
               {chosen ? <MandateCard mandate={chosen} /> : null}
-              <button onClick={arm} disabled={!chosen || !!busy} className="op-btn-primary w-full">
-                {busy ?? "Arm agent budget"}
+              {UA_FUNDED_AGENT && chosen ? (
+                <ExpenseCardFundingConsent
+                  amountAtomic={fundingAmount}
+                  totalCapAtomic={chosen.totalCap}
+                  summary={fundingPreviewSummary}
+                  loading={fundingPreviewLoading}
+                  error={fundingPreviewError}
+                  onRetry={refreshFundingPreview}
+                />
+              ) : null}
+              <button
+                onClick={arm}
+                disabled={
+                  !chosen ||
+                  !!busy ||
+                  (UA_FUNDED_AGENT && (!fundingPreview || !fundingPreviewSummary || fundingPreviewLoading))
+                }
+                className="op-btn-primary w-full"
+              >
+                {busy ?? (UA_FUNDED_AGENT ? `Fund ${fmt(fundingAmount)} & arm agent` : "Arm agent budget")}
               </button>
+              {UA_FUNDED_AGENT ? (
+                <p className="text-center text-[11px] leading-relaxed text-muted">
+                  One review, explicit wallet approvals: sign the spending limits, then sign the
+                  Particle funding transaction. A one-time chain activation may also be requested.
+                </p>
+              ) : null}
             </div>
           ) : (
             <div className="space-y-4">
@@ -751,8 +1034,12 @@ export default function AgentPage() {
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted">
-          <Chip>x402 pattern</Chip>
-          <span>settled by an on-chain spend mandate</span>
+          <Chip>{UA_FUNDED_AGENT ? "Particle-funded card" : "x402 pattern"}</Chip>
+          <span>
+            {UA_FUNDED_AGENT
+              ? "experimental path · explicit confirmation required"
+              : "settled by an on-chain spend mandate"}
+          </span>
         </div>
       </div>
     </main>

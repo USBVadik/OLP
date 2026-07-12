@@ -60,16 +60,22 @@ live run; quote values are time-sensitive.
 
 ## Decision
 
-The build-only technical gate is **green**. Product integration remains gated.
+The build-only technical gate is **green**. A default-off product integration is now implemented;
+live execution remains gated.
 
-Next safe step:
+Implemented safe step:
 
-1. Add the UA-funded arming path behind a default-off feature flag.
-2. Preserve the current direct Arbitrum approval as rollback.
-3. Present one legible `Fund and arm card` consent while keeping the mandate and Particle root
-   signatures explicit in the implementation.
-4. Only after code review, request explicit approval for one small mainnet run.
-5. Verify post-transaction Arbitrum USDC balance and exact allowance before running the agent.
+1. `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=false` keeps the current direct Arbitrum approval as rollback.
+2. When enabled, `/agent` shows one legible funding + permission consent using the live unsigned
+   Particle route and fee quote.
+3. The explicit action keeps the mandate and Particle root signatures distinct, delegates routed
+   chains, rebuilds fresh, and refuses to arm until Particle reports `FINISHED` plus read-only
+   Arbitrum balance and allowance verification.
+4. A material route/fee change after rebuild stops before send and asks the user to review again.
+
+Next live gate (not run): request explicit approval for one small mainnet run, then verify the
+Particle activity, post-transaction Arbitrum USDC balance, and exact allowance before running the
+agent.
 
 ## Claim discipline
 

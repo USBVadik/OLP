@@ -34,6 +34,7 @@
 - [x] G2 Preview exposes USDC source/destination chains.
 - [x] G3 At least one source chain differs from Arbitrum.
 - [x] G4 Approval target and amount exactly match SpendPolicy and the intended cap.
-- [ ] G5 The next integration can preserve one legible consent and unattended later charges.
+- [x] G5 The feature-gated integration preserves one legible consent and unattended later charges;
+  live execution remains separately gated.
 
 No product integration begins until G1–G5 are all true.
