@@ -44,3 +44,17 @@ export function accountSpineFacts(): SpineFact[] {
 export function blockHeldOnAccountLine(): string {
   return "Firewall held — enforced on your own account";
 }
+
+/**
+ * The same account-level differentiators as chip-length facts for the pre-arm consent view —
+ * one glanceable line where the user hands the workflow its card. Same honesty rules as the
+ * spine: about the ACCOUNT, never about how a specific charge settles.
+ */
+export function compactAccountFacts(): string[] {
+  return [
+    "Your own EOA",
+    "Same address · EIP-7702",
+    `One balance · ${enforcementChainsLabel()}`,
+    "Enforced on-chain · revocable",
+  ];
+}

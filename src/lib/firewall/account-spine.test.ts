@@ -5,6 +5,7 @@ import {
   enforcementChainsLabel,
   shortAddress,
   accountSpineFacts,
+  compactAccountFacts,
   blockHeldOnAccountLine,
 } from "./account-spine";
 
@@ -52,4 +53,26 @@ test("honesty guard: block-moment copy never implies cross-chain / bridge / Sola
 
 test("block line ties the held firewall to the user's own account", () => {
   assert.match(blockHeldOnAccountLine(), /your own account/i);
+});
+
+test("compact account facts: four chip-length facts covering EOA, 7702, one balance, enforcement", () => {
+  const facts = compactAccountFacts();
+  assert.equal(facts.length, 4);
+  const blob = facts.join(" ");
+  assert.match(blob, /own EOA/i);
+  assert.match(blob, /EIP-7702/);
+  assert.match(blob, /one balance/i);
+  assert.ok(blob.includes(enforcementChainsLabel()));
+  assert.match(blob, /on-chain/i);
+  // Chip-length: each fact must stay glanceable on camera.
+  for (const f of facts) {
+    assert.ok(f.length <= 34, `fact too long for a chip: "${f}"`);
+  }
+});
+
+test("honesty guard: compact facts never imply cross-chain charges / bridge / Solana", () => {
+  const blob = compactAccountFacts().join(" ").toLowerCase();
+  for (const forbidden of ["cross-chain", "bridge", "solana", "sourced from", "gasless"]) {
+    assert.ok(!blob.includes(forbidden), `compact facts must not contain "${forbidden}"`);
+  }
 });

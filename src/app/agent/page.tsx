@@ -17,6 +17,7 @@ import { LoginWithGoogleButton, SignOutButton } from "@/components/login-with-go
 import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
 import { AccountSpine } from "@/components/account-spine";
+import { compactAccountFacts } from "@/lib/firewall/account-spine";
 import { MandateCard } from "@/components/mandate-card";
 import { PermissionReceipt } from "@/components/permission-receipt";
 import {
@@ -859,6 +860,20 @@ export default function AgentPage() {
                 error={balanceError}
                 onRetry={reloadBalance}
               />
+              <ul
+                aria-label="Account facts"
+                className="flex flex-wrap items-center justify-center gap-1.5"
+              >
+                {compactAccountFacts().map((fact) => (
+                  <li
+                    key={fact}
+                    className="flex items-center gap-1 rounded-full border border-line2 bg-paper px-2.5 py-1 text-[11px] font-medium text-ink2"
+                  >
+                    <IconCheck className="h-3 w-3 shrink-0 text-verify" aria-hidden="true" />
+                    {fact}
+                  </li>
+                ))}
+              </ul>
               <FundUsdcNotice
                 summary={balanceSummary}
                 ownerAddress={address}
