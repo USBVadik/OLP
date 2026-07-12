@@ -15,7 +15,7 @@ deployed live at onelink-pay.vercel.app.
 2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable — "a card with a built-in limit."
 3. **Run task with my budget** → it buys market insight (`0.05`) and sentiment (`0.08`) through the x402 pattern, then renders a readable ETH risk brief. The unexpected `0.20` premium export is blocked by the signed `0.10/tool` cap.
 4. **Revoke budget** → the mandate emits `MandateRevoked` on Arbitrum and the workflow is disarmed. The kill switch is owned by the payer.
-5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). And **zero native gas** — the one-time delegation is relayer-sponsored (C23).
+5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). Separately, the first-time Arbitrum delegation path is proven relayer-sponsored (C23), so the payer needs no native gas for that step.
 6. Open the public **proof receipt** → anyone verifies on a block explorer, no account.
 
 **Golden path — don't sprawl.** The live run is exactly `/agent` for task → result → block → revoke, followed by the canonical cross-chain `/receipt` for Particle UA credibility. `/try` (walletless self-serve block), `/firewall`, `/dashboard`, `/wallet` (Pro / key-export), and `/demo-replay` are **"explore if asked," not live beats**. One useful result plus one hard refusal beats a tour of every route.
@@ -26,10 +26,10 @@ deployed live at onelink-pay.vercel.app.
 - *"Is this really x402?"* → "The pattern — 402 → pay → retry-with-proof — settled by our on-chain mandate, not the Coinbase facilitator. Enforcement is real; wire-compat isn't claimed."
 - *"Is the agent autonomous?"* → "Unattended, one click — but deterministic, not an LLM. We don't claim AI reasoning; the on-chain limit is fully real."
 - *"What does 'zero gas' mean?"* → "Over-cap charges revert in simulation, before broadcast — no funds move and no gas is spent on the blocked attempt."
-- *"Is cross-chain real?"* → "Proven live + on-chain — here are the tx hashes and the UniversalX link. And the payer needs **zero native gas**: the one-time delegation is relayer-sponsored (C23)."
-- *"Does the user need any gas / ETH?"* → "No. The one-time 7702 delegation is **sponsored by our relayer** — proven on-chain (the delegation tx's sender is the relayer, not the user — C23). The settlement fee is paid in USDC. Zero native gas for the payer. We don't claim a general paymaster — just this delegation step."
+- *"Is cross-chain real?"* → "Yes. The Base debit and Arbitrum merchant settlement are both mined and independently inspectable; the completed Particle activity links those legs. Here are the hashes, UniversalX activity, and public receipt."
+- *"Does the user need any gas / ETH?"* → "For the proven Arbitrum onboarding path, no native gas: the relayer submitted the one-time 7702 delegation and paid that gas (C23). Particle charges the settlement fee in USDC. We do not claim a general paymaster."
 - *"Is it custodial — do you hold the wallet?"* → "No. It's your **own EOA**, upgraded in place via EIP-7702 (same address). In Pro mode you can **export your key** through Magic's own reveal UI (we never see it — C22) and **revert the delegation** to a plain wallet anytime. Non-custodial, vs the MPC / vendor-wallet approaches."
-- *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / MetaMask Advanced Permissions already do this."* → "Correct — we don't own the primitive, and the market shipping it **validates** the direction. Our wedge is the packaging none of them combine: the limit lives on your **own EOA via EIP-7702** (same address, non-custodial — not Coinbase's MPC vendor wallet or a MetaMask session account), **chain-abstracted** via Particle, **merchant-bound**, with a **public proof receipt** per payment and our **own auditable SpendPolicy**. And caps alone aren't the blocker — Forrester (Jun 2026) found ~¾ uncomfortable letting an agent pay *even with limits set* — so we add *visible, provable, revocable* on-chain enforcement, not just a number."
+- *"Didn't you reinvent spend limits? Coinbase Agentic Wallets / MetaMask Advanced Permissions already do this."* → "Correct — we don't own the primitive, and the market shipping it **validates** the direction. Our wedge is the packaging: the mandate is signed by your **own EOA via EIP-7702** (same address, non-custodial), enforced by our auditable SpendPolicy, **chain-abstracted** via Particle, **merchant-bound**, and paired with a public proof receipt. Caps alone aren't the blocker — people need visible, provable, revocable enforcement, not just a number in a dashboard."
 
 **Market context (verified 2026 — for competitive / adoption Q&A):**
 - The direction is real and racing — position *alongside*, not against: Coinbase **Agentic Wallets** (Feb 11 2026 — MPC wallet + x402 + programmable spend controls) and **Coinbase for Agents** (Jun 11 2026 — ChatGPT/Claude pay via x402 within user limits); **MetaMask Advanced Permissions** shipped on **ERC-7715** (scoped, expiring spend permissions + an x402 flow). OneLink's differentiator: non-custodial enforcement on your **own** EOA (not a vendor/MPC wallet or session account) + a **public proof receipt** + Particle chain-abstraction.
@@ -138,12 +138,13 @@ The mic-drop for the non-custodial thesis. Flip on **Pro** in the Account panel:
 - **Revert anytime** — "Revert to a plain wallet" clears the delegation on-chain; you're never locked in.
 - **Zero-gas onboarding** — the first payment's delegation was relayer-sponsored (C23), so the user never needed native gas.
 
-Talk track: "Competitors hand the agent a custodial or MPC wallet. OneLink's limit lives on *your own*
-account — you can export the key and walk, or revert the delegation, anytime. It's provably yours."
+Talk track: "Competitors hand the agent a custodial or MPC wallet. OneLink binds the mandate to *your
+own* EOA and enforces it in a public contract — you can export the key and walk, or revert the
+delegation, anytime. It's provably yours."
 
 ### Judge self-serve — `/try` (no wallet, leave-behind)
 
-Hand a skeptical judge **onelink-pay.vercel.app/try**. With no wallet and no login, one tap triggers the real on-chain block: a pre-signed demo mandate is charged **$0.50 over its $0.10 per-charge cap**, the live Arbitrum `SpendPolicy` reverts **`PerChargeExceeded`**, and the page shows **"Blocked on-chain · no funds moved · zero gas."** The route is **simulate-only** — it never submits a transaction and never reads a client-supplied amount (no drain vector); the over-cap reverts before any transfer, so it needs no allowance, funds, or gas. Use it as the **leave-behind** after the demo, or as the **Act 1 fallback** if live login flakes (C24).
+Hand a skeptical judge **onelink-pay.vercel.app/try**. With no wallet and no login, one tap runs a preflight simulation against the live Arbitrum `SpendPolicy`: a pre-signed demo mandate attempts **$0.50 over its $0.10 per-charge cap**, the contract returns **`PerChargeExceeded`**, and the page shows **"Blocked on-chain · no funds moved · zero gas."** The route is **simulate-only** — it never submits a transaction and never reads a client-supplied amount (no drain vector); the over-cap request is rejected before broadcast, so it needs no allowance, funds, or gas. Use it as the **leave-behind** after the demo, or as the **Act 1 fallback** if live login flakes (C24).
 
 ## On-chain proofs (copy-paste)
 

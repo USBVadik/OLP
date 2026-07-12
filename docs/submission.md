@@ -25,18 +25,18 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 > Give your AI a card, not your wallet. Sign one on-chain mandate; your agent can pay within strict caps but physically can't overspend.
 
 **Short (milestone / outline):**
-> OneLink Pay is an on-chain expense card for autonomous software. You sign one scoped mandate — per-charge, daily, and total caps, expiry, one merchant, instant revoke — and the workflow can pay USDC but **physically cannot overspend**. In the live demo a research workflow buys two inputs, produces an ETH risk brief, and an unexpected premium export is blocked before settlement. Built on **Particle Universal Accounts in EIP-7702 mode** + **Magic** walletless login: one balance across chains with **cross-chain settlement (no manual bridge)** and zero-native-gas onboarding through a sponsored one-time delegation. The limit lives on **your own EOA**, enforced on Arbitrum, with a public proof receipt.
+> OneLink Pay is an on-chain expense card for autonomous software. You sign one scoped mandate — per-charge, daily, and total caps, expiry, one merchant, instant revoke — and the workflow can pay USDC but **physically cannot overspend through that mandate**. In the live demo a research workflow buys two inputs, produces an ETH risk brief, and an unexpected premium export is blocked before settlement. Built on **Particle Universal Accounts in EIP-7702 mode** + **Magic** walletless login: one balance across chains with **cross-chain settlement (no manual bridge)** and a proven relayer-sponsored delegation path on Arbitrum. The mandate is bound to **your own EOA** and enforced by an auditable Arbitrum contract, with a public proof receipt for checkout settlement.
 
 **Long (final submission):**
 > AI agents can now pay for anything over HTTP (x402) — but nothing stops a buggy or hijacked agent from draining the wallet. OneLink Pay is the missing leash: a **permission firewall for Universal Accounts**.
 >
-> You sign one EIP-712 mandate — per-charge / daily / total caps + expiry + a single merchant + instant revoke — and an on-chain `SpendPolicy` contract enforces it. Your AI agent (or a merchant) can charge USDC within those limits, but an over-cap, off-merchant, or post-revoke charge **reverts on-chain at zero gas**. Every payment ships a public, verifiable proof receipt.
+> You sign one EIP-712 mandate — per-charge / daily / total caps + expiry + a single merchant + instant revoke — and an on-chain `SpendPolicy` contract enforces it. Your AI agent (or a merchant) can charge USDC within those limits, while an over-cap, off-merchant, or post-revoke request is rejected by preflight simulation against the live contract **before broadcast**, so no funds move and no gas is spent. Checkout settlements produce public proof receipts; agent charges expose their on-chain transaction evidence.
 >
 > It runs on **Particle Universal Accounts in EIP-7702 mode**: one **Magic** login (email/Google, no seed phrase), one balance across chains, and **cross-chain settlement** — a merchant is paid on **Arbitrum** with USDC sourced from **Base** in one operation, no manual bridge. The agent demo runs the real x402 handshake (`402 → pay within the mandate → 200`), bounded by the on-chain caps.
 >
 > **Concrete outcome:** give the deterministic research workflow a `0.10 USDC/tool` card. It buys market insight for `0.05 USDC` and sentiment for `0.08 USDC`, then produces a readable ETH market-risk brief. When an unexpected workflow step requests a `0.20 USDC` premium export, `SpendPolicy` rejects it before settlement. The user then revokes the budget on-chain. Useful work completed; unexpected spend prevented; unrestricted wallet authority never shared.
 >
-> **Differentiator:** most agent-wallet products enforce limits in a custodial or MPC server you must trust. OneLink enforces them in an **auditable on-chain contract anyone can re-check**, on **your own EOA** (same address) — export your key or revert the delegation anytime, and onboard with **zero native gas** (the one-time delegation is relayer-sponsored, C23). *Policy you can audit, not policy you have to trust.*
+> **Differentiator:** most agent-wallet products enforce limits in a custodial or MPC server you must trust. OneLink binds the permission to **your own EOA** (same address) and enforces it in an **auditable on-chain contract anyone can re-check** — export your key or revert the delegation anytime. On Arbitrum, the proven one-time delegation path is relayer-sponsored (C23), so the payer needs no native gas for that step. *Policy you can audit, not policy you have to trust.*
 
 ---
 
@@ -57,7 +57,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 - Legible "card-limit" consent: a plain-English mandate card (per-charge / day / total / merchant / expiry / revoke) instead of a blind signature — EIP-712 hash behind a "show technical details" disclosure.
 - Live budget HUD that drains from on-chain `SpendPolicy` state; one-click revoke.
 - A task-first result: two paid inputs produce a useful brief before any technical logs are shown.
-- The visceral moment: an unexpected `0.20 USDC` export is **blocked on-chain — no funds moved, zero gas**, while the signed cap remains `0.10 USDC/tool`.
+- The visceral moment: an unexpected `0.20 USDC` export is **blocked by the live on-chain policy during preflight — no broadcast, no funds moved, zero gas**, while the signed cap remains `0.10 USDC/tool`.
 - Fully chain-abstracted: the user never picks a network, holds gas on the settlement chain, or bridges. Public, shareable proof receipt (no account needed).
 
 **Prominent / innovative use of Universal Accounts + EIP-7702 — 30%**

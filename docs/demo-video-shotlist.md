@@ -2,6 +2,7 @@
 
 > Recording plan for the final judge video. This is the click-and-screen storyboard, not the
 > voiceover. Target length: **1:45-2:10**. Hard cap: 2:30.
+> Read it alongside `docs/demo-video-voiceover.md`, which contains the timed final narration.
 >
 > Judging weights served: UX 40 · Universal Accounts + EIP-7702 30 · adoption 20 · polish 10.
 > Golden rule: **show useful work, the hard block, and the proof. Do not tour the app.**
@@ -10,6 +11,8 @@
 
 - [ ] Use a clean browser profile without extensions. Window 1280-1440 px; zoom 110-125%.
 - [ ] Record the production build at `https://onelink-pay.vercel.app`.
+- [ ] Re-run the full Magic Google OAuth round-trip in that clean profile before recording. C13 is a
+      live dependency; seeing the button is not enough. Never show the email address or OTP in the cut.
 - [ ] Confirm the Research Agent payer has enough Arbitrum USDC for `0.13 USDC` of purchases and
       the relayer has enough Arbitrum ETH.
 - [ ] Open `/agent`, sign in with Magic, and arm the `agent budget` mandate before recording. Keep
@@ -18,6 +21,10 @@
       `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5` · `/try`.
 - [ ] Run the exact click path once silently. If any external dependency is unstable, record the
       existing verified state and use the canonical receipt rather than sending another payment.
+- [ ] Treat revoke as a one-take state mutation: record it last, or capture it as a separate shot.
+      Re-arm a fresh mandate before another take; never pretend a previous revoke is live.
+- [ ] Mention Pro key export only if Magic's reveal flow is manually re-verified that day; otherwise
+      leave C22 out of the main cut.
 
 ## Primary 115-second cut
 

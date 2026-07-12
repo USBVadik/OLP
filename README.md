@@ -1,6 +1,6 @@
 # OneLink Pay
 
-**Give your AI a card, not your wallet.** OneLink Pay is a permission firewall for Universal Accounts: sign one scoped mandate, and an app, script, or AI agent can spend USDC only inside the per-charge, daily, and total caps you set — to a single merchant, until it expires, revocable anytime. Over-cap, off-merchant, or post-revoke charges revert on-chain (caught in simulation — zero gas). Every payment ships a public, verifiable proof receipt.
+**Give your AI a card, not your wallet.** OneLink Pay is a permission firewall for Universal Accounts: sign one scoped mandate, and an app, script, or AI agent can spend USDC only inside the per-charge, daily, and total caps you set — to a single merchant, until it expires, revocable anytime. Invalid charges are caught against the live on-chain policy during preflight simulation, before broadcast, so no funds move and no gas is spent. Completed checkout payments produce a public, verifiable proof receipt; agent charges expose their on-chain evidence.
 
 Particle makes execution chain-abstracted; OneLink makes consent visible, limits enforceable, and every settlement provable.
 
@@ -12,7 +12,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 **No login or wallet needed — verify the core claims right now:**
 
-1. **Trigger the on-chain block yourself — no wallet, no gas** → [`/try`](https://onelink-pay.vercel.app/try): one tap fires the live Arbitrum `SpendPolicy`; an over-cap charge reverts (`PerChargeExceeded`) with no funds moved. The firewall, driven by you.
+1. **Trigger the on-chain block yourself — no wallet, no gas** → [`/try`](https://onelink-pay.vercel.app/try): one tap simulates the charge against the live Arbitrum `SpendPolicy`; an over-cap request returns `PerChargeExceeded` before broadcast, with no funds moved. The firewall, driven by you.
 2. **Verify the cross-chain payment (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
 3. **Watch the walkthrough** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): a real, verified **same-chain** payment and its on-chain proof receipt — no wallet, no gas. (The live cross-chain checkout and the agent-on-a-leash block are on `/pay` and `/agent`, below.)
 4. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
@@ -41,11 +41,11 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 - ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
 - ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
 - ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.3` (stable): a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
-- ✅ Zero-gas onboarding is live: the one-time EIP-7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas — scoped to the delegation step only (no general settlement paymaster; the settlement fee is paid in USDC). Particle AuthKit is not installed or used; Magic is the live wallet and signer.
+- ✅ Zero-native-gas delegation is proven live on Arbitrum: the one-time EIP-7702 delegation is relayer-sponsored (C23). This is scoped to that delegation step only (no general settlement paymaster; the Particle settlement fee is paid in USDC). Particle AuthKit is not installed or used; Magic is the live wallet and signer.
 
 **Honesty caveats:**
 
-- The cross-chain settlement is independently verified on-chain and was re-run live through the prod `/pay` on the stable `2.0.3` build (2026-07-04); a first-time payer needs zero native gas — the one-time 7702 delegation is relayer-sponsored (C23).
+- Both cross-chain value legs are independently inspectable on-chain and linked by the completed Particle activity; the flow was re-run through prod `/pay` on stable `2.0.3`. The zero-native-gas delegation proof is scoped to the live Arbitrum C23 run.
 - Prod runs the pinned **stable** Particle SDK (`2.0.3`) — real EIP-7702 + cross-chain, with same-chain and cross-chain settlement live-verified on it (RPC-checked, 2026-07-04).
 - `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" runs a real **unattended deterministic** loop over the same firewall (one click, then no human per-step) — not an LLM that reasons, so no AI decision-making is claimed.
 - Particle AuthKit is not installed and is not part of the live path. Magic is the embedded wallet and signer used by the demo.
@@ -56,7 +56,7 @@ Scoped spend permissions are not new — OneLink builds on the wave rather than 
 
 | Prior art | What it is | Where OneLink differs |
 |-----------|-----------|------------------------|
-| [Coinbase / Base Spend Permissions](https://docs.base.org/base-account/improve-ux/spend-permissions) | Allowance (token, period, amount) + revoke for smart wallets | Wallet-agnostic — the mandate lives on the 7702 Universal Account, not a specific smart wallet; adds a public proof receipt + x402 binding |
+| [Coinbase / Base Spend Permissions](https://docs.base.org/base-account/improve-ux/spend-permissions) | Allowance (token, period, amount) + revoke for smart wallets | Wallet-agnostic — the mandate is signed by the user's 7702 EOA and enforced by our auditable SpendPolicy; adds a public proof receipt + x402 binding |
 | [ERC-7715](https://eips.ethereum.org/EIPS/eip-7715) / [ERC-7710](https://eips.ethereum.org/EIPS/eip-7710) | Emerging standard: wallet-granted scoped permissions + delegation | A focused, auditable payments-specific mandate aligned to that vocabulary, shipping today |
 | [ZeroDev session keys](https://docs.zerodev.app/smart-accounts/permissions/intro) | Low-level account-layer delegation (rate limits, allowed calls) | We enforce a payment policy (per-charge / daily / total / merchant) with legible consent + on-chain proof |
 | [Google AP2](https://cloud.google.com/blog/products/ai-machine-learning/announcing-agents-to-payments-ap2-protocol/) | Agent "mandates" as off-chain Verifiable Credentials | Same word "mandate", but enforced on-chain at the user's account — a promise becomes a guarantee |
