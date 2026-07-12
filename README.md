@@ -121,7 +121,7 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm typecheck
 corepack pnpm lint
-corepack pnpm test:unit          # 231 unit tests (node:test)
+corepack pnpm test:unit          # 246 unit tests (node:test)
 corepack pnpm build
 cd contracts && corepack pnpm test   # 22 Hardhat contract tests
 ```

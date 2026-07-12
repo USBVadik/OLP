@@ -13,9 +13,10 @@
 Realistic max: **$5,000**.
 
 **Key dates** — mid-hackathon checkpoint **Jul 5** (23:59 GMT+1) **confirmed on the platform 2026-07-05**;
-final submission **Jul 19**, finale + prize-giving **Jul 30** (per the hosts — schedule shows Week 5
-Judging / Week 6 Finale; confirm exact final time on the platform). UX workshop track: ZeroDev
-chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
+final submission deadline **Mon Jul 20, 2026, 2:59 PM Europe/Kiev (GMT+3)** — read off the platform's
+Final Submissions countdown 2026-07-12; finale + prize-giving **Jul 30, 4:00 PM GMT+1**. UX workshop
+track: ZeroDev chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22 (after the deadline,
+before the finale).
 
 ---
 
@@ -72,7 +73,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 
 **Technical quality / polish — 10%**
 - `SpendPolicy.sol` + `ReceiptEmitter.sol` deployed on Base + Arbitrum; **22 Hardhat tests** pass.
-- **210 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
+- **246 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
 - Typed end-to-end; the EIP-712 `PaymentMandate` is **byte-identical** between contract and frontend.
 - Honest-claim ledger + risk register + verifiable proof pack; WCAG-AA contrast pass; reduced-motion respected.
 

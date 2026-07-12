@@ -127,7 +127,7 @@ The primary adoption story is now a concrete outcome rather than a generic payme
 4. An unexpected `0.20 USDC` premium export is rejected with `PerChargeExceeded` before broadcast; no funds move and no gas is spent on the blocked attempt.
 5. The user revokes the budget on-chain; the `/agent` run control is disabled and later charges are contractually invalid.
 
-Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current verified gate is 231 unit tests, 22 contract tests, production build, and 7/7 HTTP smoke checks.
+Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current verified gate is 246 unit tests, 22 contract tests, production build, and 7/7 HTTP smoke checks.
 
 ### Experimental UA-funded arm path (default off)
 

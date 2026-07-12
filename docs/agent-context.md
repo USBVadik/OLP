@@ -117,5 +117,5 @@ Cross-checked against the RC2 repository and live evidence:
 - Particle UA SDK is pinned to stable `2.0.3`; AuthKit and ZeroDev are absent from the active stack.
 - Arbitrum is the primary settlement and SpendPolicy chain; Base remains a supported source/proof chain.
 - `submission-rc2` points to `c1f051a` and includes the Research Agent Expense Card plus one-click revoke.
-- Verified gate: typecheck, lint, 231 unit tests, 22 contract tests, production build, and 7/7 HTTP smoke checks.
+- Verified gate: typecheck, lint, 246 unit tests, 22 contract tests, production build, and 7/7 HTTP smoke checks.
 - Live proof details belong in `docs/honest-claim-ledger.md`, `docs/proof-pack.md`, and `docs/research-agent-expense-card-spec.md`; those artifacts override narrative summaries.

@@ -1,7 +1,9 @@
 # OneLink Pay — Final Submission Draft (Universal Accounts Track)
 
-> Paste-ready copy for the final submission form. Current schedule records Jul 19 as the final
-> submission date; confirm the exact platform cutoff before submitting.
+> Paste-ready copy for the final submission form. Platform-confirmed deadline (read off the
+> Final Submissions countdown 2026-07-12): **Mon Jul 20, 2026, 2:59 PM Europe/Kiev (GMT+3)** —
+> do not plan around the earlier "Jul 19" note. Required-but-empty form fields as of 2026-07-12:
+> Submission Details, Link to Demo Video, Live Demo Link.
 > Keep it honest — every claim maps to `docs/honest-claim-ledger.md` and the on-chain proofs.
 > `docs/submission.md` is the canonical full rubric/track record; this file is the condensed form copy.
 
@@ -38,4 +40,4 @@
 - **UX excellence (40%):** a concrete task and useful brief; walletless 10-second block moment; legible Trust Preview vs blind signature; live Budget HUD; one-tap revoke; shareable Proof Receipt.
 - **Universal Accounts + EIP-7702 (30%):** own EOA delegated in 7702 mode → Particle UA; cross-chain USDC (Base → Arbitrum) proven live; account-level mandate enforcement.
 - **Adoption (20%):** an expense-card pattern for autonomous software buying data, inference, compute, storage, or other paid tools; a concrete research-agent demonstration; integrate-in-one-call.
-- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 207 unit tests; typed end to end; claim-discipline `/trust`.
+- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 246 unit tests; typed end to end; claim-discipline `/trust`.
