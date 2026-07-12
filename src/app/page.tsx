@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
 import { getConfiguredPaymentMode, getPaymentModeLabel } from "@/lib/config/payment";
-import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import {
   Wordmark,
   Chip,
@@ -23,17 +21,7 @@ import { CrossChainRoute } from "@/components/cross-chain-route";
 const PAYMENT_MODE = getConfiguredPaymentMode();
 const PAYMENT_MODE_LABEL = getPaymentModeLabel(PAYMENT_MODE);
 
-function demoAmountLabel() {
-  const token = resolvePaymentToken(
-    DEMO_REPLAY_PAYMENT_LINK.token,
-    DEMO_REPLAY_PAYMENT_LINK.destination_chain_id,
-  );
-  return `${formatAtomicTokenAmount(DEMO_REPLAY_PAYMENT_LINK.amount, token)} ${token.symbol}`;
-}
-
 export default function HomePage() {
-  const amount = demoAmountLabel();
-
   return (
     <main className="op-shell">
       <SmoothScroll />
@@ -62,10 +50,10 @@ export default function HomePage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-verify opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-verify" />
               </span>
-              On-chain spending limits for the agent era
+              A research agent expense card
             </span>
             <h1 className="mt-4 font-display text-[2.3rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]">
-              Give your AI a card.
+              Give your agent a budget.
               <br />
               <span className="relative inline-block text-gold">
                 Not your wallet.
@@ -76,14 +64,14 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="mt-4 font-display text-xl font-medium text-ink sm:text-2xl">
-              Trust before you pay. Proof after it settles.
+              Useful work in. Overspending out.
             </p>
             <p
               className="op-animate-rise mt-4 max-w-lg text-base leading-relaxed text-ink2 sm:text-lg"
               style={{ animationDelay: "240ms" }}
             >
-              Set a USDC budget software cannot exceed. One merchant, clear caps, instant revoke,
-              and a public proof receipt.
+              A research workflow buys the market data it needs, prepares a useful brief, and gets
+              stopped when an unexpected premium request exceeds your signed limit.
             </p>
 
             <div
@@ -91,16 +79,16 @@ export default function HomePage() {
               style={{ animationDelay: "340ms" }}
             >
               <Magnetic>
-                <Link href="/try" className="op-btn-primary w-full sm:w-auto">
-                  Watch the firewall hold
+                <Link href="/agent" className="op-btn-primary w-full sm:w-auto">
+                  Run the research task
                   <IconArrowUpRight className="h-4 w-4" />
                 </Link>
               </Magnetic>
               <Link
-                href="/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5"
+                href="/try"
                 className="op-btn-secondary w-full sm:w-auto"
               >
-                Verify cross-chain proof
+                Try the block without a wallet
               </Link>
             </div>
 
@@ -108,8 +96,8 @@ export default function HomePage() {
               className="op-animate-rise mt-3 max-w-lg text-xs leading-relaxed text-muted"
               style={{ animationDelay: "360ms" }}
             >
-              No wallet needed for the live block. The receipt opens independently on Base,
-              Arbitrum, and UniversalX.
+              The task is deterministic, not an LLM. The separate canonical receipt proves the
+              live Base-to-Arbitrum Particle UA payment.
             </p>
           </div>
 
@@ -119,7 +107,7 @@ export default function HomePage() {
             style={{ animationDelay: "320ms" }}
           >
             <div className="animate-float-y">
-              <PreviewPeek amount={amount} />
+              <PreviewPeek />
             </div>
           </div>
           </div>
@@ -254,30 +242,28 @@ export default function HomePage() {
   );
 }
 
-function PreviewPeek({ amount }: { amount: string }) {
+function PreviewPeek() {
   return (
     <div className="w-full max-w-sm op-card p-6 shadow-[0_24px_48px_-24px_rgba(35,32,27,0.28),0_0_72px_-20px_rgba(110,86,240,0.40)] transition-shadow duration-500 hover:shadow-[0_24px_60px_-24px_rgba(35,32,27,0.32),0_0_92px_-16px_rgba(110,86,240,0.55)]">
       <div className="flex items-center justify-between">
-        <span className="op-eyebrow">Trust Preview</span>
+        <span className="op-eyebrow">Research expense card</span>
         <Chip tone="gold">
-          <IconShield className="h-3.5 w-3.5" /> Consent
+          <IconShield className="h-3.5 w-3.5" /> Armed
         </Chip>
       </div>
 
-      <div className="mt-5 rounded-2xl bg-paper2 p-4 text-center">
-        <p className="text-xs text-muted">You pay</p>
-        <p className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink tnum">{amount}</p>
+      <div className="mt-5 rounded-2xl bg-paper2 p-4">
+        <p className="text-xs text-muted">Task</p>
+        <p className="mt-1 font-display text-xl font-semibold tracking-tight text-ink">
+          Prepare an ETH market-risk brief
+        </p>
       </div>
 
       <dl className="mt-4 divide-y divide-line">
-        <Row label="Merchant receives" value={amount} />
-        <Row label="Settles on" value="Arbitrum + Base" />
-        <Row label="Funding" value="Cross-chain · no bridge" />
-        <Row label="Proof" value="On-chain receipt" />
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm text-muted">Spend mandate</span>
-          <span className="text-sm font-medium text-ink">Scoped · revocable</span>
-        </div>
+        <Row label="Per paid tool" value="up to 0.10 USDC" />
+        <Row label="Daily budget" value="2.00 USDC" />
+        <Row label="Provider" value="one approved address" />
+        <Row label="Permission" value="expires · revocable" />
       </dl>
 
       <div className="mt-4 flex items-center gap-2 rounded-xl bg-verify-soft px-3.5 py-2.5 text-sm font-medium text-verify">
@@ -285,8 +271,11 @@ function PreviewPeek({ amount }: { amount: string }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-verify opacity-50" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-verify" />
         </span>
-        Reviewed before you confirm
+        0.20 USDC premium request will be blocked
       </div>
+      <p className="mt-3 text-center text-xs text-muted">
+        Expected result: brief + settlement evidence
+      </p>
     </div>
   );
 }

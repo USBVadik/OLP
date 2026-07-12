@@ -15,7 +15,7 @@ import { RailComparison } from "@/components/rail-comparison";
 export const metadata = {
   title: "Pitch · OneLink Pay",
   description:
-    "Give your AI a card, not your wallet. The pitch in one page — with the live demo one click away.",
+    "A research agent expense card with on-chain spending limits and verifiable settlement.",
 };
 
 const APP = "https://onelink-pay.vercel.app";
@@ -42,8 +42,8 @@ const STEPS: { icon: React.ReactNode; title: string; body: string }[] = [
 const DEMO_BEATS: { t: string; d: string }[] = [
   { t: "Walletless, gasless login", d: "Google or email via Magic — no seed phrase, no extension, no gas — into a Particle Universal Account in EIP-7702 mode; the first-time delegation is relayer-sponsored." },
   { t: "Read the card, not a hash", d: "A plain-English mandate: $0.10 / charge, $2 / day, one merchant, expires today, revocable. The EIP-712 hash sits behind a disclosure." },
-  { t: "Send the agent", d: "It runs the x402 handshake (402 → pay → 200) and buys within budget; the live Budget HUD drains from on-chain state." },
-  { t: "Over-cap is blocked on-chain", d: "The next charge exceeds the cap and reverts (PerChargeExceeded) — no funds move, zero gas. The moment that lands." },
+  { t: "Run one useful research task", d: "The deterministic workflow buys a 0.05 USDC market snapshot and a 0.08 USDC sentiment feed through the x402 pattern." },
+  { t: "Brief ready; overreach blocked", d: "The useful ETH brief appears first. Then an unnecessary 0.20 USDC premium export exceeds the cap and is refused before settlement." },
   { t: "Cross-chain, no manual bridge", d: "A merchant is paid on Arbitrum with USDC sourced from Base in one operation — the user never bridges or picks a chain." },
   { t: "Proof, then revoke", d: "Open the public proof receipt — anyone re-checks it on a block explorer. One click revokes the mandate." },
 ];
@@ -51,7 +51,7 @@ const DEMO_BEATS: { t: string; d: string }[] = [
 const PROVEN: string[] = [
   "Permission Firewall — SpendPolicy enforces per-charge / daily / total caps + expiry + single-merchant + revoke, live on Base + Arbitrum. Over-cap reverts at zero gas. 22 contract tests pass.",
   "Cross-chain settlement via Particle Universal Account (EIP-7702) — merchant paid on Arbitrum, USDC sourced from Base, one operation, no manual bridge. Proven live on-chain.",
-  "Agent on a leash — the real x402 pattern, bounded by the mandate; within-cap buys succeed, over-cap is refused before any funds move.",
+  "Research agent expense card — two paid inputs produce a useful brief through the x402 pattern; the unexpected premium export is bounded by the mandate and refused before settlement.",
   "Public proof receipts — ReceiptEmitter anchors an InvoicePaid attestation after server-side verification of the on-chain USDC transfer; re-verifiable by anyone.",
   "Zero-gas onboarding — the one-time per-chain EIP-7702 delegation is submitted by our relayer (relayer pays); a first-time payer needs no native gas. Proven live on Arbitrum (the delegation tx is sent by the relayer, not the payer).",
   "Self-custody — the limit lives on your own EOA (same address), not a custodial or MPC wallet; export your key via Magic's own reveal (OneLink never sees it) or revert the delegation anytime.",
@@ -85,24 +85,24 @@ export default function PitchPage() {
             <Chip>Magic Labs</Chip>
           </div>
           <h1 className="mt-5 font-display text-[2.6rem] font-semibold leading-[1.03] tracking-[-0.02em] text-ink sm:text-[3.4rem]">
-            Give your AI a card.
+            Give a research agent a budget.
             <br />
             <span className="text-gold">Not your wallet.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink2">
-            OneLink Pay is a permission firewall for Universal Accounts. You sign one scoped on-chain
-            mandate — per-charge, daily and total caps, expiry, a single merchant, instant revoke —
-            and your agent (or a merchant) can pay USDC but{" "}
-            <span className="font-semibold text-ink">physically cannot overspend</span>.
+            Give a deterministic research workflow 2 USDC for paid tools. It buys two market feeds,
+            produces an ETH risk brief, and an unexpected premium request is stopped by the signed
+            0.10 USDC per-tool limit.
           </p>
           <p className="mt-4 max-w-2xl leading-relaxed text-ink2">
-            It isn&rsquo;t another wallet for sending money between people. It&rsquo;s the{" "}
+            Underneath that legible story, OneLink Pay is the{" "}
             <span className="font-semibold text-ink">safety layer for the payments your apps and
-            agents make</span> — a limit they can&rsquo;t exceed, and a proof anyone can verify.
+            agents make</span>: Particle handles chain-abstracted value movement while an on-chain
+            mandate enforces limits and public receipts make settlement verifiable.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/agent" className="op-btn-primary">
-              See the agent demo
+              Run the research task
               <IconArrowUpRight className="h-4 w-4" />
             </Link>
             <Link href="/demo-replay" className="op-btn-secondary">
@@ -120,7 +120,7 @@ export default function PitchPage() {
             Agents can pay now. Nothing stops them overspending.
           </h2>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink2">
-            AI agents can already pay for anything over HTTP (x402). But a buggy or hijacked agent
+            Software agents can already pay for anything over HTTP (x402). But a buggy or hijacked workflow
             can drain the wallet — and consumers feel it. The rails are here; the trust isn&rsquo;t.
           </p>
           <div className="mt-6">
@@ -275,7 +275,7 @@ GET  /api/x402/<resource>
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="/agent" className="op-btn-primary">
-              Agent on a leash
+              Research agent expense card
               <IconArrowUpRight className="h-4 w-4" />
             </Link>
             <Link href="/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5" className="op-btn-secondary">

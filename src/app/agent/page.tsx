@@ -24,10 +24,27 @@ import {
   type LogSource,
   type LogTone,
 } from "@/lib/agent/log-formatter";
-import { Wordmark, Chip, IconBolt, IconCheck, IconBan, IconLock, Term, AppNav } from "@/components/ui";
+import {
+  Wordmark,
+  Chip,
+  Disclosure,
+  IconBolt,
+  IconCheck,
+  IconBan,
+  IconLock,
+  AppNav,
+} from "@/components/ui";
 import { UniversalBalanceCard } from "@/components/universal-balance-card";
 import { FundUsdcNotice } from "@/components/fund-usdc-notice";
 import { summarizeUniversalBalance, type UniversalBalanceSummary } from "@/lib/particle/assets";
+import { AgentMissionCard } from "@/components/agent-mission-card";
+import { AgentTaskResult } from "@/components/agent-task-result";
+import {
+  orderResearchResources,
+  summarizeResearchTask,
+  type ResearchResourceOutcome,
+  type ResearchResourceStatus,
+} from "@/lib/agent/research-task";
 
 // Demo on Arbitrum (where SpendPolicy + USDC + relayer gas live).
 const CHAIN = ARBITRUM_CHAIN;
@@ -78,7 +95,13 @@ function fmt(atomic: bigint) {
   return `${n % 1 === 0 ? n : n.toFixed(2)} USDC`;
 }
 
-type AgentOutcome = "ok" | "blocked" | "error" | "withheld";
+type AgentChargeResult = {
+  status: ResearchResourceStatus;
+  settled?: boolean;
+  data?: unknown;
+  txUrl?: string;
+  reason?: string;
+};
 
 export default function AgentPage() {
   const spendPolicy = getSpendPolicyAddress(CHAIN.chainId);
@@ -92,6 +115,7 @@ export default function AgentPage() {
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
+  const [taskOutcomes, setTaskOutcomes] = useState<ResearchResourceOutcome[]>([]);
   const [blockPulse, setBlockPulse] = useState(0);
   const [settleTick, setSettleTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +135,35 @@ export default function AgentPage() {
   const reloadBalance = useCallback(() => setBalanceReloadKey((k) => k + 1), []);
 
   const resources = useMemo(() => listResources(), []);
+
+  const taskSummary = useMemo(() => {
+    const dailyCap = armed
+      ? armed.mandate.maxPerDay > 0n
+        ? armed.mandate.maxPerDay
+        : armed.mandate.totalCap
+      : 0n;
+    return summarizeResearchTask(taskOutcomes, dailyCap);
+  }, [armed, taskOutcomes]);
+
+  const recordOutcome = useCallback(
+    (resource: X402Resource, result: AgentChargeResult) => {
+      const outcome: ResearchResourceOutcome = {
+        resourceId: resource.id,
+        title: resource.title,
+        priceAtomic: resource.priceAtomic,
+        status: result.status,
+        ...(result.settled === undefined ? {} : { settled: result.settled }),
+        ...(result.data === undefined ? {} : { data: result.data }),
+        ...(result.txUrl ? { txUrl: result.txUrl } : {}),
+        ...(result.reason ? { reason: result.reason } : {}),
+      };
+      setTaskOutcomes((previous) => [
+        ...previous.filter((item) => item.resourceId !== resource.id),
+        outcome,
+      ]);
+    },
+    [],
+  );
 
   // A stable agent_budget mandate preview derived once we know the payer address.
   const chosen = useMemo<PaymentMandate | null>(() => {
@@ -232,6 +285,8 @@ export default function AgentPage() {
 
       setArmed({ mandate: chosen, signature });
       setAgentLog([]);
+      setBought({});
+      setTaskOutcomes([]);
       append(
         "USER",
         `Agent armed — budget up to ${fmt(chosen.totalCap)}, ${fmt(chosen.maxPerCharge)} per call.`,
@@ -245,22 +300,23 @@ export default function AgentPage() {
   }, [magic, address, chosen, spendPolicy, append]);
 
   const chargeForResource = useCallback(
-    async (resource: X402Resource): Promise<AgentOutcome> => {
-      if (!armed) return "error";
+    async (resource: X402Resource): Promise<AgentChargeResult> => {
+      if (!armed) return { status: "error", reason: "No armed permission" };
       const path = `/api/x402/${resource.id}`;
+      let settlementTxUrl: string | undefined;
       try {
         // 1) Unpaid request -> expect 402 + payment requirements (the x402 handshake).
         append("AGENT", `GET ${path} — requesting resource…`, "info");
         const unpaid = await fetch(path);
         if (unpaid.status !== 402) {
           append("AGENT", `Unexpected ${unpaid.status} (expected 402 Payment Required).`, "error");
-          return "error";
+          return { status: "error", reason: `Unexpected HTTP ${unpaid.status}` };
         }
         const body = await unpaid.json();
         const reqs = body?.accepts?.[0];
         if (!reqs) {
           append("FIREWALL", "402 had no payment requirements.", "error");
-          return "error";
+          return { status: "error", reason: "402 had no payment requirements" };
         }
         append(
           "FIREWALL",
@@ -293,17 +349,22 @@ export default function AgentPage() {
             append("FIREWALL", line.message, line.tone);
             append("AGENT", `Access denied by the firewall — ${resource.title} not delivered.`, "error");
             setBlockPulse((n) => n + 1);
-            return "blocked";
+            return {
+              status: "blocked",
+              reason: charge.reason ?? "Blocked by the signed spending policy",
+            };
           }
           const line = firewallResultLine({ kind: "error", message: charge.error ?? "charge failed" });
           append("FIREWALL", line.message, line.tone);
-          return "error";
+          return { status: "error", reason: charge.error ?? "Charge failed" };
         }
+        const txUrl = getExplorerTxUrl(CHAIN, charge.txHash);
+        settlementTxUrl = txUrl;
         append(
           "FIREWALL",
           `Charged ${fmt(resource.priceAtomic)}. Settled to merchant.`,
           "ok",
-          getExplorerTxUrl(CHAIN, charge.txHash)
+          txUrl
         );
         setSettleTick((n) => n + 1);
 
@@ -323,9 +384,9 @@ export default function AgentPage() {
           const paid = await fetch(path, { headers: { "X-PAYMENT": xPayment } });
           if (paid.ok) {
             const data = await paid.json();
-            append("AGENT", `200 OK — received ${resource.title}.`, "ok", getExplorerTxUrl(CHAIN, charge.txHash));
+            append("AGENT", `200 OK — received ${resource.title}.`, "ok", txUrl);
             setBought((prev) => ({ ...prev, [resource.id]: data.data }));
-            return "ok";
+            return { status: "purchased", settled: true, data: data.data, txUrl };
           }
           const err = await paid.json().catch(() => ({}));
           if (typeof err?.error === "string" && /not found on-chain yet/.test(err.error) && attempt < 5) {
@@ -333,12 +394,26 @@ export default function AgentPage() {
             continue;
           }
           append("FIREWALL", `Resource withheld: ${err?.error ?? paid.status}`, "blocked");
-          return "withheld";
+          return {
+            status: "withheld",
+            settled: true,
+            txUrl,
+            reason: err?.error ?? `Resource returned HTTP ${paid.status}`,
+          };
         }
-        return "withheld";
+        return {
+          status: "withheld",
+          settled: true,
+          txUrl,
+          reason: "Resource proof was not accepted in time",
+        };
       } catch (e: any) {
         append("FIREWALL", `ERROR: ${e?.message ?? "network"}`, "error");
-        return "error";
+        return {
+          status: "error",
+          ...(settlementTxUrl ? { settled: true, txUrl: settlementTxUrl } : {}),
+          reason: e?.message ?? "Network error",
+        };
       }
     },
     [armed, append]
@@ -351,27 +426,26 @@ export default function AgentPage() {
       setRunning(true);
       setError(null);
       try {
-        await chargeForResource(resource);
+        const result = await chargeForResource(resource);
+        recordOutcome(resource, result);
       } finally {
         setRunning(false);
       }
     },
-    [armed, running, chargeForResource]
+    [armed, running, chargeForResource, recordOutcome]
   );
 
-  // Autonomous run: unattended, the agent works through the affordable APIs in cost order and is
-  // halted by the firewall when it exceeds the per-charge cap. Deterministic — no LLM, no AI claim.
+  // The unattended workflow follows one explicit task plan. The final premium request deliberately
+  // exercises the same on-chain cap as a buggy or over-eager production workflow would.
   const runAutonomous = useCallback(async () => {
     if (!armed || running) return;
     setRunning(true);
     setError(null);
     try {
-      const plan = [...resources].sort((a, b) =>
-        a.priceAtomic < b.priceAtomic ? -1 : a.priceAtomic > b.priceAtomic ? 1 : 0
-      );
+      const plan = orderResearchResources(resources);
       append(
         "AGENT",
-        `Autonomous run — budget ${fmt(armed.mandate.totalCap)}, ${fmt(armed.mandate.maxPerCharge)} per call. I'll buy what I can afford and stop when the firewall blocks me.`,
+        `Task started — prepare the ETH market-risk brief with a ${fmt(armed.mandate.maxPerCharge)} per-tool limit.`,
         "info"
       );
       let purchased = 0;
@@ -379,15 +453,16 @@ export default function AgentPage() {
       for (const r of plan) {
         if (r.id in bought) continue;
         const outcome = await chargeForResource(r);
-        if (outcome === "ok") {
+        recordOutcome(r, outcome);
+        if (outcome.status === "purchased") {
           purchased += 1;
           continue;
         }
         halted = true;
-        if (outcome === "blocked") {
+        if (outcome.status === "blocked") {
           append(
             "AGENT",
-            `Halted by the firewall after ${purchased} purchase${purchased === 1 ? "" : "s"} — I cannot exceed the mandate. No funds moved beyond it.`,
+            `Brief inputs complete after ${purchased} purchase${purchased === 1 ? "" : "s"}. The unexpected premium export was blocked before settlement.`,
             "error"
           );
         } else {
@@ -398,14 +473,14 @@ export default function AgentPage() {
       if (!halted) {
         append(
           "AGENT",
-          `Run complete — ${purchased} purchase${purchased === 1 ? "" : "s"}, all within budget.`,
+          `Task complete — ${purchased} required input${purchased === 1 ? "" : "s"} purchased within budget.`,
           "ok"
         );
       }
     } finally {
       setRunning(false);
     }
-  }, [armed, running, resources, bought, chargeForResource, append]);
+  }, [armed, running, resources, bought, chargeForResource, recordOutcome, append]);
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
@@ -424,27 +499,24 @@ export default function AgentPage() {
 
         <div className="op-card op-animate-rise p-6 sm:p-7">
           <div className="mb-5">
-            <p className="op-eyebrow">Agent commerce on x402</p>
+            <p className="op-eyebrow">Research agent expense card</p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink">
-              An agent that pays per call — on a leash
+              Give software a budget, not your wallet
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              <Term def="An open web standard that lets software pay for an API call over HTTP — via the '402 Payment Required' response.">x402</Term>{" "}
-              lets an agent pay for any API over HTTP. OneLink Pay bounds it: every x402 payment is
-              settled through an on-chain{" "}
-              <Term def="A spending permission you sign once: which merchant, how much per charge, per day, in total, and until when — revocable anytime.">mandate</Term>
-              , so the agent can buy what it needs but physically cannot overspend. Over-budget
-              requests are refused before any funds move.
+              Set a 2 USDC daily tool budget. The workflow buys two paid data feeds, prepares an ETH
+              market-risk brief, and proves that an unnecessary premium export cannot exceed your
+              signed 0.10 USDC per-tool limit.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode — one balance across supported chains">
-                Particle · supported-chain balance
+              <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode">
+                One supported-chain balance
               </span>
-              <span className="op-chip" title="Magic embedded wallet — email/Google login, your wallet is your email">
-                Magic · walletless login
+              <span className="op-chip" title="Magic embedded wallet with email or Google login">
+                Sign in with email
               </span>
-              <span className="op-chip" title="Settles on Arbitrum One">
-                Arbitrum · settlement
+              <span className="op-chip" title="Every charge is checked by SpendPolicy on Arbitrum One">
+                On-chain spending limits
               </span>
             </div>
           </div>
@@ -506,93 +578,108 @@ export default function AgentPage() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-4">
-                <PermissionReceipt mandate={armed.mandate} />
-                <UniversalBalanceCard
-                  summary={balanceSummary}
-                  loading={balanceLoading}
-                  error={balanceError}
-                  onRetry={reloadBalance}
+            <div className="space-y-4">
+              <AgentMissionCard mandate={armed.mandate} running={running} onRun={runAutonomous} />
+
+              {!running && taskSummary.status !== "idle" ? (
+                <AgentTaskResult summary={taskSummary} />
+              ) : null}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <BudgetHud
+                  chainId={CHAIN.chainId}
+                  mandate={armed.mandate}
+                  protectedPulse={blockPulse}
+                  refreshSignal={settleTick}
                 />
-                <BudgetHud chainId={CHAIN.chainId} mandate={armed.mandate} protectedPulse={blockPulse} refreshSignal={settleTick} />
-                <AccountSpine address={address} protectedPulse={blockPulse} clearSignal={settleTick} />
-                <div className="space-y-2">
-                  <p className="op-eyebrow">Paid APIs (x402)</p>
-                  <button
-                    onClick={runAutonomous}
-                    disabled={running}
-                    className="op-btn-primary w-full justify-center"
-                  >
-                    {running ? (
-                      "Agent running…"
-                    ) : (
-                      <>
-                        <IconBolt className="h-4 w-4" /> Send the agent (autonomous run)
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[11px] leading-relaxed text-faint">
-                    One click: the agent works through these APIs within its budget and is stopped by
-                    the firewall the moment it tries to overspend — a deterministic loop, not an LLM.
-                    Or trigger a single call below.
-                  </p>
-                  {resources.map((r) => {
-                    const owned = r.id in bought;
-                    return (
-                      <div key={r.id} className="rounded-2xl border border-line bg-paper2 p-3">
-                        <div className="flex items-baseline justify-between gap-3">
-                          <p className="text-sm font-semibold text-ink">{r.title}</p>
-                          <span className="font-mono text-xs text-ink2">{fmt(r.priceAtomic)}</span>
-                        </div>
-                        <p className="mt-1 text-xs text-muted">{r.description}</p>
-                        <button
-                          onClick={() => buy(r)}
-                          disabled={running || owned}
-                          className="op-btn-secondary mt-2 w-full justify-center"
-                        >
-                          {owned ? (
-                            <>
-                              <IconCheck className="h-4 w-4 text-verify" /> Purchased
-                            </>
-                          ) : r.priceAtomic > armed.mandate.maxPerCharge ? (
-                            <>
-                              <IconBan className="h-4 w-4 text-danger" /> Buy (over cap)
-                            </>
-                          ) : (
-                            <>
-                              <IconBolt className="h-4 w-4 text-gold" /> Buy this call
-                            </>
-                          )}
-                        </button>
-                        {owned ? (
-                          <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-paper p-2 text-[11px] leading-relaxed text-ink2">
-                            {JSON.stringify(bought[r.id], null, 2)}
-                          </pre>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
+                <AccountSpine
+                  address={address}
+                  protectedPulse={blockPulse}
+                  clearSignal={settleTick}
+                />
               </div>
 
-              <div className="space-y-3">
-                <p className="op-eyebrow">Autonomous agent</p>
-                <AgentTerminal entries={agentLog} />
-                <p className="text-xs leading-relaxed text-muted">
-                  Each purchase runs the real x402 handshake: the API answers{" "}
-                  <span className="font-mono">402 Payment Required</span>, the agent pays through the
-                  mandate, then retries with the on-chain proof to unlock the data. Over-cap calls are
-                  blocked before settlement.
-                </p>
-                <p className="text-[11px] leading-relaxed text-faint">
-                  The agent sees one balance across supported chains (Particle{" "}
-                  <Term def="A Particle account that gives you one balance across many chains — no bridging or picking a network.">Universal Account</Term>
-                  ). Today
-                  settlement runs on Arbitrum; Particle&apos;s cross-chain V2 extends the same flow to
-                  supported source chains.
-                </p>
-              </div>
+              <Disclosure
+                summary={
+                  <span className="flex items-center gap-2">
+                    <IconBolt className="h-4 w-4 text-gold" /> Technical activity · x402 and on-chain evidence
+                  </span>
+                }
+              >
+                <div className="space-y-4">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <PermissionReceipt mandate={armed.mandate} />
+                    <UniversalBalanceCard
+                      summary={balanceSummary}
+                      loading={balanceLoading}
+                      error={balanceError}
+                      onRetry={reloadBalance}
+                    />
+                  </div>
+
+                  <div>
+                    <p className="op-eyebrow">Agent activity</p>
+                    <div className="mt-2">
+                      <AgentTerminal entries={agentLog} />
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted">
+                      Each purchase runs the real x402-pattern handshake: the API answers{" "}
+                      <span className="font-mono">402 Payment Required</span>, the workflow pays through
+                      the mandate, then retries with on-chain proof. Over-cap calls are blocked before
+                      settlement.
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="op-eyebrow">Resource controls and raw payloads</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      {resources.map((r) => {
+                        const owned = r.id in bought;
+                        return (
+                          <div key={r.id} className="min-w-0 rounded-2xl border border-line bg-paper p-3">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <p className="min-w-0 text-sm font-semibold text-ink">{r.title}</p>
+                              <span className="shrink-0 font-mono text-xs text-ink2">{fmt(r.priceAtomic)}</span>
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-muted">{r.description}</p>
+                            <button
+                              type="button"
+                              onClick={() => buy(r)}
+                              disabled={running || owned}
+                              className="op-btn-secondary mt-2 w-full justify-center text-xs"
+                            >
+                              {owned ? (
+                                <>
+                                  <IconCheck className="h-4 w-4 text-verify" /> Purchased
+                                </>
+                              ) : r.priceAtomic > armed.mandate.maxPerCharge ? (
+                                <>
+                                  <IconBan className="h-4 w-4 text-danger" /> Try over cap
+                                </>
+                              ) : (
+                                <>
+                                  <IconBolt className="h-4 w-4 text-gold" /> Buy this call
+                                </>
+                              )}
+                            </button>
+                            {owned ? (
+                              <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-paper2 p-2 text-[11px] leading-relaxed text-ink2">
+                                {JSON.stringify(bought[r.id], null, 2)}
+                              </pre>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] leading-relaxed text-faint">
+                    Particle Universal Accounts provide the supported-chain balance. This deterministic
+                    task settles its x402-pattern purchases on Arbitrum; the project&apos;s separate
+                    canonical receipt proves the live Particle UA cross-chain operation.
+                  </p>
+                </div>
+              </Disclosure>
             </div>
           )}
 
