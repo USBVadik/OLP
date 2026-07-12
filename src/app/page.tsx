@@ -53,7 +53,7 @@ export default function HomePage() {
               A research agent expense card
             </span>
             <h1 className="mt-4 font-display text-[2.3rem] font-semibold leading-[0.98] tracking-[-0.02em] text-ink sm:text-[4.75rem]">
-              Give your agent a budget.
+              Give your AI a card.
               <br />
               <span className="relative inline-block text-gold">
                 Not your wallet.
@@ -64,7 +64,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="mt-4 font-display text-xl font-medium text-ink sm:text-2xl">
-              Useful work in. Overspending out.
+              Trust before you pay. Proof after it settles.
             </p>
             <p
               className="op-animate-rise mt-4 max-w-lg text-base leading-relaxed text-ink2 sm:text-lg"

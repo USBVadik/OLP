@@ -18,10 +18,10 @@ function get(path: string): Promise<Response> {
   return fetch(`${BASE}${path}`);
 }
 
-test("landing responds 200 and shows the tagline", async () => {
+test("landing responds 200 and shows the core hook", async () => {
   const res = await get("/");
   assert.equal(res.status, 200);
-  assert.match(await res.text(), /Trust before you pay/i);
+  assert.match(await res.text(), /Not your wallet/i);
 });
 
 test("landing sends the F6 baseline security headers", async () => {

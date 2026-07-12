@@ -85,7 +85,7 @@ export default function PitchPage() {
             <Chip>Magic Labs</Chip>
           </div>
           <h1 className="mt-5 font-display text-[2.6rem] font-semibold leading-[1.03] tracking-[-0.02em] text-ink sm:text-[3.4rem]">
-            Give a research agent a budget.
+            Give a research agent a card.
             <br />
             <span className="text-gold">Not your wallet.</span>
           </h1>
