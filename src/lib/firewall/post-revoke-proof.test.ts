@@ -6,6 +6,7 @@ import {
   POST_REVOKE_EXPECTED_ERROR,
   postRevokeCheckUnavailableLine,
   postRevokeProofLine,
+  revokedStatusCopy,
   revertErrorName,
 } from "./post-revoke-proof";
 
@@ -72,4 +73,30 @@ test("honesty guard: proof copy never claims cross-chain / bridge / gasless-in-g
 
 test("expected error constant matches the SpendPolicy revert", () => {
   assert.equal(POST_REVOKE_EXPECTED_ERROR, "MandateIsRevoked");
+});
+
+test("revoked status stays neutral while the retry check is pending", () => {
+  const copy = revokedStatusCopy(null);
+  assert.equal(copy.proven, false);
+  assert.match(copy.message, /revocation confirmed on-chain/i);
+  assert.match(copy.message, /checking/i);
+  assert.doesNotMatch(copy.message, /MandateIsRevoked/);
+  assert.equal(copy.detail, null);
+});
+
+test("revoked status does not claim MandateIsRevoked when the check is inconclusive", () => {
+  const proof = postRevokeProofLine("BadSignature");
+  const copy = revokedStatusCopy(proof);
+  assert.equal(copy.proven, false);
+  assert.match(copy.message, /revocation confirmed on-chain/i);
+  assert.doesNotMatch(copy.message, /MandateIsRevoked/);
+  assert.match(copy.detail ?? "", /BadSignature/);
+});
+
+test("revoked status promotes the exact live revert only after it is proven", () => {
+  const proof = postRevokeProofLine("MandateIsRevoked");
+  const copy = revokedStatusCopy(proof);
+  assert.equal(copy.proven, true);
+  assert.equal(copy.message, proof.message);
+  assert.equal(copy.detail, null);
 });

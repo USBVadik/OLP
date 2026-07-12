@@ -17,10 +17,14 @@ import { LoginWithGoogleButton, SignOutButton } from "@/components/login-with-go
 import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
 import { AccountSpine } from "@/components/account-spine";
-import { compactAccountFacts } from "@/lib/firewall/account-spine";
+import {
+  compactAccountFacts,
+  shouldShowCompactAccountFacts,
+} from "@/lib/firewall/account-spine";
 import {
   postRevokeCheckUnavailableLine,
   postRevokeProofLine,
+  revokedStatusCopy,
   revertErrorName,
   type PostRevokeProof,
 } from "@/lib/firewall/post-revoke-proof";
@@ -326,9 +330,12 @@ export default function AgentPage() {
   useEffect(() => {
     if (!address) {
       setUa(null);
+      setBalanceSummary(null);
       return;
     }
     let cancelled = false;
+    setUa(null);
+    setBalanceSummary(null);
     setBalanceLoading(true);
     setBalanceError(null);
     (async () => {
@@ -594,8 +601,7 @@ export default function AgentPage() {
       );
 
       // Kill-switch proof: simulate ONE more within-cap charge read-only (eth_call — no
-      // signature prompt, no broadcast, no gas) and surface the live revert. Within-cap is
-      // essential: the only reason it can revert now is the revoke itself.
+      // signature prompt, no broadcast, no gas) and surface only the exact live revert.
       try {
         const client = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
         await client.simulateContract({
@@ -809,6 +815,12 @@ export default function AgentPage() {
   }, [armed, running, resources, bought, chargeForResource, recordOutcome, append]);
 
   const controls = agentControls({ running, revoked });
+  const showAccountFacts = shouldShowCompactAccountFacts({
+    uaReady: Boolean(ua),
+    balanceReady: balanceSummary !== null,
+    balanceFailed: Boolean(balanceError),
+  });
+  const revokedCopy = revoked ? revokedStatusCopy(revokeProof) : null;
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
@@ -894,20 +906,22 @@ export default function AgentPage() {
                 error={balanceError}
                 onRetry={reloadBalance}
               />
-              <ul
-                aria-label="Account facts"
-                className="flex flex-wrap items-center justify-center gap-1.5"
-              >
-                {compactAccountFacts().map((fact) => (
-                  <li
-                    key={fact}
-                    className="flex items-center gap-1 rounded-full border border-line2 bg-paper px-2.5 py-1 text-[11px] font-medium text-ink2"
-                  >
-                    <IconCheck className="h-3 w-3 shrink-0 text-verify" aria-hidden="true" />
-                    {fact}
-                  </li>
-                ))}
-              </ul>
+              {showAccountFacts ? (
+                <ul
+                  aria-label="Account capabilities"
+                  className="flex flex-wrap items-center justify-center gap-1.5"
+                >
+                  {compactAccountFacts().map((fact) => (
+                    <li
+                      key={fact}
+                      className="flex items-center gap-1 rounded-full border border-line2 bg-paper px-2.5 py-1 text-[11px] font-medium text-ink2"
+                    >
+                      <IconBolt className="h-3 w-3 shrink-0 text-gold" aria-hidden="true" />
+                      {fact}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <FundUsdcNotice
                 summary={balanceSummary}
                 ownerAddress={address}
@@ -970,19 +984,17 @@ export default function AgentPage() {
                   <p className="flex items-center gap-2 font-semibold text-danger">
                     <IconBan className="h-4 w-4" /> Budget revoked on-chain
                   </p>
-                  {revokeProof?.proven ? (
+                  {revokedCopy?.proven ? (
                     <p className="animate-seal mt-2 flex items-start gap-1.5 rounded-xl bg-paper px-3 py-2 text-xs font-semibold text-ink">
                       <IconCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-verify" aria-hidden="true" />
-                      {revokeProof.message}
+                      {revokedCopy.message}
                     </p>
                   ) : (
                     <p className="mt-1 text-danger/90">
-                      Any further charge now reverts with{" "}
-                      <span className="font-mono text-xs">MandateIsRevoked</span> — the agent can no
-                      longer spend.
-                      {revokeProof ? (
+                      {revokedCopy?.message}
+                      {revokedCopy?.detail ? (
                         <span className="mt-1 block text-xs font-normal text-danger/80">
-                          {revokeProof.message}
+                          {revokedCopy.detail}
                         </span>
                       ) : null}
                     </p>

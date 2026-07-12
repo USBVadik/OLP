@@ -7,6 +7,7 @@ import {
   accountSpineFacts,
   compactAccountFacts,
   blockHeldOnAccountLine,
+  shouldShowCompactAccountFacts,
 } from "./account-spine";
 
 test("enforcement chains are exactly the live SpendPolicy chains (Base + Arbitrum)", () => {
@@ -75,4 +76,30 @@ test("honesty guard: compact facts never imply cross-chain charges / bridge / So
   for (const forbidden of ["cross-chain", "bridge", "solana", "sourced from", "gasless"]) {
     assert.ok(!blob.includes(forbidden), `compact facts must not contain "${forbidden}"`);
   }
+});
+
+test("compact facts describe capabilities instead of claiming an already-completed delegation", () => {
+  const blob = compactAccountFacts().join(" ");
+  assert.match(blob, /EIP-7702 mode/i);
+  assert.match(blob, /on-chain limits/i);
+  assert.doesNotMatch(blob, /delegated|armed|activated/i);
+});
+
+test("compact facts render only after both Particle UA and its balance read succeed", () => {
+  assert.equal(
+    shouldShowCompactAccountFacts({ uaReady: true, balanceReady: true, balanceFailed: false }),
+    true,
+  );
+  assert.equal(
+    shouldShowCompactAccountFacts({ uaReady: false, balanceReady: true, balanceFailed: false }),
+    false,
+  );
+  assert.equal(
+    shouldShowCompactAccountFacts({ uaReady: true, balanceReady: false, balanceFailed: false }),
+    false,
+  );
+  assert.equal(
+    shouldShowCompactAccountFacts({ uaReady: true, balanceReady: true, balanceFailed: true }),
+    false,
+  );
 });

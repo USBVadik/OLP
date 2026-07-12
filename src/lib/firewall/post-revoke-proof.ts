@@ -4,8 +4,8 @@ import { BaseError, ContractFunctionRevertedError } from "viem";
  * Post-revoke kill-switch proof — turns "the revoke button worked" into verified contract
  * behavior. After the revoke transaction mines, the caller SIMULATES one more within-cap
  * `SpendPolicy.charge` (read-only eth_call: no signature prompt, no broadcast, no gas) and shows
- * the live revert. A within-cap amount is essential: the only reason such a charge can revert on
- * a fresh mandate is the revoke itself, so the observed `MandateIsRevoked` is the proof.
+ * the live revert. The observed error name must be `MandateIsRevoked`; any earlier guard or RPC
+ * failure remains explicitly inconclusive.
  *
  * Honesty: the copy only ever reports what the simulation actually returned. Anything other than
  * the expected revert is surfaced as-is (or as "inconclusive"), never claimed as proof.
@@ -27,6 +27,12 @@ export type PostRevokeProof = {
   proven: boolean;
   /** Judge-facing line describing what the live contract just did. */
   message: string;
+};
+
+export type RevokedStatusCopy = {
+  proven: boolean;
+  message: string;
+  detail: string | null;
 };
 
 /** Build the judge-facing proof line from the simulated revert name (null = did not revert). */
@@ -56,5 +62,27 @@ export function postRevokeCheckUnavailableLine(): PostRevokeProof {
     proven: false,
     message:
       "Post-revoke check unavailable — the retry simulation could not run; the mined revoke transaction above remains the on-chain source of truth.",
+  };
+}
+
+/**
+ * Present the mined revoke separately from the optional retry proof. This prevents the fallback
+ * UI from claiming a specific revert when the simulation returned another guard or never ran.
+ */
+export function revokedStatusCopy(proof: PostRevokeProof | null): RevokedStatusCopy {
+  if (proof?.proven) {
+    return { proven: true, message: proof.message, detail: null };
+  }
+  if (proof) {
+    return {
+      proven: false,
+      message: "Revocation confirmed on-chain. The agent is disarmed.",
+      detail: proof.message,
+    };
+  }
+  return {
+    proven: false,
+    message: "Revocation confirmed on-chain. Checking the live contract retry now…",
+    detail: null,
   };
 }

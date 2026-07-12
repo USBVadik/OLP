@@ -73,7 +73,7 @@ before the finale).
 
 **Technical quality / polish — 10%**
 - `SpendPolicy.sol` + `ReceiptEmitter.sol` deployed on Base + Arbitrum; **22 Hardhat tests** pass.
-- **246 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
+- **251 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
 - Typed end-to-end; the EIP-712 `PaymentMandate` is **byte-identical** between contract and frontend.
 - Honest-claim ledger + risk register + verifiable proof pack; WCAG-AA contrast pass; reduced-motion respected.
 

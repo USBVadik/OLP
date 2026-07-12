@@ -53,8 +53,17 @@ export function blockHeldOnAccountLine(): string {
 export function compactAccountFacts(): string[] {
   return [
     "Your own EOA",
-    "Same address · EIP-7702",
+    "Same address · EIP-7702 mode",
     `One balance · ${enforcementChainsLabel()}`,
-    "Enforced on-chain · revocable",
+    "On-chain limits · revocable",
   ];
+}
+
+/** Fail closed: capability chips appear only after Particle UA and its balance read both succeed. */
+export function shouldShowCompactAccountFacts(input: {
+  uaReady: boolean;
+  balanceReady: boolean;
+  balanceFailed: boolean;
+}): boolean {
+  return input.uaReady && input.balanceReady && !input.balanceFailed;
 }
