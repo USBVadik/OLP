@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits, type Address } from "viem";
 import { ARBITRUM_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
 import { ERC20_APPROVE_ABI } from "@/lib/contracts/receipt-emitter";
+import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
 import {
   buildMandateTypedData,
   deriveMandate,
@@ -45,6 +46,7 @@ import {
   type ResearchResourceOutcome,
   type ResearchResourceStatus,
 } from "@/lib/agent/research-task";
+import { agentControls } from "@/lib/agent/agent-controls";
 
 // Demo on Arbitrum (where SpendPolicy + USDC + relayer gas live).
 const CHAIN = ARBITRUM_CHAIN;
@@ -112,6 +114,7 @@ export default function AgentPage() {
   const [address, setAddress] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [armed, setArmed] = useState<{ mandate: PaymentMandate; signature: string } | null>(null);
+  const [revoked, setRevoked] = useState(false);
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
@@ -284,6 +287,7 @@ export default function AgentPage() {
       await tx.wait();
 
       setArmed({ mandate: chosen, signature });
+      setRevoked(false);
       setAgentLog([]);
       setBought({});
       setTaskOutcomes([]);
@@ -298,6 +302,34 @@ export default function AgentPage() {
       setBusy(null);
     }
   }, [magic, address, chosen, spendPolicy, append]);
+
+  // Revoke the budget on-chain (mirrors the proven /firewall flow). SpendPolicy.revoke marks the
+  // mandate revoked; any later charge then reverts with MandateIsRevoked. No new payment logic.
+  const revoke = useCallback(async () => {
+    if (!magic || !armed || running) return;
+    setBusy("Revoking budget…");
+    setError(null);
+    try {
+      const { BrowserProvider, Contract } = await loadEthers();
+      const provider = new BrowserProvider(magic.rpcProvider);
+      const signer = await provider.getSigner();
+      const policy = new Contract(spendPolicy, SPEND_POLICY_ABI as any, signer);
+      append("USER", "Revoke signed.", "info");
+      const tx = await policy.revoke(toContractMandate(armed.mandate));
+      await tx.wait();
+      setRevoked(true);
+      append(
+        "FIREWALL",
+        "Budget revoked on-chain. Agent disarmed — further charges will revert.",
+        "blocked",
+        getExplorerTxUrl(CHAIN, tx.hash)
+      );
+    } catch (e: any) {
+      setError(e.message ?? "Revoke failed");
+    } finally {
+      setBusy(null);
+    }
+  }, [magic, armed, running, spendPolicy, append]);
 
   const chargeForResource = useCallback(
     async (resource: X402Resource): Promise<AgentChargeResult> => {
@@ -482,6 +514,8 @@ export default function AgentPage() {
     }
   }, [armed, running, resources, bought, chargeForResource, recordOutcome, append]);
 
+  const controls = agentControls({ running, revoked });
+
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
@@ -579,7 +613,7 @@ export default function AgentPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <AgentMissionCard mandate={armed.mandate} running={running} onRun={runAutonomous} />
+              <AgentMissionCard mandate={armed.mandate} running={running} onRun={runAutonomous} disabled={revoked} />
 
               {!running && taskSummary.status !== "idle" ? (
                 <AgentTaskResult summary={taskSummary} />
@@ -599,6 +633,32 @@ export default function AgentPage() {
                 />
               </div>
 
+              {revoked ? (
+                <div role="status" className="rounded-2xl border border-danger/25 bg-danger-soft p-4 text-sm">
+                  <p className="flex items-center gap-2 font-semibold text-danger">
+                    <IconBan className="h-4 w-4" /> Budget revoked on-chain
+                  </p>
+                  <p className="mt-1 text-danger/90">
+                    Any further charge now reverts with{" "}
+                    <span className="font-mono text-xs">MandateIsRevoked</span> — the agent can no
+                    longer spend.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={revoke}
+                  disabled={!controls.canRevoke || !!busy}
+                  className="op-btn-secondary w-full justify-center"
+                >
+                  {busy ?? (
+                    <>
+                      <IconBan className="h-4 w-4 text-danger" /> Revoke budget
+                    </>
+                  )}
+                </button>
+              )}
+
               <Disclosure
                 summary={
                   <span className="flex items-center gap-2">
@@ -608,7 +668,7 @@ export default function AgentPage() {
               >
                 <div className="space-y-4">
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <PermissionReceipt mandate={armed.mandate} />
+                    <PermissionReceipt mandate={armed.mandate} revoked={revoked} />
                     <UniversalBalanceCard
                       summary={balanceSummary}
                       loading={balanceLoading}

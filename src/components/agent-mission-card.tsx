@@ -7,9 +7,11 @@ type Props = {
   mandate: PaymentMandate;
   running: boolean;
   onRun: () => void;
+  /** When true (e.g. after revoke), disable Run without showing the "preparing" label. */
+  disabled?: boolean;
 };
 
-export function AgentMissionCard({ mandate, running, onRun }: Props) {
+export function AgentMissionCard({ mandate, running, onRun, disabled = false }: Props) {
   return (
     <section aria-labelledby="research-mission-title" className="rounded-2xl border border-gold/25 bg-paper p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -46,7 +48,7 @@ export function AgentMissionCard({ mandate, running, onRun }: Props) {
       <button
         type="button"
         onClick={onRun}
-        disabled={running}
+        disabled={running || disabled}
         className="op-btn-primary mt-5 w-full justify-center"
       >
         {running ? (
