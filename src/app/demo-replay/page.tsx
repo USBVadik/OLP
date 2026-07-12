@@ -7,7 +7,6 @@ import {
   DEMO_REPLAY_PAYMENT_LINK,
   getDemoReplaySuccess,
 } from "@/lib/demo/replay";
-import { getPaymentModeLabel } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { formatUsdcAmount } from "@/lib/mandates/format";
 import { AgentTaskResult } from "@/components/agent-task-result";
@@ -24,7 +23,6 @@ import {
   IconLock,
 } from "@/components/ui";
 
-const PAYMENT_MODE_LABEL = getPaymentModeLabel();
 const CROSS_CHAIN_RECEIPT_ID = "fc5adc83-3b17-4004-8902-a5a40a178dd5";
 
 function formatAmount() {
@@ -186,10 +184,15 @@ export default function DemoReplayPage() {
             <dl className="divide-y divide-line">
               <Field label="Amount" value={amount} emphasis />
               <Field label="Merchant" value={DEMO_REPLAY_PAYMENT_LINK.merchant_address} mono />
-              <Field label="Payer Universal Account" value={DEMO_REPLAY_PAYMENT.payer_address} mono />
+              <Field label="Payer smart account (legacy mode)" value={DEMO_REPLAY_PAYMENT.payer_address} mono />
               <Field label="Invoice ID" value={DEMO_REPLAY_PAYMENT_LINK.contract_invoice_id} mono />
-              <Field label="Payment mode" value={PAYMENT_MODE_LABEL} />
+              <Field label="Payment mode" value="Legacy smart-account checkout (pre-7702)" />
             </dl>
+            <p className="pb-3 pt-1 text-xs leading-relaxed text-muted">
+              This early checkout ran in the SDK&apos;s legacy smart-account mode, so the payer is a
+              separate contract address. The current product path is EIP-7702 — the Universal
+              Account is the owner&apos;s own EOA (same address); see the cross-chain receipt above.
+            </p>
           </div>
 
           <div className="space-y-2 px-6 pb-5 pt-2">
