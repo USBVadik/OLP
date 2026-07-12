@@ -154,30 +154,31 @@ Secret handling:
 - Keep `.secrets` local only.
 - Do not paste private keys into chat, docs, scripts, screenshots, or commits.
 
-## Known Blockers
+## Current Submission State
 
-- Particle `createUniversalTransaction()` custom calls have returned:
+- Historical SDK `1.1.1` probes returned:
 
 ```text
 -32801 System maintanence, please use SEND/TRANSFER/SELL feature to transfer your assets immediately
 ```
 
-- `universal_invoice` is available but blocked until Particle custom calls work.
-- Active live path is `transfer_fallback`.
-- Arbitrum is exploratory only.
-- Particle AuthKit is not active in checkout.
-- Cross-chain proof is not final until final rules define and accept the path.
+- That migration-era blocker is resolved for the active V2 rail. Prod uses stable SDK `2.0.3` and `universal_7702_transfer`.
+- Cross-chain Particle UA value movement is proven live (C21).
+- Arbitrum is the primary settlement and SpendPolicy chain; Base is a supported source/proof chain.
+- Particle AuthKit is not installed or active. Magic is the live wallet and signer.
+- `universal_invoice` remains inactive; do not switch modes before submission.
+- Research Agent Expense Card and one-click revoke are live-verified (C25-C26).
 
-## What Not To Touch Before Kickoff
+## What Not To Touch Before Submission
 
 - Do not add ZeroDev.
 - Do not build Repeat-Pay Caps.
 - Do not migrate to Particle AuthKit checkout.
-- Do not activate Arbitrum as the product chain.
+- Do not migrate away from the proven Arbitrum-first product path.
 - Do not add QR links.
 - Do not add merchant auth.
 - Do not add broad token support.
-- Do not add UI polish or landing-page work.
+- Do not add broad visual redesigns; only fix demonstrated judge-flow regressions.
 - Do not deploy new contracts.
 - Do not send new mainnet payments.
 - Do not change the default payment mode away from `transfer_fallback`.

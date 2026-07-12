@@ -1,7 +1,7 @@
 # OneLink Pay — Agent Operating Context
 
 > Operating context for AI agents working on this repo. Read this plus `docs/status.md`
-> before acting. Verified by Kiro on 2026-06-19 (see "Verification" at the bottom).
+> before acting. Last synchronized with submission RC2 on 2026-07-12.
 
 ## Workspace
 
@@ -15,32 +15,36 @@ explicitly requested. (Confirmed 2026-06-19: that older copy directory does exis
 OneLink Pay is a consent + proof layer for Universal Accounts, not just a crypto checkout.
 
 Core phrase: **Particle handles the rails. OneLink Pay handles consent, proof, and
-permission safety.** (Positioning. Today the code delivers the proof + PAID state; the
-consent / permission-safety pieces are concept-mode — keep claim discipline below.)
+permission safety.** This is live product behavior: Trust Preview, on-chain SpendPolicy limits,
+revoke, server-verified settlement, Proof Receipt, and PAID state. Real session keys and LLM
+reasoning are not implemented; keep the narrower claim discipline below.
 
 ## Active working direction
 
 - Magic embedded wallet
 - Particle Universal Accounts
-- Base + Arbitrum One (Arbitrum-first settlement); cross-chain via Particle UA (C21). UA SDK pinned stable `2.0.3`
+- Base + Arbitrum One (Arbitrum-first settlement); cross-chain via Particle UA (C21). UA SDK pinned stable `2.0.3`.
 - `PAYMENT_MODE=universal_7702_transfer` as the current Universal Accounts Track candidate
-- `createTransferTransaction` rail
+- `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-routed-chain EIP-7702 pre-delegation
 - server-side USDC `Transfer` verification
 - `ReceiptEmitter.recordVerifiedPayment` proof
 - Supabase PAID state
+- `SpendPolicy` merchant/per-charge/daily/total/expiry/revoke enforcement on Arbitrum and Base
+- Research Agent Expense Card as the primary use case: paid inputs -> useful brief -> over-cap block -> on-chain revoke
 
 ## Fallback / stable mode
 
 - `PAYMENT_MODE=transfer_fallback`
 
-## Strict future path
+## Inactive strict invoice path
 
 - `PAYMENT_MODE=universal_invoice`
 - `createUniversalTransaction` -> approve + payInvoice -> `InvoicePaid`
-- currently blocked by Particle `-32801` maintenance/custom-call issue (V2 migration)
-- do not make it default unless probes prove it works
+- not the active payment path; the deployed product settles via direct verified USDC transfer
+- the historical `-32801` custom-call maintenance issue is resolved for the active V2 universal transaction rail
+- do not make this mode default without a fresh, separately verified `approve + payInvoice` run
 
-## Proven live (2026-06-20 per prompt; environment clock showed 2026-06-19)
+## Proven live
 
 - Base EIP-7702 delegation succeeded.
 - Owner EOA: `0x53Bd615635Af778e5E460d5EEC2d6b234693206a`
@@ -48,9 +52,9 @@ consent / permission-safety pieces are concept-mode — keep claim discipline be
 - BaseScan: https://basescan.org/tx/0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0
 - Particle reports Base `isDelegated=true` after delegation (true on-chain: EOA code is
   `0xef0100` + Particle delegate `0x6640c1cccaf07dbe765ec05e294fe427cc92831c`).
-- `createTransferTransaction` builds after delegation with rootHash, fee quotes, and token
-  changes. (See Verification note 1: `eip7702Delegated=true` on the post-delegation build
-  was not yet captured in a log — re-run "Build transfer in 7702" once delegated to confirm.)
+- Cross-chain value movement is proven on stable UA SDK `2.0.3`: Base-funded USDC settled to a merchant on Arbitrum through `createUniversalTransaction`, without a manual bridge (C21).
+- The Research Agent Expense Card was live-verified on Arbitrum on 2026-07-12: `0.05 + 0.08 USDC` paid for two inputs, a useful brief produced, and an unexpected `0.20 USDC` export blocked before settlement (C25).
+- One-click `/agent` revoke was live-verified through a successful `MandateRevoked` transaction on Arbitrum (C26).
 
 ## Active ReceiptEmitter
 
@@ -72,7 +76,7 @@ consent / permission-safety pieces are concept-mode — keep claim discipline be
 - Do not claim real session keys or automated future (unattended-recurring) payments.
 - The x402 flow is the **pattern** (`onelink-mandate` scheme), not Coinbase-facilitator-compatible.
 - The agent is an **unattended deterministic** loop — never claim an LLM / AI-reasoning agent.
-- Particle AuthKit is installed but **inactive** — not on the live path.
+- Particle AuthKit is **not installed** and is not on the live path.
 
 ## Constraints
 
@@ -99,23 +103,13 @@ consent / permission-safety pieces are concept-mode — keep claim discipline be
 - `corepack pnpm lint`
 - `corepack pnpm test:unit`
 
-## Verification (Kiro, 2026-06-19)
+## Verification (submission RC2, 2026-07-12)
 
-Cross-checked this context against the repo — accurate. Specifics confirmed:
+Cross-checked against the RC2 repository and live evidence:
 
-- Payment modes in `src/lib/config/payment.ts` are exactly
-  `transfer_fallback | universal_invoice | universal_7702_transfer`.
-- ReceiptEmitter + Base USDC addresses match `.env.local` / config.
-- The three commands run clean (`typecheck` ok, `lint` "No ESLint warnings or errors",
-  `test:unit` all pass). Plain `corepack pnpm` (pnpm 9.15) works for these scripts; only
-  `pnpm add`/install needs the matching pnpm 10 (store v10).
-- AuthKit not imported in `src`; ZeroDev not wired in. Arbitrum chain is `active: false`.
-- Older copy `/Users/usbdick/code/OneLink-Pay` exists — the warning is valid.
-
-Notes / slight nuances:
-
-1. `eip7702Delegated=true` on a post-delegation `createTransferTransaction` build was not
-   directly captured in a log. The build (pre-delegation) and the on-chain delegation were
-   each confirmed separately. Re-run "Build transfer in 7702" while delegated to confirm.
-2. Date label: "2026-06-20" per the source prompt; the environment clock read 2026-06-19.
-   The delegation tx itself is the source of truth regardless of label.
+- Payment modes remain `transfer_fallback | universal_invoice | universal_7702_transfer`; prod uses `universal_7702_transfer`.
+- Particle UA SDK is pinned to stable `2.0.3`; AuthKit and ZeroDev are absent from the active stack.
+- Arbitrum is the primary settlement and SpendPolicy chain; Base remains a supported source/proof chain.
+- `submission-rc2` points to `c1f051a` and includes the Research Agent Expense Card plus one-click revoke.
+- Verified gate: typecheck, lint, 207 unit tests, 22 contract tests, production build, and 6/6 HTTP smoke checks.
+- Live proof details belong in `docs/honest-claim-ledger.md`, `docs/proof-pack.md`, and `docs/research-agent-expense-card-spec.md`; those artifacts override narrative summaries.

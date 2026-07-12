@@ -2,17 +2,18 @@
 
 Use this to keep the final UXmaxx / Encode rules aligned with implementation decisions. Do not change the product path until the relevant checklist item is complete.
 
-## Current Prototype Baseline
+## Current Submission Baseline (2026-07-12)
 
 - Wallet/auth: Magic active.
 - Chain abstraction: Particle Universal Accounts active.
-- Active chain: Base mainnet.
-- Exploratory chain: Arbitrum One.
+- Primary settlement and policy chain: Arbitrum One.
+- Supported source/proof chain: Base mainnet.
 - AuthKit checkout: inactive.
-- Stable fallback mode: `transfer_fallback`.
-- Active Universal Accounts Track candidate: `universal_7702_transfer`.
-- Strict payment mode: `universal_invoice`, gated and currently blocked by Particle `-32801`.
-- Working proof path: Particle transfer -> server verifies Base USDC `Transfer` -> ReceiptEmitter proof -> dashboard `PAID`.
+- Legacy fallback mode: `transfer_fallback`.
+- Active Universal Accounts Track mode: `universal_7702_transfer` on stable UA SDK `2.0.3`.
+- Inactive strict invoice mode: `universal_invoice`; the old `-32801` affected the historical V1 custom-call rail, while the active V2 universal transfer path is live.
+- Working proof path: Particle cross-chain universal transaction -> server verifies destination USDC `Transfer` -> ReceiptEmitter proof -> dashboard `PAID`.
+- Primary use case: Research Agent Expense Card (C25-C26).
 
 ## Captured UXmaxx Rules
 
@@ -37,16 +38,16 @@ Universal Accounts Track judging:
 Bonus opportunities:
 
 - Magic Labs bonus: embedded-wallet onboarding and wallet UX. This aligns with the current Magic path.
-- Arbitrum bounty: app and components must run primarily on Arbitrum. This is not active by default; treat as a separate decision.
+- Arbitrum bounty: app and components must run primarily on Arbitrum. Settlement, SpendPolicy, x402-pattern purchases, and revoke are live on Arbitrum.
 - ZeroDev subtrack: meaningful ZeroDev infrastructure integration. This is not active; do not present Spend Caps Concept Mode as ZeroDev.
 - Openfort subtrack: backend wallets + x402. Inactive unless the final strategy pivots.
 
 Known gap:
 
-- Base EIP-7702 delegation is proven.
-- Same-chain Base payment/proof is proven.
-- A live final-rule-compliant cross-chain UA value movement is still pending.
-- Use `docs/cross-chain-proof-runbook.md` for the safe execution path.
+- EIP-7702 delegation is proven.
+- Same-chain payment/proof is proven.
+- Final-rule-compliant cross-chain UA value movement is proven live on stable SDK `2.0.3` (C21).
+- `docs/cross-chain-proof-runbook.md` is retained as the closed proof procedure.
 
 ## Rule Source Capture
 
@@ -111,9 +112,8 @@ Check:
 
 Decision:
 
-- Keep Base if it satisfies the rules.
-- Activate Arbitrum only if rules or probes make it materially better.
-- Do not support both chains in product UX until the final chosen path is stable.
+- Keep Arbitrum as the primary settlement/policy chain for the bonus and product story.
+- Keep Base as a supported funding/proof chain; do not add more chains before submission.
 
 ## Partner Bounties
 

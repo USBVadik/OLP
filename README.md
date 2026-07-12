@@ -19,7 +19,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
 
-- **Agent on a leash** → `/agent`: arm a budget → **Send the agent** → it buys within the caps and is **blocked on-chain** on the over-cap call (no funds moved, zero gas) → revoke.
+- **Research Agent Expense Card** → `/agent`: arm a `0.10 USDC/tool` budget → **Run task with my budget** → the deterministic workflow buys two paid inputs, produces an ETH market-risk brief, blocks an unexpected `0.20 USDC` export before settlement, then lets the user revoke the budget on-chain.
 - **Cross-chain checkout** → `/pay`: Magic login → a merchant is paid on Arbitrum with USDC sourced from Base (no manual bridge) → public proof receipt.
 
 **Prize fit:** Particle Universal Accounts + EIP-7702 (cross-chain, chain-abstracted UX) · Magic (walletless Google/email login) · Arbitrum (USDC settlement + on-chain mandate enforcement).
@@ -30,7 +30,7 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 
 - **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` — caught in simulation before broadcast, so no funds move and zero gas is spent. 22 Hardhat tests pass. **Source verified on-chain — read the enforcement contract on [Basescan](https://basescan.org/address/0x73C862a8312c12C764487a9a484f1d1ad44E3957#code) and [Arbiscan](https://arbiscan.io/address/0x9782e3724859469fbBAC5085EA8bf8E70724164E#code).**
 - **Cross-chain settlement via Particle Universal Account (EIP-7702)** — a Magic-signed UA pays a merchant on Arbitrum with USDC sourced cross-chain from Base in one operation — no manual bridge. Proven live (Arbitrum settle `0x85d8…4911`, Base source `0x8b85…4a2e`, UniversalX `0x0654e81cfea86a`) and wired into `/pay` (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`, live in prod). Same-chain checkout runs on the same path.
-- **Agent on a leash (x402-pattern)** — `/agent` runs the real x402 HTTP handshake (`GET → 402 → pay → retry-with-proof → 200`) settled through the on-chain mandate, so an agent's per-call spend is bounded by the caps. Within-cap buys succeed; over-cap calls are refused before any funds move. Proven live on Arbitrum. Settlement scheme is `onelink-mandate` (the x402 *pattern*, not the Coinbase facilitator).
+- **Research Agent Expense Card (x402-pattern)** — `/agent` runs the real HTTP payment handshake (`GET → 402 → pay → retry-with-proof → 200`) through the on-chain mandate. In the verified run it bought market insight for `0.05 USDC` and sentiment for `0.08 USDC`, produced a readable brief, and refused an unexpected `0.20 USDC` premium export because it exceeded the signed `0.10 USDC/tool` cap. The workflow is deterministic, the payment and block are real, and the settlement scheme is `onelink-mandate` (not the Coinbase facilitator).
 - **Legible consent** — a plain-English mandate card before signing (EIP-712 hash behind a disclosure) and a live budget HUD that drains from on-chain `SpendPolicy` state.
 - **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public, shareable receipt at `/receipt/[id]` (copy-link + QR) with a "Cross-chain: Base → Arbitrum" badge and a UniversalX activity link. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
 - **Walletless onboarding** — Magic embedded wallet, email + Google OAuth (live, with auto-detect on reload).
@@ -41,14 +41,14 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 - ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
 - ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
 - ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.3` (stable): a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
-- ✅ Zero-gas onboarding is live: the one-time EIP-7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas — scoped to the delegation step only (no general settlement paymaster; the settlement fee is paid in USDC). Particle AuthKit is installed but not on the live path.
+- ✅ Zero-gas onboarding is live: the one-time EIP-7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas — scoped to the delegation step only (no general settlement paymaster; the settlement fee is paid in USDC). Particle AuthKit is not installed or used; Magic is the live wallet and signer.
 
 **Honesty caveats:**
 
 - The cross-chain settlement is independently verified on-chain and was re-run live through the prod `/pay` on the stable `2.0.3` build (2026-07-04); a first-time payer needs zero native gas — the one-time 7702 delegation is relayer-sponsored (C23).
 - Prod runs the pinned **stable** Particle SDK (`2.0.3`) — real EIP-7702 + cross-chain, with same-chain and cross-chain settlement live-verified on it (RPC-checked, 2026-07-04).
 - `/agent` uses the x402 **pattern** with a custom `onelink-mandate` settlement scheme — not the Coinbase EIP-3009 facilitator. The on-chain enforcement is real; the "agent" runs a real **unattended deterministic** loop over the same firewall (one click, then no human per-step) — not an LLM that reasons, so no AI decision-making is claimed.
-- `@particle-network/authkit` is installed but is not used in the active flow. AuthKit should not be described as the live demo wallet/auth path.
+- Particle AuthKit is not installed and is not part of the live path. Magic is the embedded wallet and signer used by the demo.
 
 ## How OneLink compares (prior art)
 
@@ -118,7 +118,7 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm typecheck
 corepack pnpm lint
-corepack pnpm test:unit          # 191 unit tests (node:test)
+corepack pnpm test:unit          # 207 unit tests (node:test)
 corepack pnpm build
 cd contracts && corepack pnpm test   # 22 Hardhat contract tests
 ```

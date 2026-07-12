@@ -1,5 +1,11 @@
 # Particle createUniversalTransaction Repro
 
+> **RESOLVED HISTORICAL REPRO.** The `-32801` results below describe Particle UA SDK `1.1.1`
+> during the V2 migration. The active product now runs stable SDK `2.0.3`; its
+> `createUniversalTransaction` cross-chain transfer path is proven live in-product (C21). The
+> separate `approve + payInvoice` experiment remains inactive, but `-32801` is not a current blocker
+> for OneLink Pay's qualifying rail.
+
 Hi Particle / Encode team,
 
 ## Update — Base EIP-7702 Delegation Verified (2026-06-20)

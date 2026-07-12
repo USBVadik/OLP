@@ -199,7 +199,7 @@ OneLink-Pay/
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Wallet / auth | Magic embedded (email + Google) | Walletless onboarding; no seed phrase. AuthKit installed but not on the live path. |
+| Wallet / auth | Magic embedded (email + Google) | Walletless onboarding and EIP-7702 signing; no seed phrase. Particle AuthKit is not installed or used. |
 | Chain abstraction | Particle Universal Accounts (EIP-7702) | One balance across chains; cross-chain sourcing + gas from the stablecoin on the `/pay` path. |
 | Spend enforcement | **Our `SpendPolicy.sol` mandate** (NOT ZeroDev) | A focused, auditable, payments-specific policy (per-charge / daily / total / merchant / expiry / revoke) with legible consent + on-chain proof. |
 | Agent rail | x402 **pattern**, `onelink-mandate` scheme | Bounds x402 per-call spend by the mandate; honest framing (not facilitator-compatible). |

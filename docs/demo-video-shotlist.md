@@ -1,94 +1,117 @@
-# Demo Video — Shot List (what to click & show)
+# Demo Video Shot List
 
-> The RECORDING plan for the Checkpoint-3 demo video. This is the "what to do on screen"
-> storyboard — NOT the voiceover. Record following this, then send me a second-by-second note of
-> what was on screen at each moment and I'll write the narration to match.
+> Recording plan for the final judge video. This is the click-and-screen storyboard, not the
+> voiceover. Target length: **1:45-2:10**. Hard cap: 2:30.
 >
-> Target length: **~2:30** (hard cap 3:00). It compresses to a 90-sec cut by keeping segments
-> 0–2 + 4 and dropping 3.
-> Judging weights to serve: UX 40 · Universal Accounts + EIP-7702 30 · adoption 20 · polish 10.
-> Golden rule: **lead with the block moment, not the plumbing.**
+> Judging weights served: UX 40 · Universal Accounts + EIP-7702 30 · adoption 20 · polish 10.
+> Golden rule: **show useful work, the hard block, and the proof. Do not tour the app.**
 
-## Pre-flight (do BEFORE hitting record — so nothing flakes)
+## Pre-flight
 
-- [ ] Clean Chrome profile, **no extensions / no ad-block** (R7). Window ~1280–1440 wide; browser
-      zoom ~110–125% so text is legible in the recording.
-- [ ] Serving the **prod** build (onelink-pay.vercel.app) with `NEXT_PUBLIC_ENABLE_DEBUG_PROBES=false`.
-- [ ] Demo wallet ready: payer `0x53Bd…206a` holds a little **USDC on Arbitrum** (≥ ~0.5 for a live
-      charge) and the relayer `0x0AC0…9f41` has a little **ETH on Arbitrum** for gas.
-- [ ] **Pre-arm the firewall mandate** on `/firewall` (log in with Magic + arm the "agent budget"
-      preset) so Segment 2 opens ALREADY armed — do NOT record the arming.
-- [ ] Tabs pre-opened (so cuts are clean): `/` · `/try` · `/firewall` (armed) ·
-      `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5` · the SpendPolicy Basescan #code page.
-- [ ] Do one silent dry-run of the whole click path first.
+- [ ] Use a clean browser profile without extensions. Window 1280-1440 px; zoom 110-125%.
+- [ ] Record the production build at `https://onelink-pay.vercel.app`.
+- [ ] Confirm the Research Agent payer has enough Arbitrum USDC for `0.13 USDC` of purchases and
+      the relayer has enough Arbitrum ETH.
+- [ ] Open `/agent`, sign in with Magic, and arm the `agent budget` mandate before recording. Keep
+      this tab in the same session because armed state is not restored after a reload.
+- [ ] Pre-open these tabs: `/` · `/agent` (armed) · canonical
+      `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5` · `/try`.
+- [ ] Run the exact click path once silently. If any external dependency is unstable, record the
+      existing verified state and use the canonical receipt rather than sending another payment.
 
-## Shot list
+## Primary 115-second cut
 
-### Segment 0 — Hook (0:00–0:10) · screen: `/`
-- Land on the homepage. Let the H1 **"Give your AI a card. Not your wallet."** + the tagline
-  ("Trust before you pay. Proof after it settles.") sit for a beat.
-- Move the cursor to the primary CTA **"Watch an AI get blocked — no wallet."** (don't click yet —
-  this sets up the payoff).
-- *Emphasis:* one clear promise in the first 10 seconds.
+### 1. Promise (0:00-0:08) · `/`
 
-### Segment 1 — The walletless BLOCK moment (0:10–0:35) · screen: `/try`
-- Click the primary CTA → `/try`. Point out: **no wallet, no login.**
-- Tap the block button once. Show the result: **"Blocked on-chain · PerChargeExceeded · No funds
-  moved · Zero gas."**
-- *Emphasis (the 10-sec wow):* an over-spend hit a real on-chain contract (the live Arbitrum
-  `SpendPolicy`) and was refused — money never moved. A judge can do this themselves.
+- Hold on **"Give your AI a card. Not your wallet."**
+- Let the supporting line sit for one beat.
+- Click the Research Agent CTA.
 
-### Segment 2 — Permission Firewall / agent on a leash (0:35–1:20) · screen: `/firewall` (pre-armed)
-- Open `/firewall` — already armed. Read the **Permission Receipt** card aloud with the cursor:
-  merchant (one recipient), **per action 0.10**, daily/total caps, expires, revocable.
-- Click **Run agent (within budget)** → a charge settles; the **Budget HUD drains**; a "view tx"
-  link appears. (Real USDC moved inside the limit.)
-- Click **Run agent (over cap → blocked)** → **"BLOCKED: over the per-charge cap — attempted 0.20
-  USDC, cap 0.10 USDC. No funds moved, zero gas."** + the "Firewall held" beat.
-- Click **Revoke permission** → then click a charge again → **"BLOCKED: mandate revoked."**
-  (The kill switch is yours — 7702 reversibility.)
-- *Emphasis:* the limit is enforced on-chain, on your own account; even the same button that just
-  paid can't move a cent after revoke.
+Voiceover intent: "Autonomous software needs purchasing power, not unrestricted wallet access."
 
-### Segment 3 — Cross-chain checkout (OPTIONAL, 1:20–1:55) · screen: `/pay/<fresh-id>`
-> Riskiest live beat (login + settlement). Only record it if it ran clean in the dry-run. If not,
-> SKIP straight to Segment 4 — the verified receipt is the same proof, safer.
-- Open a **fresh unpaid** `/pay/<id>` (create one in `/dashboard` beforehand). **Continue with
-  Google** (Magic) — no seed phrase, no chain picker.
-- Show the **Trust Preview**: You pay / Merchant receives / **Base → Arbitrum** route / fee in USDC
-  / no manual bridge.
-- One tap **Pay** → it settles.
-- *Emphasis:* one balance, cross-chain, no bridge — Particle UA in EIP-7702 mode.
+### 2. Permission before execution (0:08-0:25) · `/agent` armed
 
-### Segment 4 — Proof Receipt + verified contract (1:55–2:25) · screens: `/receipt/fc5adc83…` then Basescan
-- Open `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`. Show the verified certificate: amount,
-  merchant, **payment tx** (Arbiscan), **proof tx / InvoicePaid** (Basescan), the **Base → Arbitrum**
-  cross-chain badge + route, UniversalX link, "verified by Particle activity."
-- Click the payment-tx link once → it resolves on Arbiscan (real, re-checkable).
-- Cut to the **SpendPolicy on Basescan `#code`** tab → "the enforcement contract is verified — read
-  it yourself."
-- *Emphasis:* anyone can verify, no account; the contract is public.
+- Show the mission: prepare an ETH market-risk brief.
+- Point to the signed limits: `0.10 USDC/tool`, `2 USDC/day`, one merchant, expiry, revoke.
+- Keep addresses, hashes, and x402 details closed.
 
-### Segment 5 — Close (2:25–2:40) · screen: `/` or `/trust`
-- Back to the homepage (or a glimpse of `/trust`).
-- *Emphasis / the closing line:* "Particle makes execution chain-abstracted; OneLink makes consent
-  visible, limits enforceable, and every settlement provable."
+Voiceover intent: "I give this workflow a card it cannot exceed: one provider, ten cents per tool,
+two dollars per day, revocable whenever I choose."
 
-## Fallbacks (if something flakes mid-record — R4)
-- Magic/Particle/RPC hiccup on `/pay` → skip Segment 3, use the verified `fc5adc83` receipt as the
-  cross-chain proof (Segment 4).
-- Live charge on `/firewall` slow → the pre-armed state + the over-cap BLOCK + revoke still tell the
-  whole story without a settled charge; or fall back to `/demo-replay` (a labeled replay).
-- Never show `/debug/*` (probes are off in prod anyway).
+### 3. Useful work and hard refusal (0:25-1:00) · `/agent`
 
-## Honesty while narrating (keep these true — denylist)
-- Say "x402 **pattern**, settled by our on-chain mandate" — never "x402 facilitator-compatible."
-- Say the agent is "**unattended, deterministic**" — never "AI/LLM agent."
-- Say gas sponsorship is "the one-time **7702 delegation**" — never "a general gas paymaster."
-- Cross-chain is "**Base → Arbitrum**" (supported chains) — never "any/every chain."
-- "We build on the spend-permission wave (ERC-7715, Coinbase, MetaMask)" — never "we invented it."
+- Click **Run task with my budget** once.
+- Let Market insight (`0.05`) and Live sentiment (`0.08`) settle.
+- Hold on the **Brief ready** result. Point to `0.13 spent`, `0.20 protected`, and the readable brief.
+- Point to the blocked premium export: attempted `0.20`, signed cap `0.10`, no settlement.
+- Do not open raw logs unless the judge explicitly asks.
 
-## After you record
-Send me, per beat: the on-screen timestamp range + exactly which screen/action was showing (e.g.
-"0:12–0:34 — /try, tapped block, 'Blocked on-chain' visible"). I'll write tight voiceover text
-matched to your real timings.
+Voiceover intent: "It buys the two inputs it needs and produces the brief. Then a buggy premium
+export asks for twenty cents. The contract refuses it before settlement. Useful work completed;
+unexpected spend prevented."
+
+### 4. Kill switch (1:00-1:13) · `/agent`
+
+- Click **Revoke budget** and confirm through Magic.
+- Hold on the revoked confirmation and disabled run action.
+- If recording without another mainnet action, use the already verified RC2 revoke state/video and
+  show its Arbiscan link instead. Never imply a replay is a fresh transaction.
+
+Voiceover intent: "And the authority remains mine. One revoke disarms the budget on-chain."
+
+### 5. Particle UA track proof (1:13-1:43) · canonical `/receipt`
+
+- Open `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`.
+- Show the Base -> Arbitrum route, amount, merchant, settlement transaction, UniversalX activity,
+  and InvoicePaid proof.
+- Open one explorer link only if it loads immediately.
+
+Voiceover intent: "Underneath, the same Magic EOA is a Particle Universal Account in EIP-7702
+mode. This verified payment sourced USDC from Base and settled on Arbitrum without a manual bridge.
+The receipt is public and independently checkable."
+
+### 6. Close (1:43-1:55) · `/` or receipt header
+
+- Finish on the product name or verified receipt.
+
+Closing line: "Particle handles the rails. OneLink gives autonomous payments consent, limits, and
+proof."
+
+## Optional inserts
+
+- **Walletless judge action (`/try`, 10-15s):** one tap triggers the real Arbitrum
+  `PerChargeExceeded` simulation with no login, no wallet, no funds moved, and no gas. Use as a
+  leave-behind or when the live agent run is unavailable, not in addition to every other flow.
+- **Magic onboarding (8-12s):** include only if a clean OAuth capture helps the Magic bonus. Show
+  email/Google login and the same EOA; do not show OTP codes.
+- **Verified contract (5-8s):** one quick Arbiscan `Contract / Code` shot if the audience is
+  technical. Never replace the useful result with Solidity on screen.
+
+## Fallback hierarchy
+
+1. Agent run works: use the primary cut.
+2. Agent provider/relayer is slow: show the verified Research Agent result and transaction links,
+   clearly labelled as an earlier live run.
+3. Magic is slow: use `/try` for the interactive block and the canonical receipt for cross-chain
+   proof.
+4. Never open `/debug/*`, expose raw secrets, or send a replacement transaction merely to rescue a
+   recording.
+
+## Claim discipline
+
+- Say **x402 pattern, settled by our on-chain mandate**, not Coinbase-facilitator compatible.
+- Say **unattended deterministic workflow**, not LLM reasoning.
+- Say the two research resources are deterministic demo fixtures; the payments and enforcement are
+  real.
+- Say the Research Agent purchases settle on Arbitrum. The separate canonical Particle UA receipt
+  is the Base -> Arbitrum cross-chain proof.
+- Say the one-time EIP-7702 delegation is sponsored, not that every transaction has a general gas
+  paymaster.
+- Say no private key or unrestricted signing authority is shared with the workflow. Do not imply
+  that no token allowance exists.
+
+## After recording
+
+Write down each visible time range and action. Trim dead waits, OTP entry, wallet modals, repeated
+explorer loading, and technical accordions. The finished video should make a judge repeat this in
+one sentence: **"The workflow completed the task, could not overspend, and the payment is provable."**

@@ -1,7 +1,9 @@
-# OneLink Pay — Checkpoint 3 Submission (Universal Accounts Track)
+# OneLink Pay — Final Submission Draft (Universal Accounts Track)
 
-> Paste-ready copy for the final submission form. Deadline: 2026-07-20 14:59 Europe/Kiev.
+> Paste-ready copy for the final submission form. Current schedule records Jul 19 as the final
+> submission date; confirm the exact platform cutoff before submitting.
 > Keep it honest — every claim maps to `docs/honest-claim-ledger.md` and the on-chain proofs.
+> `docs/submission.md` is the canonical full rubric/track record; this file is the condensed form copy.
 
 ## Form fields
 
@@ -23,17 +25,17 @@
 
 **Universal Accounts + EIP-7702 (track fit).** Magic email/Google login delegates the user's *own* EOA in place via EIP-7702, turning it into a Particle Universal Account that settles USDC cross-chain (Base → Arbitrum, no manual bridge) in one operation. We meet the track requirements: UA SDK in 7702 mode, a live cross-chain value operation via the UA, and a functional demo — all proven on-chain (canonical receipt `/receipt/fc5adc83…`).
 
-**Agent on a leash (x402).** An unattended, deterministic agent pays per API call via the x402 *pattern* (our `onelink-mandate` scheme — not the Coinbase facilitator), bounded by the same on-chain mandate; over-cap calls are refused before any funds move.
+**Research Agent Expense Card (x402 pattern).** The demo gives a deterministic research workflow a real task: prepare an ETH market-risk brief. It buys two required inputs for `0.05 + 0.08 USDC`, produces the brief, then an unexpected `0.20 USDC` premium export is rejected because it exceeds the signed `0.10 USDC/tool` cap. The useful result appears before technical logs; the user can then revoke the budget on-chain. These purchases and the revoke are live-verified on Arbitrum. Our settlement scheme is `onelink-mandate`, not the Coinbase facilitator.
 
 **Why it's credible, not just a demo.** `SpendPolicy` is source-verified on Basescan and Arbiscan, so anyone can read the enforcement contract. A walletless page (`/try`) lets a judge trigger the real on-chain over-cap revert in one tap — no wallet, no gas. A `/trust` page states plainly what's real vs pattern vs future.
 
-**Honest scope.** x402 *pattern* (not facilitator-compatible); the agent is unattended-deterministic (not an LLM); gas sponsorship is scoped to the one-time 7702 delegation (not a general settlement paymaster); cross-chain is proven Base↔Arbitrum. We build on the emerging spend-permission wave (ERC-7715, Coinbase, MetaMask) — we don't claim to have invented it; our wedge is a merchant-bound, revocable mandate on your own EOA, chain-abstracted, with a public proof receipt.
+**Honest scope.** x402 *pattern* (not facilitator-compatible); the agent is unattended-deterministic (not an LLM); its paid research inputs are deterministic demo resources; gas sponsorship is scoped to the one-time 7702 delegation (not a general settlement paymaster). The canonical track proof is a separate Base → Arbitrum Particle UA payment; we do not claim the research purchases themselves were cross-chain. We build on the emerging spend-permission wave (ERC-7715, Coinbase, MetaMask) — we don't claim to have invented it; our wedge is a merchant-bound, revocable mandate on your own EOA, chain-abstracted, with a public proof receipt.
 
 **Try it:** live at onelink-pay.vercel.app · walletless block at `/try` · cross-chain receipt at `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`.
 
 ## Judging-criteria map (for our own reference, not for the box)
 
-- **UX excellence (40%):** walletless 10-second "block moment"; legible Trust Preview vs blind signature; live Budget HUD; one-tap revoke; shareable Proof Receipt.
+- **UX excellence (40%):** a concrete task and useful brief; walletless 10-second block moment; legible Trust Preview vs blind signature; live Budget HUD; one-tap revoke; shareable Proof Receipt.
 - **Universal Accounts + EIP-7702 (30%):** own EOA delegated in 7702 mode → Particle UA; cross-chain USDC (Base → Arbitrum) proven live; account-level mandate enforcement.
-- **Adoption (20%):** an API layer (walletless firewall verdict JSON); a concrete use case (x402 vendor caps agent spend); integrate-in-one-call.
-- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 191 unit tests; typed end to end; claim-discipline `/trust`.
+- **Adoption (20%):** an expense-card pattern for autonomous software buying data, inference, compute, storage, or other paid tools; a concrete research-agent demonstration; integrate-in-one-call.
+- **Technical quality / polish (10%):** SpendPolicy source-verified on-chain; 22 contract + 207 unit tests; typed end to end; claim-discipline `/trust`.

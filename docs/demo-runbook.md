@@ -1,6 +1,6 @@
 # OneLink Pay — Demo Runbook
 
-Last updated: 2026-07-06
+Last updated: 2026-07-12
 
 The definitive "what to show and say" for judges. Reflects the current build — Arbitrum-first, with
 cross-chain settlement via the Particle Universal Account (prod mode `universal_7702_transfer`),
@@ -8,17 +8,17 @@ deployed live at onelink-pay.vercel.app.
 
 ## Pitch card (rehearse this — 60–90s)
 
-**Cold-open hook (10s) — lead with the payoff, human-first.** Start ALREADY armed. Point the agent at an over-cap buy and say: *"Watch — this AI tries to spend more than I allowed… and it can't. My money never moves."* The charge is refused, the budget bars don't flinch, and the **"Firewall held"** beat stays lit. Only THEN name the tech: *"That refusal happened on-chain, on my own account — and it cost nothing."*
+**Cold-open hook (10s) — lead with useful work plus protection.** Start on the armed Research Agent mission and say: *"I'm giving this workflow a 0.10-dollar-per-tool card to prepare an ETH risk brief. Watch what happens when a buggy step asks for twice that limit."* Click **Run task with my budget**. The payoff arrives in the same flow: **Brief ready**, `0.13 spent`, `0.20 protected`. Only then name the technology: *"The budget was enforced on-chain, on my own account."*
 
-**Then rewind — "here's all it took" (60–90s):**
+**The full 60–90 second path:**
 1. Magic login — no seed phrase, no gas, no chain picker. *(Your own EOA → Particle UA in EIP-7702 mode.)*
 2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable — "a card with a built-in limit."
-3. **Send the agent** → it buys *within* budget (`402 → pay → 200`); the Budget HUD drains. The limit is real; money really moves inside it.
-4. **Revoke** → agent disarmed instantly — the kill switch is yours (7702 reversibility as a safety feature).
+3. **Run task with my budget** → it buys market insight (`0.05`) and sentiment (`0.08`) through the x402 pattern, then renders a readable ETH risk brief. The unexpected `0.20` premium export is blocked by the signed `0.10/tool` cap.
+4. **Revoke budget** → the mandate emits `MandateRevoked` on Arbitrum and the workflow is disarmed. The kill switch is owned by the payer.
 5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). And **zero native gas** — the one-time delegation is relayer-sponsored (C23).
 6. Open the public **proof receipt** → anyone verifies on a block explorer, no account.
 
-**Golden path — don't sprawl.** The live run is exactly the beats above (`/firewall` for the block + one cross-chain `/pay` for the credibility beat). `/try` (walletless self-serve block), `/dashboard`, `/wallet` (Pro / key-export) and `/demo-replay` are **"explore if asked," not live beats** — one crisp "it physically can't overspend" moment beats five decent flows.
+**Golden path — don't sprawl.** The live run is exactly `/agent` for task → result → block → revoke, followed by the canonical cross-chain `/receipt` for Particle UA credibility. `/try` (walletless self-serve block), `/firewall`, `/dashboard`, `/wallet` (Pro / key-export), and `/demo-replay` are **"explore if asked," not live beats**. One useful result plus one hard refusal beats a tour of every route.
 
 **Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC) and the **one-time 7702 delegation is now sponsored** — the relayer pays it (proven on-chain, C23), so a first-time payer needs **zero native gas**. (Scoped to the delegation step; the settlement fee is still paid in USDC — we do **not** claim a general paymaster.)
 
@@ -60,7 +60,7 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 - **Permission Firewall — real on-chain enforcement (live on Base and Arbitrum).** `SpendPolicy` enforces per-charge / daily / total caps + expiry + merchant-only recipient + revoke. Off-scope or over-cap charges revert.
 - **Walletless self-serve block — `/try` (C24).** Anyone — no wallet, no login — taps once and triggers the real on-chain over-cap revert (`PerChargeExceeded`, no funds moved, zero gas), simulated against the live Arbitrum `SpendPolicy`. Lets a skeptical judge drive the wow themselves.
 - **Cross-chain settlement via the Universal Account (C21).** USDC sourced from Base, settled to the merchant on Arbitrum in one operation — no manual bridge. Proven live + deployed.
-- **Autonomous agent on a leash.** One-click unattended run buys within the mandate and is halted by the firewall on the over-cap call (deterministic — not LLM-driven).
+- **Research Agent Expense Card (C25-C26).** One click buys two required inputs for `0.05 + 0.08 USDC`, produces a deterministic ETH risk brief, blocks an unexpected `0.20 USDC` export before settlement, and exposes a live one-click on-chain revoke. The workflow is unattended and deterministic, not LLM-driven.
 - **Proof Receipt.** A verified -> matched -> recorded trail, shareable at `/receipt/[id]`; anyone can verify on a block explorer.
 - **InvoicePaid proof** anchored on Base via `ReceiptEmitter`.
 - **Zero-gas onboarding — sponsored 7702 delegation (C23).** The one-time per-chain delegation is submitted by our relayer (relayer pays the gas); the payer signs only the authorization (gasless, via Magic). Proven live on Arbitrum — the delegation tx's sender is the relayer, not the payer. Flag-gated with a self-paid fallback; scoped to the delegation step (not a general paymaster).
@@ -69,8 +69,8 @@ on-chain at your own account** — the enforcement layer the 2026 agentic-paymen
 
 ## Live demo (~2 minutes, agent-first)
 
-One hero moment, one credibility beat — **cold-open on the block.** **Act 1** = the agent on a leash
-(the on-chain block, the emotional peak). **Act 2** = the cross-chain checkout (proof-of-depth,
+One hero moment, one credibility beat — **task first, hard block second.** **Act 1** = the Research
+Agent Expense Card (useful result plus on-chain refusal). **Act 2** = the cross-chain checkout (proof-of-depth,
 *after* the peak — never the opener). Both live on Arbitrum + Base; keep amounts tiny.
 
 ### Act 1 — The agent on a leash (the hook, cold-open) — `/agent` (or `/firewall`)
@@ -78,30 +78,30 @@ One hero moment, one credibility beat — **cold-open on the block.** **Act 1** 
 Set up ALREADY armed before you present, so you can open on the block. (The `/agent` screen shows
 your one Universal Account balance across chains — Particle's chain-abstraction, made visible.)
 
-1. Read the mandate card aloud: `$0.10 / charge`, `$2 / day`, `$10 total`, **one merchant**,
+1. Read the mission and mandate aloud: **prepare an ETH market-risk brief**, `$0.10 / paid tool`, `$2 / day`, `$10 total`, **one merchant**,
    **expires today**, **revocable anytime**. "If a charge breaks any limit it reverts on-chain — you
    pay nothing." *(If arming live: one signature + one approve; the Budget HUD lights up 2.00/2.00
    today, 10.00/10.00 lifetime.)*
-2. **Send the agent (autonomous run).** One click. The terminal narrates the real x402 handshake —
-   it buys **Market insight ($0.05)** then **Live sentiment ($0.08)** (`402 → pay within mandate →
-   200 OK`), and the **Budget HUD drains** with each purchase.
+2. **Run task with my budget.** One click. The workflow buys **Market insight ($0.05)** then
+   **Live sentiment ($0.08)** (`402 → pay within mandate → 200 OK`). The **Budget HUD drains** and
+   the primary result becomes **Brief ready** with a readable risk summary; technical activity stays
+   behind the accordion.
 3. It then reaches **Premium dataset ($0.20)** — over the $0.10 per-charge cap. **BLOCKED: over the
    per-charge cap. No funds moved, zero gas.** The agent halts itself; the Budget HUD and the "Your
    own account" spine hold **Firewall held · budget untouched** — the bars do NOT move. *(This is the
    10-second wow — say it human-first: "it tried to overspend and it can't; my money never moved.")*
-4. **Revoke** → "Mandate revoked on-chain. Agent disarmed." The charge buttons stay live on
-   purpose: **tap any charge again** — even the within-budget one that just settled — and the
-   firewall now reverts it `BLOCKED: mandate revoked. No funds moved, zero gas.` 7702
-   reversibility as a safety feature. *(This post-revoke retry is the most convincing proof — the
-   same button that paid a second ago now can't move a cent. It reads clearer to judges than
-   another cross-chain tx hash.)*
+4. **Revoke budget** → "Budget revoked on-chain." The `/agent` run control becomes unavailable and
+   the revoked state is visible. The security boundary is the contract: the live revoke transaction
+   emitted `MandateRevoked`, and future charges for that mandate revert. If a judge asks to exercise
+   the post-revoke failure manually, use the dedicated `/firewall` surface rather than adding another
+   live transaction to the main presentation.
 
-Proven live on Arbitrum (2026-06-21): autonomous run bought 0.05 + 0.08, over-cap 0.20 blocked
-(`PerChargeExceeded`), HUD drained to 1.87/9.87, revoke confirmed.
+Proven live on Arbitrum (2026-07-12): the Research Agent run bought `0.05 + 0.08 USDC`, produced
+the brief, blocked the `0.20 USDC` export (`PerChargeExceeded`), and left on-chain state at `0.13`
+spent. The `/agent` revoke tx `0xe01a85…5aea` succeeded and emitted `MandateRevoked` (C25-C26).
 
-Talk track: "x402 gives an agent a wallet; OneLink is the leash. The agent runs unattended and makes
-its own purchases — but the on-chain firewall is the hard limit. Even a buggy or prompt-injected
-agent physically cannot exceed what you signed." **Honesty:** the agent is an *unattended
+Talk track: "Payment rails let software buy tools. OneLink is the expense card and hard limit. This
+workflow completed useful work, but the unexpected export could not exceed what I signed." **Honesty:** the agent is an *unattended
 deterministic* loop — **not** LLM-driven; the x402 flow is the *pattern* (`onelink-mandate`, not the
 Coinbase facilitator); the on-chain enforcement is fully real.
 
@@ -252,16 +252,16 @@ Accounts:
 - [ ] Revoke → `Mandate revoked`; run again → `BLOCKED: MandateIsRevoked`.
 - [ ] (optional a11y) with VoiceOver/NVDA on, the "BLOCKED" line is announced aloud (aria-live fix).
 
-### 4. `/agent` autonomous run (verifies C16 / C17)
+### 4. `/agent` Research Agent run (verifies C25 / C26)
 
 - [ ] Login + Arm; the Universal Account balance shows one balance across the EVM chains held (Base, Arbitrum, …) — or "Balance unavailable … Retry" (R12). Demo proceeds either way.
-- [ ] Click **Send the agent (autonomous run)** → it buys Market insight ($0.05) then Live sentiment ($0.08) (`402 → Paying… → 200 OK`), HUD drains 2.00 → 1.87.
+- [ ] Click **Run task with my budget** → it buys Market insight ($0.05) then Live sentiment ($0.08) (`402 → Paying… → 200 OK`), produces the brief, and the HUD drains 2.00 → 1.87.
 - [ ] It reaches Premium dataset ($0.20, over cap) → `BLOCKED: over the per-charge cap. No funds moved, zero gas.` → agent halts; **no new tx** on arbiscan for that attempt.
-- [ ] (optional) Revoke on `/firewall` → re-run → `MandateIsRevoked`.
+- [ ] Click **Revoke budget** on `/agent` → Magic confirms the tx → revoked banner appears and the run action is disabled. Record the `MandateRevoked` tx hash.
 
 ### 5. Record the results
 
-- [ ] In `docs/honest-claim-ledger.md`, bump `last_verified` for the rows just proven live (C8/C16/C17/C20) and move R15/R17 from "build-verified" to "live-verified" in `docs/risk-register.md`, pasting the new tx hashes.
+- [ ] In `docs/honest-claim-ledger.md`, bump `last_verified` only for the claims actually rerun. C25-C26 already contain the RC2 funded-run and revoke evidence.
 - [ ] Save the recording as the R4 backup video, labeled "replay".
 
 ### Fallbacks (R4)

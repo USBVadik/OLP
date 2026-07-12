@@ -1,16 +1,16 @@
 # Status
 
-Last updated: 2026-07-06
+Last updated: 2026-07-12
 
 ## Active Stack
 
-This is a pre-hackathon prototype. The active Milestone B checkout uses Magic + Particle Universal Accounts.
+This is the active UXmaxx submission candidate. The production checkout uses Magic + Particle Universal Accounts.
 
 - Magic is the embedded wallet/auth layer.
 - Particle Universal Account SDK (`2.0.3`, pinned exact stable) is the chain abstraction layer.
 - Legacy/fallback modes use `new UniversalAccount({ ownerAddress })` (separate smart-account address, `UNIVERSAL` version `1.0.3`).
 - An explicit EIP-7702 mode (`universal_7702_transfer`) is now implemented: `smartAccountOptions { useEIP7702: true, version: UNIVERSAL_ACCOUNT_VERSION }`, with the EOA delegated in-place via Magic's `sign7702Authorization` / `send7702Transaction`.
-- Particle AuthKit is installed but not used in the active flow.
+- Particle AuthKit was removed from the dependency tree and is not part of the active flow.
 - Base + Arbitrum One mainnet USDC are supported. Arbitrum is the active settlement chain; the `InvoicePaid` proof is anchored on Base.
 - The active payment mode is `universal_7702_transfer`: cross-chain settlement via Particle UA in EIP-7702 mode — **proven live and deployed (ledger C21)**. `transfer_fallback` remains only as a legacy same-chain fallback.
 
@@ -116,6 +116,18 @@ Historical Base Sepolia v0 deployment:
 The historical Sepolia v0 and previous Base mainnet v1 share the same hex address, but they are separate deployments on separate chains.
 
 The historical transfer-only P0 is no longer the target path. It remains proof that Magic + Particle UA can move real USDC on Base.
+
+## Submission RC2: Research Agent Expense Card
+
+The primary adoption story is now a concrete outcome rather than a generic payment harness:
+
+1. The user signs an on-chain agent budget: `0.10 USDC` per paid tool, `2 USDC` per day, one merchant, expiry, and revoke.
+2. An unattended deterministic workflow buys market insight for `0.05 USDC` and sentiment for `0.08 USDC` through the x402 pattern.
+3. The purchased inputs produce a readable ETH market-risk brief.
+4. An unexpected `0.20 USDC` premium export is rejected with `PerChargeExceeded` before broadcast; no funds move and no gas is spent on the blocked attempt.
+5. The user revokes the budget on-chain; the `/agent` run control is disabled and later charges are contractually invalid.
+
+Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the verified gate is 207 unit tests, 22 contract tests, production build, and 6/6 HTTP smoke checks.
 
 ## Known Risk (resolved -> residual)
 

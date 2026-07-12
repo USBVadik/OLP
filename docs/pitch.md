@@ -12,11 +12,11 @@ agent economy.
 
 ## Elevator (≈20s)
 
-AI agents are starting to pay for things over HTTP (x402) — but you can't hand a bot your wallet.
-OneLink Pay lets you sign one scoped mandate, and your Universal Account can be charged only inside
-it: per-charge, daily and total caps, expiry, a single merchant, instant revoke. The agent can pay,
-but it physically cannot overpay — over-limit charges revert on-chain at zero gas — and every
-payment ships a verifiable proof receipt. Particle handles execution; OneLink Pay handles consent,
+Autonomous software is starting to buy data and tools, but the choices today are full wallet access
+or constant human approval. OneLink Pay gives the workflow a scoped expense card on the user's own
+Universal Account: per-charge, daily and total caps, expiry, one merchant, instant revoke. In our
+live demo a research workflow buys two inputs, produces an ETH risk brief, and a buggy premium export
+physically cannot exceed the signed limit. Particle handles execution; OneLink Pay handles consent,
 limits, and proof.
 
 ## The problem
@@ -40,31 +40,28 @@ agentic payments safe — an "AI-safe card", not a blank-cheque wallet.
 
 | Time | On screen (do) | Say |
 |------|----------------|-----|
-| 0:00–0:12 | `/firewall` → **Continue with Google** | "You can't give an AI agent your wallet. So we give it a card. I sign in with Google — no seed phrase, no extension." |
-| 0:12–0:30 | Pick **Agent budget** preset → sign + approve; Budget HUD lights up | "One signature arms a mandate: 0.10 per charge, 2.00/day, 10.00 total, expires in 24h, one merchant, revocable. This isn't a promise — it's enforced on-chain by my account via EIP-7702." |
-| 0:30–0:48 | **Run agent (within budget)** → `Charged 0.10. Settled. view tx`; HUD drains 2.00→1.90 | "The agent pays inside the budget — real USDC, settled on Arbitrum. Here's the transaction." |
-| 0:48–1:06 | **Run agent (over cap, 0.20)** → red `BLOCKED: PerChargeExceeded. No funds moved, zero gas.` | "Now it tries to overspend. It physically can't. The charge reverts on-chain — no funds move, zero gas. The seatbelt holds, on camera." |
-| 1:06–1:18 | **Revoke** → run again → `BLOCKED: MandateIsRevoked` | "And I hold the kill switch. Revoke, and the agent is disarmed instantly — 7702 reversibility as a safety feature." |
-| 1:18–1:30 | Open `/receipt/<id>` | "Every payment ships a verifiable receipt: the settlement is trustless, the proof is an on-chain attestation anyone can re-check. Particle makes execution invisible — we make consent visible, limits unbreakable, and every payment provable." |
-
-Optional Part C (`/agent`): the same mandate bounding an **x402** agent purchase — buy a $0.05 API,
-then a $0.20 one gets blocked. "x402 gives agents a wallet; we give them a leash."
+| 0:00–0:10 | `/agent` completed result | "I gave this research workflow a ten-cent-per-tool card. It completed the task — and the unexpected twenty-cent export could not spend." |
+| 0:10–0:25 | Mission + mandate card | "One merchant, 0.10 per tool, 2.00 per day, expiry and revoke. The policy is enforced on-chain, not trusted to the workflow." |
+| 0:25–0:50 | **Run task with my budget** → two purchases → **Brief ready** | "It buys market insight for 0.05 and sentiment for 0.08, then produces this ETH risk brief. Useful work comes first; payment plumbing stays behind details." |
+| 0:50–1:02 | Blocked premium export | "A buggy step asks for 0.20. SpendPolicy rejects it before settlement — no funds move and no gas is spent on the blocked attempt." |
+| 1:02–1:14 | **Revoke budget** | "I still hold the kill switch. Revoke disarms the mandate on-chain." |
+| 1:14–1:30 | Canonical `/receipt/<id>` | "The same Magic EOA is a Particle Universal Account. This verified payment sourced USDC from Base and settled on Arbitrum without a manual bridge, with a public receipt anyone can check." |
 
 ## Why it wins (rubric 40 / 30 / 20 / 10)
 
 - **UX excellence (40%)** — Google/email onboarding, no seed phrase or extension; a *legible* mandate
   card (plain-English caps, EIP-712 hash tucked behind "show technical details") instead of a blind
-  signature; a live draining budget HUD; the visceral "overcharge blocked on-chain" moment; one-tap
-  revoke; a shareable proof receipt (screen-reader-announced).
+  signature; a concrete task and useful brief; a live draining budget HUD; the visceral "unexpected
+  spend blocked on-chain" moment; one-tap revoke; a shareable proof receipt (screen-reader-announced).
 - **Universal Accounts + EIP-7702 (30%)** — a Magic EOA upgraded in place via EIP-7702 (same address
-  across Base/Arbitrum/Optimism); account-level mandate enforcement (`SpendPolicy`, 22 passing tests,
+  across Base and Arbitrum); account-level mandate enforcement (`SpendPolicy`, 22 passing tests,
   deployed on Base + Arbitrum); one unified balance across chains via Particle `getPrimaryAssets`;
   directly answers the documented 7702 drainer risk with a scoped, revocable delegation.
   *(Cross-chain value movement via UA: proven live — C21.)*
-- **Adoption potential (20%)** — plugs into the real agent economy: x402 (Coinbase + AWS) and AP2
-  (Google/FIDO); concrete markets in subscriptions and autonomous-agent spend; an x402-pattern
-  gateway already shipped, settled by the on-chain mandate.
-- **Technical quality / polish (10%)** — 22 passing contract tests; typed end-to-end; the EIP-712
+- **Adoption potential (20%)** — a non-custodial expense-card layer for autonomous software buying
+  paid data, inference, compute, storage, or APIs; the Research Agent is one concrete vertical; an
+  x402-pattern gateway already ships, settled by the on-chain mandate.
+- **Technical quality / polish (10%)** — 207 unit + 22 contract tests; typed end-to-end; the EIP-712
   mandate is byte-identical between contract and frontend; clean production build; honest claim
   ledger + risk register discipline.
 
@@ -97,6 +94,9 @@ then a $0.20 one gets blocked. "x402 gives agents a wallet; we give them a leash
 - SpendPolicy (Base): `0x73C862a8312c12C764487a9a484f1d1ad44E3957`
 - ReceiptEmitter (Base): `0x89CF50C01BDb8b47fc8f38AE4dB495FCCC685bC3`
 - EIP-7702 delegation (Base): `0x4ca63029e2f4fb0824ba63407b28c518fc22c6270b6fc18c258bf2c13c29cef0`
+- Research input 1 (Arbitrum, 0.05 USDC): `0xbe1b718305fd60b228e27c44156678e2c13fd1714510d8b9a02aa161814d7eb3`
+- Research input 2 (Arbitrum, 0.08 USDC): `0xfaa29913ae64dd0731b21758d58529d5f08e7b007e306c282b05012661254aa8`
+- Research budget revoke (Arbitrum): `0xe01a85f70d25acbda2d54f1dbe4350a055c0cf567658b0dbe015e643a3cd5aea`
 
 ## Stack (one line)
 

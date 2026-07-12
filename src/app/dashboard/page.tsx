@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
@@ -200,6 +201,11 @@ function DashboardContent() {
                   ? "This merchant address has no payment links. Create one above to start accepting payments."
                   : "Enter a merchant address above to view its payment links, statuses, and on-chain proofs."}
               </p>
+              {!merchantId && (
+                <Link href="/dashboard?demo=replay" className="op-btn-secondary mt-4 inline-flex">
+                  View a verified demo receipt
+                </Link>
+              )}
             </div>
           ) : (
             <ul className="mt-5 space-y-3">

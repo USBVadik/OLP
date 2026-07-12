@@ -25,7 +25,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 > Give your AI a card, not your wallet. Sign one on-chain mandate; your agent can pay within strict caps but physically can't overspend.
 
 **Short (milestone / outline):**
-> OneLink Pay is an on-chain spending limit for the agent economy. You sign one scoped mandate — per-charge, daily, and total caps, expiry, a single merchant, instant revoke — and your AI agent (or a merchant) can pay USDC but **physically cannot overspend**: over-limit charges revert on-chain at zero gas, and every payment ships a verifiable proof receipt. Built on **Particle Universal Accounts in EIP-7702 mode** + **Magic** walletless login: one balance across chains with **cross-chain settlement (no manual bridge)** and **zero-gas onboarding** (the one-time delegation is relayer-sponsored). Non-custodial — the limit lives on **your own EOA** (export your key, revert anytime), settling on **Arbitrum**, bounding **x402** agent payments.
+> OneLink Pay is an on-chain expense card for autonomous software. You sign one scoped mandate — per-charge, daily, and total caps, expiry, one merchant, instant revoke — and the workflow can pay USDC but **physically cannot overspend**. In the live demo a research workflow buys two inputs, produces an ETH risk brief, and an unexpected premium export is blocked before settlement. Built on **Particle Universal Accounts in EIP-7702 mode** + **Magic** walletless login: one balance across chains with **cross-chain settlement (no manual bridge)** and zero-native-gas onboarding through a sponsored one-time delegation. The limit lives on **your own EOA**, enforced on Arbitrum, with a public proof receipt.
 
 **Long (final submission):**
 > AI agents can now pay for anything over HTTP (x402) — but nothing stops a buggy or hijacked agent from draining the wallet. OneLink Pay is the missing leash: a **permission firewall for Universal Accounts**.
@@ -33,6 +33,8 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 > You sign one EIP-712 mandate — per-charge / daily / total caps + expiry + a single merchant + instant revoke — and an on-chain `SpendPolicy` contract enforces it. Your AI agent (or a merchant) can charge USDC within those limits, but an over-cap, off-merchant, or post-revoke charge **reverts on-chain at zero gas**. Every payment ships a public, verifiable proof receipt.
 >
 > It runs on **Particle Universal Accounts in EIP-7702 mode**: one **Magic** login (email/Google, no seed phrase), one balance across chains, and **cross-chain settlement** — a merchant is paid on **Arbitrum** with USDC sourced from **Base** in one operation, no manual bridge. The agent demo runs the real x402 handshake (`402 → pay within the mandate → 200`), bounded by the on-chain caps.
+>
+> **Concrete outcome:** give the deterministic research workflow a `0.10 USDC/tool` card. It buys market insight for `0.05 USDC` and sentiment for `0.08 USDC`, then produces a readable ETH market-risk brief. When an unexpected workflow step requests a `0.20 USDC` premium export, `SpendPolicy` rejects it before settlement. The user then revokes the budget on-chain. Useful work completed; unexpected spend prevented; unrestricted wallet authority never shared.
 >
 > **Differentiator:** most agent-wallet products enforce limits in a custodial or MPC server you must trust. OneLink enforces them in an **auditable on-chain contract anyone can re-check**, on **your own EOA** (same address) — export your key or revert the delegation anytime, and onboard with **zero native gas** (the one-time delegation is relayer-sponsored, C23). *Policy you can audit, not policy you have to trust.*
 
@@ -54,7 +56,8 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 - Walletless Magic login (email/Google, no seed phrase, no extension); session auto-detects on reload.
 - Legible "card-limit" consent: a plain-English mandate card (per-charge / day / total / merchant / expiry / revoke) instead of a blind signature — EIP-712 hash behind a "show technical details" disclosure.
 - Live budget HUD that drains from on-chain `SpendPolicy` state; one-click revoke.
-- The visceral moment: an over-cap charge is **blocked on-chain — no funds moved, zero gas**, the HUD flashes "budget untouched".
+- A task-first result: two paid inputs produce a useful brief before any technical logs are shown.
+- The visceral moment: an unexpected `0.20 USDC` export is **blocked on-chain — no funds moved, zero gas**, while the signed cap remains `0.10 USDC/tool`.
 - Fully chain-abstracted: the user never picks a network, holds gas on the settlement chain, or bridges. Public, shareable proof receipt (no account needed).
 
 **Prominent / innovative use of Universal Accounts + EIP-7702 — 30%**
@@ -63,11 +66,13 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 - Account-level mandate enforcement is exactly the **privilege de-escalation** EIP-7702 names as a goal — and a direct answer to 7702's #1 documented risk (drainer delegation): here the delegated permission is *bounded and revocable*.
 
 **Adoption potential — 20%**
-- Plugs into the real agentic economy: x402 (Coinbase, now on AWS/Cloudflare) + AP2 (Google/FIDO). Concrete markets: AI-agent spending, subscriptions, B2B API billing.
+- Plugs into the real agentic economy: x402 (Coinbase, now on AWS/Cloudflare) + AP2 (Google/FIDO). Concrete markets: paid data, inference, compute, storage, subscriptions, and B2B API billing.
+- The Research Agent Expense Card is a narrow demonstration of a broader product: non-custodial expense controls for autonomous software.
 - Integrate as a hosted pay link **or** a single API call — no contracts for the integrator (`docs/integrate.md`). Particle-incubation candidate.
 
 **Technical quality / polish — 10%**
 - `SpendPolicy.sol` + `ReceiptEmitter.sol` deployed on Base + Arbitrum; **22 Hardhat tests** pass.
+- **207 deterministic unit tests** cover payment verification, mandate state, agent task accounting, replay guards, receipt rendering, and UX helpers.
 - Typed end-to-end; the EIP-712 `PaymentMandate` is **byte-identical** between contract and frontend.
 - Honest-claim ledger + risk register + verifiable proof pack; WCAG-AA contrast pass; reduced-motion respected.
 
@@ -101,7 +106,7 @@ chain-abstraction Jul 7 · x402 Jul 8 · Magic social-login Jul 22.
 
 - **Live app:** https://onelink-pay.vercel.app
 - **No login needed:** [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay) · verifiable cross-chain receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5) · honesty surface [`/trust`](https://onelink-pay.vercel.app/trust)
-- **Live product:** `/agent` (agent on a leash) · `/firewall` (sign + enforce + revoke) · `/pay` (cross-chain checkout) · `/dashboard` · `/wallet`
+- **Live product:** `/agent` (Research Agent Expense Card) · `/firewall` (sign + enforce + revoke) · `/pay` (cross-chain checkout) · `/dashboard` · `/wallet`
 - **Verify on-chain (60s):** `docs/proof-pack.md`
 - **Talk track + pitch card:** `docs/demo-runbook.md`
 

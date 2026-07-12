@@ -1,7 +1,7 @@
-# OneLink Pay — Proof Pack (cross-chain, verifiable)
+# OneLink Pay — Proof Pack (payments, policy, and cross-chain)
 
-> Last updated: 2026-07-06 · One page a judge can open and verify independently.
-> Backs ledger claim **C21**. Every tx below is on a public mainnet explorer.
+> Last updated: 2026-07-12 · One page a judge can open and verify independently.
+> Backs ledger claims **C21, C25, and C26**. Every tx below is on a public mainnet explorer.
 
 ## The one claim we make (verbatim, ledger C21)
 
@@ -50,6 +50,26 @@ InvoicePaid attestor is the relayer key, **distinct from the merchant payee** (R
 
 ---
 
+## Evidence C — Research Agent Expense Card (`/agent`)
+
+A deterministic research workflow received a signed `0.10 USDC/tool` mandate, bought the two inputs
+required to produce an ETH market-risk brief, and was prevented from buying an unexpected premium
+export. The payer then revoked the mandate on-chain.
+
+| Step | Public evidence |
+|---|---|
+| Market insight, `0.05 USDC` | [Arbitrum tx `0xbe1b…d7eb3`](https://arbiscan.io/tx/0xbe1b718305fd60b228e27c44156678e2c13fd1714510d8b9a02aa161814d7eb3) |
+| Sentiment feed, `0.08 USDC` | [Arbitrum tx `0xfaa2…54aa8`](https://arbiscan.io/tx/0xfaa29913ae64dd0731b21758d58529d5f08e7b007e306c282b05012661254aa8) |
+| Unexpected premium export, `0.20 USDC` | Rejected as `PerChargeExceeded` before broadcast; on-chain state remained `0.13 USDC` spent |
+| Budget revoke | [Arbitrum tx `0xe01a…d5aea`](https://arbiscan.io/tx/0xe01a85f70d25acbda2d54f1dbe4350a055c0cf567658b0dbe015e643a3cd5aea), successful `MandateRevoked` |
+
+The resource payloads and brief generation are deterministic demo fixtures; no LLM reasoning or
+live market-data quality is claimed. The two settlements, over-cap enforcement, and revoke are real.
+These purchases are same-chain Arbitrum operations. Evidence A-B is the separate Particle UA
+cross-chain track proof.
+
+---
+
 ## Contracts & addresses (all mainnet)
 
 | Item | Base (8453) | Arbitrum One (42161) |
@@ -83,6 +103,7 @@ InvoicePaid attestor is the relayer key, **distinct from the merchant payee** (R
 | On-chain spend mandate (per-charge/daily/total/expiry/merchant/revoke), over-cap reverts at zero gas | **Real, live + 22 contract tests** |
 | Walletless login (Magic email/Google) | **Real, live** |
 | x402 agent loop (402 → pay → 200; over-cap blocked) | **Real — x402 *pattern*, `onelink-mandate` settled (NOT Coinbase facilitator-compatible)** |
+| Research Agent task result | **Real deterministic demo result (C25)** — two paid inputs produced the brief; the data fixtures are not claimed as live market research |
 | The "agent" | **Real unattended deterministic loop** — one click; it works through the x402 APIs within budget and is halted by the firewall on the over-cap call. NOT LLM-driven (no AI decision-making claimed); on-chain enforcement is real |
 | Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — and the one-time 7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas |
 | Zero-gas onboarding (one-time 7702 delegation relayer-sponsored) | **Real, live (C23)** — payer needs zero native gas; scoped to the delegation step |

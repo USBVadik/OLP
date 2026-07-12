@@ -1,5 +1,10 @@
 # Arbitrum Spike
 
+> **HISTORICAL SPIKE (2026-05).** The exploratory decision below has been superseded. Arbitrum is
+> now the primary settlement and SpendPolicy chain; cross-chain Particle UA value movement is proven
+> live on stable SDK `2.0.3` (C21), and the Research Agent purchases/revoke are proven on Arbitrum
+> (C25-C26). Keep this document only as the original probe record.
+
 ## Decision Context
 
 Magic remains the active embedded wallet/auth path.
