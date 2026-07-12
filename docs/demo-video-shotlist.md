@@ -97,8 +97,8 @@ proof."
 ## Fallback hierarchy
 
 1. Agent run works: use the primary cut.
-2. Agent provider/relayer is slow: show the verified Research Agent result and transaction links,
-   clearly labelled as an earlier live run.
+2. Agent provider/relayer is slow: open `/demo-replay` and show the verified Research Agent result,
+   transaction links, policy refusal, and revoke proof, clearly labelled as an earlier live run.
 3. Magic is slow: use `/try` for the interactive block and the canonical receipt for cross-chain
    proof.
 4. Never open `/debug/*`, expose raw secrets, or send a replacement transaction merely to rescue a

@@ -1,6 +1,81 @@
-import { BASE_CHAIN, getExplorerTxUrl } from "@/lib/config/payment";
+import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl } from "@/lib/config/payment";
+import {
+  summarizeResearchTask,
+  type ResearchResourceOutcome,
+} from "@/lib/agent/research-task";
 
 export const DEMO_REPLAY_MODE = "replay";
+
+const RESEARCH_MARKET_TX =
+  "0xbe1b718305fd60b228e27c44156678e2c13fd1714510d8b9a02aa161814d7eb3";
+const RESEARCH_SENTIMENT_TX =
+  "0xfaa29913ae64dd0731b21758d58529d5f08e7b007e306c282b05012661254aa8";
+const RESEARCH_REVOKE_TX =
+  "0xe01a85f70d25acbda2d54f1dbe4350a055c0cf567658b0dbe015e643a3cd5aea";
+
+/**
+ * Read-only replay of the live C25/C26 Research Agent run. Payloads are frozen evidence snapshots,
+ * deliberately independent from today's mutable demo catalog. Importing this module never
+ * initializes a wallet, calls an API, or sends a tx.
+ */
+export const DEMO_REPLAY_AGENT_OUTCOMES: ResearchResourceOutcome[] = [
+  {
+    resourceId: "market-insight",
+    title: "Market insight snapshot",
+    priceAtomic: 50_000n,
+    status: "purchased",
+    settled: true,
+    data: {
+      kind: "market-insight",
+      asOf: "2026-06-21T00:00:00Z",
+      summary: "ETH momentum neutral-to-positive; stablecoin flows rising on L2s.",
+      signals: [
+        { name: "l2_stablecoin_inflow", value: "rising", confidence: 0.71 },
+        { name: "eth_funding", value: "neutral", confidence: 0.6 },
+      ],
+    },
+    txUrl: getExplorerTxUrl(ARBITRUM_CHAIN, RESEARCH_MARKET_TX),
+  },
+  {
+    resourceId: "sentiment-feed",
+    title: "Live sentiment feed",
+    priceAtomic: 80_000n,
+    status: "purchased",
+    settled: true,
+    data: {
+      kind: "sentiment-feed",
+      window: "1h",
+      score: 0.62,
+      label: "mildly bullish",
+      sources: 1284,
+    },
+    txUrl: getExplorerTxUrl(ARBITRUM_CHAIN, RESEARCH_SENTIMENT_TX),
+  },
+  {
+    resourceId: "premium-dataset",
+    title: "Premium dataset (full export)",
+    priceAtomic: 200_000n,
+    status: "blocked",
+    settled: false,
+    reason: "PerChargeExceeded: attempted 0.20 USDC, signed cap 0.10 USDC",
+  },
+];
+
+export const DEMO_REPLAY_AGENT_SUMMARY = summarizeResearchTask(
+  DEMO_REPLAY_AGENT_OUTCOMES,
+  2_000_000n,
+);
+
+export const DEMO_REPLAY_AGENT = {
+  mode: "verified_replay" as const,
+  sendsTransactions: false as const,
+  chain: ARBITRUM_CHAIN.name,
+  perToolCapAtomic: 100_000n,
+  dailyCapAtomic: 2_000_000n,
+  merchant: "0x8C54783849A2C042544efc37c4657Ee98a411Fb7",
+  revokeTxHash: RESEARCH_REVOKE_TX,
+  revokeExplorer: getExplorerTxUrl(ARBITRUM_CHAIN, RESEARCH_REVOKE_TX),
+};
 
 export const DEMO_REPLAY_PAYMENT_LINK = {
   id: "7cfd444c-5308-4688-80c4-7e9c4def9149",

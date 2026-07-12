@@ -5,7 +5,7 @@
 // deploy with SMOKE_BASE_URL=https://<preview>.vercel.app.
 //
 // Scope: it guards the routes a judge actually touches (landing wow, walletless firewall block,
-// x402 402, the canonical cross-chain receipt, and the F6 security headers). It does NOT exercise
+// x402 402, the verified Research Agent replay, the canonical cross-chain receipt, and the F6 security headers). It does NOT exercise
 // client-side rendering — that would need a browser E2E — it catches deploy/route regressions.
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -48,6 +48,16 @@ test("x402 resource requires payment (402 + requirements to the demo merchant)",
   assert.equal(res.status, 402);
   const body = (await res.json()) as { accepts?: Array<{ payTo?: string }> };
   assert.equal(body.accepts?.[0]?.payTo?.toLowerCase(), DEMO_MERCHANT);
+});
+
+test("verified Research Agent replay renders without a wallet", async () => {
+  const res = await get("/demo-replay");
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  assert.match(body, /Research Agent Expense Card/i);
+  assert.match(body, /No transaction sent by replay/i);
+  assert.match(body, /0\.20 USDC/i);
+  assert.match(body, /Trigger live policy check/i);
 });
 
 test("canonical cross-chain receipt renders", async () => {

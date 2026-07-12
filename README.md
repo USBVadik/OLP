@@ -14,7 +14,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 1. **Trigger the on-chain block yourself — no wallet, no gas** → [`/try`](https://onelink-pay.vercel.app/try): one tap simulates the charge against the live Arbitrum `SpendPolicy`; an over-cap request returns `PerChargeExceeded` before broadcast, with no funds moved. The firewall, driven by you.
 2. **Verify the cross-chain payment (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
-3. **Watch the walkthrough** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): a real, verified **same-chain** payment and its on-chain proof receipt — no wallet, no gas. (The live cross-chain checkout and the agent-on-a-leash block are on `/pay` and `/agent`, below.)
+3. **Replay the winning use case** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): inspect the verified Research Agent outcome — `0.13 USDC` of useful inputs, an unexpected `0.20 USDC` request blocked, and the on-chain revoke — with real explorer evidence and no wallet. The page also links the canonical Base-to-Arbitrum UA receipt and keeps the earlier same-chain checkout proof.
 4. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
 
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):

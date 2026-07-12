@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DEMO_REPLAY_PAYMENT, DEMO_REPLAY_PAYMENT_LINK, getDemoReplaySuccess } from "@/lib/demo/replay";
-import { BASE_CHAIN, getPaymentModeLabel } from "@/lib/config/payment";
+import {
+  DEMO_REPLAY_AGENT,
+  DEMO_REPLAY_AGENT_SUMMARY,
+  DEMO_REPLAY_PAYMENT,
+  DEMO_REPLAY_PAYMENT_LINK,
+  getDemoReplaySuccess,
+} from "@/lib/demo/replay";
+import { getPaymentModeLabel } from "@/lib/config/payment";
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
+import { formatUsdcAmount } from "@/lib/mandates/format";
+import { AgentTaskResult } from "@/components/agent-task-result";
 import {
   Wordmark,
   Chip,
@@ -16,7 +24,6 @@ import {
   IconLock,
 } from "@/components/ui";
 
-const ACTIVE_CHAIN = BASE_CHAIN;
 const PAYMENT_MODE_LABEL = getPaymentModeLabel();
 const CROSS_CHAIN_RECEIPT_ID = "fc5adc83-3b17-4004-8902-a5a40a178dd5";
 
@@ -45,22 +52,92 @@ export default function DemoReplayPage() {
 
         {/* Intro */}
         <section className="op-animate-rise">
-          <span className="op-eyebrow">Demo replay · no wallet needed</span>
+          <span className="op-eyebrow">Verified Research Agent replay · no wallet needed</span>
           <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
-            Trust before you pay.{" "}
-            <span className="text-gold">Proof</span> after it settles.
+            The task finished.{" "}
+            <span className="text-gold">The overspend didn&apos;t.</span>
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink2">
-            Watch a real, verified payment without spending a thing: the customer paid {amount} on{" "}
-            {ACTIVE_CHAIN.name}, the backend verified the USDC transfer, and a ReceiptEmitter proof
-            was recorded on-chain before the invoice was marked paid.
+            Inspect the verified mainnet outcome without signing or spending: a deterministic
+            workflow bought the two inputs needed for an ETH risk brief, then the signed expense
+            card stopped an unexpected premium export before settlement.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Chip tone="verify">
               <IconCheck className="h-3.5 w-3.5" /> No wallet needed
             </Chip>
-            <Chip>No gas spent</Chip>
-            <Chip>Everything verifiable on-chain</Chip>
+            <Chip>No transaction sent by replay</Chip>
+            <Chip>Real Arbitrum evidence</Chip>
+          </div>
+        </section>
+
+        <section className="mt-10" aria-labelledby="research-replay-title">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="op-eyebrow">The useful outcome</p>
+              <h2 id="research-replay-title" className="mt-2 font-display text-3xl font-semibold text-ink">
+                Research Agent Expense Card
+              </h2>
+            </div>
+            <Chip tone="verify">
+              <IconCheck className="h-3.5 w-3.5" /> Verified replay
+            </Chip>
+          </div>
+
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+            The resource payloads and brief are deterministic demo fixtures. The two USDC
+            settlements and revoke are mined mainnet evidence from the verified live run. The
+            refusal was observed live during preflight against the deployed policy and can be
+            reproduced below.
+          </p>
+
+          <dl className="mt-5 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
+            <ReplayMetric label="Mission" value="Prepare an ETH risk brief" />
+            <ReplayMetric
+              label="Signed boundary"
+              value={`${formatUsdcAmount(DEMO_REPLAY_AGENT.perToolCapAtomic)} / tool`}
+            />
+            <ReplayMetric
+              label="Daily budget"
+              value={formatUsdcAmount(DEMO_REPLAY_AGENT.dailyCapAtomic)}
+            />
+          </dl>
+
+          <div className="mt-5">
+            <AgentTaskResult summary={DEMO_REPLAY_AGENT_SUMMARY} />
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-verify/25 bg-verify-soft/55 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-verify text-white">
+                <IconLock className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-semibold text-ink">Budget revoked on-chain</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  The payer&apos;s kill switch disarmed this mandate after the verified run.
+                </p>
+              </div>
+            </div>
+            <TxReference
+              label="Revoke transaction"
+              hash={DEMO_REPLAY_AGENT.revokeTxHash}
+              href={DEMO_REPLAY_AGENT.revokeExplorer}
+            />
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gold/25 bg-gold-soft/45 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-ink">Reproduce the refusal yourself</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                No login or wallet. Simulate an over-cap request against the live Arbitrum policy;
+                nothing is broadcast.
+              </p>
+            </div>
+            <Link href="/try" className="op-btn-secondary shrink-0">
+              Trigger live policy check
+              <IconShield className="h-4 w-4" />
+            </Link>
           </div>
         </section>
 
@@ -99,7 +176,7 @@ export default function DemoReplayPage() {
         {/* Verified summary */}
         <section className="mt-8 op-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-line px-6 py-4">
-            <span className="op-eyebrow">Verified payment</span>
+            <span className="op-eyebrow">Earlier checkout replay</span>
             <Chip tone="verify">
               <IconCheck className="h-3.5 w-3.5" /> PAID · proof recorded
             </Chip>
@@ -136,12 +213,22 @@ export default function DemoReplayPage() {
         </section>
 
         <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-          Honest scope: the walkthrough card uses a real same-chain payment. The main-track receipt
-          above is a separate real Base-to-Arbitrum Universal Account settlement. No transaction is
-          created by this replay.
+          Honest scope: the Research Agent resources are deterministic fixtures; its two payments,
+          policy block, and revoke evidence are real Arbitrum results. The checkout card uses a
+          separate real same-chain payment, while the main-track receipt is a separate real
+          Base-to-Arbitrum Universal Account settlement. No transaction is created by this replay.
         </p>
       </div>
     </main>
+  );
+}
+
+function ReplayMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0">
+      <dt className="op-eyebrow">{label}</dt>
+      <dd className="mt-1.5 text-sm font-semibold text-ink">{value}</dd>
+    </div>
   );
 }
 
