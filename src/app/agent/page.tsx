@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPublicClient, formatUnits, http, type Address } from "viem";
+import { createPublicClient, formatUnits, http, type Address, type Hex } from "viem";
 import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
 import { ERC20_APPROVE_ABI } from "@/lib/contracts/receipt-emitter";
 import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
@@ -18,6 +18,12 @@ import { AgentTerminal } from "@/components/agent-terminal";
 import { BudgetHud } from "@/components/budget-hud";
 import { AccountSpine } from "@/components/account-spine";
 import { compactAccountFacts } from "@/lib/firewall/account-spine";
+import {
+  postRevokeCheckUnavailableLine,
+  postRevokeProofLine,
+  revertErrorName,
+  type PostRevokeProof,
+} from "@/lib/firewall/post-revoke-proof";
 import { MandateCard } from "@/components/mandate-card";
 import { PermissionReceipt } from "@/components/permission-receipt";
 import {
@@ -201,6 +207,7 @@ export default function AgentPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [armed, setArmed] = useState<{ mandate: PaymentMandate; signature: string } | null>(null);
   const [revoked, setRevoked] = useState(false);
+  const [revokeProof, setRevokeProof] = useState<PostRevokeProof | null>(null);
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
@@ -538,6 +545,7 @@ export default function AgentPage() {
 
       setArmed({ mandate: chosen, signature });
       setRevoked(false);
+      setRevokeProof(null);
       setBought({});
       setTaskOutcomes([]);
       append(
@@ -584,6 +592,32 @@ export default function AgentPage() {
         "blocked",
         getExplorerTxUrl(CHAIN, tx.hash)
       );
+
+      // Kill-switch proof: simulate ONE more within-cap charge read-only (eth_call — no
+      // signature prompt, no broadcast, no gas) and surface the live revert. Within-cap is
+      // essential: the only reason it can revert now is the revoke itself.
+      try {
+        const client = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
+        await client.simulateContract({
+          address: spendPolicy as Address,
+          abi: SPEND_POLICY_ABI,
+          functionName: "charge",
+          args: [
+            toContractMandate(armed.mandate),
+            armed.signature as Hex,
+            armed.mandate.maxPerCharge,
+          ],
+          account: armed.mandate.payer,
+        });
+        const proof = postRevokeProofLine(null);
+        setRevokeProof(proof);
+        append("FIREWALL", proof.message, "error");
+      } catch (simErr) {
+        const name = revertErrorName(simErr);
+        const proof = name ? postRevokeProofLine(name) : postRevokeCheckUnavailableLine();
+        setRevokeProof(proof);
+        append("FIREWALL", proof.message, proof.proven ? "blocked" : "error");
+      }
     } catch (e: any) {
       setError(e.message ?? "Revoke failed");
     } finally {
@@ -936,11 +970,23 @@ export default function AgentPage() {
                   <p className="flex items-center gap-2 font-semibold text-danger">
                     <IconBan className="h-4 w-4" /> Budget revoked on-chain
                   </p>
-                  <p className="mt-1 text-danger/90">
-                    Any further charge now reverts with{" "}
-                    <span className="font-mono text-xs">MandateIsRevoked</span> — the agent can no
-                    longer spend.
-                  </p>
+                  {revokeProof?.proven ? (
+                    <p className="animate-seal mt-2 flex items-start gap-1.5 rounded-xl bg-paper px-3 py-2 text-xs font-semibold text-ink">
+                      <IconCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-verify" aria-hidden="true" />
+                      {revokeProof.message}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-danger/90">
+                      Any further charge now reverts with{" "}
+                      <span className="font-mono text-xs">MandateIsRevoked</span> — the agent can no
+                      longer spend.
+                      {revokeProof ? (
+                        <span className="mt-1 block text-xs font-normal text-danger/80">
+                          {revokeProof.message}
+                        </span>
+                      ) : null}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <button
