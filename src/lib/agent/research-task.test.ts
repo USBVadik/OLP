@@ -46,6 +46,9 @@ test("research mission names one concrete task and is explicitly deterministic",
   assert.equal(RESEARCH_MISSION.id, "eth-market-risk-brief");
   assert.match(RESEARCH_MISSION.title, /ETH market-risk brief/i);
   assert.equal(RESEARCH_MISSION.execution, "deterministic");
+  assert.equal(RESEARCH_MISSION.adversarialFixture.usesLlm, false);
+  assert.match(RESEARCH_MISSION.adversarialFixture.label, /adversarial test/i);
+  assert.match(RESEARCH_MISSION.adversarialFixture.instruction, /premium export/i);
 });
 
 test("research resource plan buys useful inputs before the unexpected premium export", () => {
@@ -113,10 +116,17 @@ test("missing a required paid input keeps the task incomplete", () => {
 });
 
 test("a blocked premium request is protected spend, never actual spend", () => {
-  const result = summarizeResearchTask(COMPLETE_OUTCOMES, DAILY_CAP);
+  const result = summarizeResearchTask(COMPLETE_OUTCOMES, DAILY_CAP, 100_000n);
 
   assert.equal(result.protectedAtomic, 200_000n);
   assert.equal(result.spentAtomic, 130_000n);
+  assert.deepEqual(result.policyBlock, {
+    title: "Premium dataset (full export)",
+    attemptedAtomic: 200_000n,
+    signedLimitAtomic: 100_000n,
+    fundsMovedAtomic: 0n,
+    reason: "over the per-charge cap",
+  });
 });
 
 test("an infrastructure failure is not presented as protected spend", () => {
@@ -136,6 +146,47 @@ test("an infrastructure failure is not presented as protected spend", () => {
   assert.equal(result.protectedAtomic, 0n);
   assert.equal(result.blockedCount, 0);
   assert.equal(result.errorCount, 1);
+  assert.equal(result.policyBlock, null);
+});
+
+test("a non-per-charge policy block stays honest when no matching signed limit is known", () => {
+  const outcomes: ResearchResourceOutcome[] = [
+    {
+      resourceId: "premium-dataset",
+      title: "Premium dataset (full export)",
+      priceAtomic: 200_000n,
+      status: "blocked",
+      reason: "MandateIsRevoked",
+    },
+  ];
+
+  const result = summarizeResearchTask(outcomes, DAILY_CAP, 100_000n);
+
+  assert.ok(result.policyBlock);
+  assert.equal(result.policyBlock.signedLimitAtomic, null);
+  assert.equal(result.policyBlock.fundsMovedAtomic, 0n);
+  assert.equal(result.policyBlock.reason, "MandateIsRevoked");
+});
+
+test("a blocked outcome marked as settled is never presented as contained spend", () => {
+  const outcomes: ResearchResourceOutcome[] = [
+    ...COMPLETE_OUTCOMES.slice(0, 2),
+    {
+      resourceId: "premium-dataset",
+      title: "Premium dataset (full export)",
+      priceAtomic: 200_000n,
+      status: "blocked",
+      settled: true,
+      reason: "inconsistent upstream result",
+    },
+  ];
+
+  const result = summarizeResearchTask(outcomes, DAILY_CAP, 100_000n);
+
+  assert.equal(result.spentAtomic, 330_000n);
+  assert.equal(result.protectedAtomic, 0n);
+  assert.equal(result.blockedCount, 0);
+  assert.equal(result.policyBlock, null);
 });
 
 test("a settled charge with withheld data is still counted as actual spend", () => {

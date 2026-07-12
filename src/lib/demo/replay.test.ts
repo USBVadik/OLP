@@ -17,6 +17,9 @@ test("verified Research Agent replay reports useful spend and protected spend se
   assert.equal(DEMO_REPLAY_AGENT_SUMMARY.remainingDailyAtomic, 1_870_000n);
   assert.equal(DEMO_REPLAY_AGENT_SUMMARY.purchasedCount, 2);
   assert.equal(DEMO_REPLAY_AGENT_SUMMARY.blockedCount, 1);
+  assert.equal(DEMO_REPLAY_AGENT_SUMMARY.policyBlock?.attemptedAtomic, 200_000n);
+  assert.equal(DEMO_REPLAY_AGENT_SUMMARY.policyBlock?.signedLimitAtomic, 100_000n);
+  assert.equal(DEMO_REPLAY_AGENT_SUMMARY.policyBlock?.fundsMovedAtomic, 0n);
   assert.equal(DEMO_REPLAY_AGENT_SUMMARY.brief?.headline, "ETH market-risk brief ready");
   assert.match(DEMO_REPLAY_AGENT_SUMMARY.brief?.summary ?? "", /mildly bullish across 1,284 sources/);
   assert.deepEqual(DEMO_REPLAY_AGENT_SUMMARY.brief?.evidence, [

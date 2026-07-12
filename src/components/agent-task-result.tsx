@@ -1,5 +1,8 @@
 import { formatUsdcAmount } from "@/lib/mandates/format";
-import { type ResearchTaskSummary } from "@/lib/agent/research-task";
+import {
+  type ResearchPolicyBlock,
+  type ResearchTaskSummary,
+} from "@/lib/agent/research-task";
 import {
   Chip,
   IconArrowUpRight,
@@ -75,21 +78,13 @@ export function AgentTaskResult({ summary }: Props) {
         </div>
       )}
 
+      {summary.policyBlock ? <PolicyBlockEvidence block={summary.policyBlock} /> : null}
+
       <dl className="mt-5 divide-y divide-line border-y border-line">
         <ResultRow
           label="Useful data purchased"
           value={formatUsdcAmount(summary.spentAtomic)}
           detail={`${summary.purchasedCount} required input${summary.purchasedCount === 1 ? "" : "s"}`}
-        />
-        <ResultRow
-          label="Unexpected spend blocked"
-          value={formatUsdcAmount(summary.protectedAtomic)}
-          detail={
-            summary.blockedCount > 0
-              ? "Premium export refused before settlement"
-              : "No policy block recorded"
-          }
-          protectedValue={summary.blockedCount > 0}
         />
         <ResultRow
           label="Daily budget remaining"
@@ -128,6 +123,74 @@ export function AgentTaskResult({ summary }: Props) {
         </div>
       ) : null}
     </section>
+  );
+}
+
+function PolicyBlockEvidence({ block }: { block: ResearchPolicyBlock }) {
+  const rule = /per[- ]?charge|PerChargeExceeded/i.test(block.reason)
+    ? "Per-charge limit enforced"
+    : /revoked|MandateIsRevoked/i.test(block.reason)
+      ? "Revoked permission enforced"
+      : "Signed policy enforced";
+
+  return (
+    <section aria-labelledby="policy-block-title" className="mt-5 border-y border-danger/20 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-danger">
+          <IconShield className="h-4 w-4" /> Adversarial safety test
+        </p>
+        <Chip tone="verify">
+          <IconCheck className="h-3 w-3" /> Contained before settlement
+        </Chip>
+      </div>
+
+      <h3 id="policy-block-title" className="mt-3 font-display text-lg font-semibold text-ink">
+        Out-of-policy request contained
+      </h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-ink2">
+        An injected deterministic test instruction requested {block.title}. SpendPolicy rejected
+        it during preflight; the useful task still completed and the attempted funds never left the
+        payer.
+      </p>
+
+      <dl className="mt-4 grid divide-y divide-line border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <PolicyMetric label="Attempted" value={formatUsdcAmount(block.attemptedAtomic)} />
+        <PolicyMetric
+          label={block.signedLimitAtomic === null ? "Decision" : "Signed limit"}
+          value={
+            block.signedLimitAtomic === null
+              ? "Blocked"
+              : formatUsdcAmount(block.signedLimitAtomic)
+          }
+        />
+        <PolicyMetric
+          label="Funds moved"
+          value={formatUsdcAmount(block.fundsMovedAtomic)}
+          verified
+        />
+      </dl>
+
+      <p className="mt-3 text-xs font-medium text-muted">{rule} · no transaction broadcast</p>
+    </section>
+  );
+}
+
+function PolicyMetric({
+  label,
+  value,
+  verified = false,
+}: {
+  label: string;
+  value: string;
+  verified?: boolean;
+}) {
+  return (
+    <div className="py-3 sm:px-3 sm:first:pl-0 sm:last:pr-0">
+      <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{label}</dt>
+      <dd className={`mt-1 font-mono text-sm font-semibold ${verified ? "text-verify" : "text-ink"}`}>
+        {value}
+      </dd>
+    </div>
   );
 }
 

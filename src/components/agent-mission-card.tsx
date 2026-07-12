@@ -25,8 +25,8 @@ export function AgentMissionCard({ mandate, running, onRun, disabled = false }: 
         {RESEARCH_MISSION.title}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Buy the two data inputs needed for the brief. An unnecessary premium export is attempted
-        afterward to prove that the signed limit stops workflow overreach.
+        Buy the two inputs needed for the brief. Then a deterministic adversarial fixture requests
+        an unnecessary export, testing whether the signed card contains workflow overreach.
       </p>
 
       <div className="mt-4 border-y border-line py-1">
@@ -34,6 +34,18 @@ export function AgentMissionCard({ mandate, running, onRun, disabled = false }: 
         <MissionRow label="Daily budget" value={formatUsdcAmount(mandate.maxPerDay)} />
         <MissionRow label="Provider scope" value={formatMerchant(mandate.merchant)} mono />
         <MissionRow label="Permission ends" value={formatShortDate(mandate.expiry)} />
+      </div>
+
+      <div className="mt-4 border-l-2 border-danger/55 pl-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-danger">
+          {RESEARCH_MISSION.adversarialFixture.label}
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-ink2">
+          “{RESEARCH_MISSION.adversarialFixture.instruction}”
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+          Injected deterministic fixture · no LLM reasoning or wallet key.
+        </p>
       </div>
 
       <ul className="mt-4 grid gap-2 text-xs text-ink2 sm:grid-cols-2">
@@ -55,7 +67,7 @@ export function AgentMissionCard({ mandate, running, onRun, disabled = false }: 
           "Preparing the brief..."
         ) : (
           <>
-            <IconShield className="h-4 w-4" /> Run task with my budget
+            <IconShield className="h-4 w-4" /> Run task + safety test
           </>
         )}
       </button>

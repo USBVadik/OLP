@@ -57,8 +57,9 @@ export default function DemoReplayPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink2">
             Inspect the verified mainnet outcome without signing or spending: a deterministic
-            workflow bought the two inputs needed for an ETH risk brief, then the signed expense
-            card stopped an unexpected premium export before settlement.
+            workflow bought the two inputs needed for an ETH risk brief. Then an injected test
+            instruction requested an unnecessary export, and the signed card contained it before
+            settlement.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Chip tone="verify">
@@ -85,8 +86,8 @@ export default function DemoReplayPage() {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             The resource payloads and brief are deterministic demo fixtures. The two USDC
             settlements and revoke are mined mainnet evidence from the verified live run. The
-            refusal was observed live during preflight against the deployed policy and can be
-            reproduced below.
+            adversarial instruction is a deterministic fixture, not LLM reasoning; its refusal was
+            observed live during preflight against the deployed policy and can be reproduced below.
           </p>
 
           <dl className="mt-5 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">

@@ -64,6 +64,7 @@ export const DEMO_REPLAY_AGENT_OUTCOMES: ResearchResourceOutcome[] = [
 export const DEMO_REPLAY_AGENT_SUMMARY = summarizeResearchTask(
   DEMO_REPLAY_AGENT_OUTCOMES,
   2_000_000n,
+  100_000n,
 );
 
 export const DEMO_REPLAY_AGENT = {

@@ -66,6 +66,7 @@ import { ExpenseCardFundingConsent } from "@/components/expense-card-funding-con
 import { AgentMissionCard } from "@/components/agent-mission-card";
 import { AgentTaskResult } from "@/components/agent-task-result";
 import {
+  RESEARCH_MISSION,
   orderResearchResources,
   summarizeResearchTask,
   type ResearchResourceOutcome,
@@ -247,7 +248,7 @@ export default function AgentPage() {
         ? armed.mandate.maxPerDay
         : armed.mandate.totalCap
       : 0n;
-    return summarizeResearchTask(taskOutcomes, dailyCap);
+    return summarizeResearchTask(taskOutcomes, dailyCap, armed?.mandate.maxPerCharge ?? null);
   }, [armed, taskOutcomes]);
 
   const recordOutcome = useCallback(
@@ -784,6 +785,13 @@ export default function AgentPage() {
       let halted = false;
       for (const r of plan) {
         if (r.id in bought) continue;
+        if (r.id === RESEARCH_MISSION.unexpectedResourceId) {
+          append(
+            "AGENT",
+            `${RESEARCH_MISSION.adversarialFixture.label.toUpperCase()} — ${RESEARCH_MISSION.adversarialFixture.instruction}`,
+            "info",
+          );
+        }
         const outcome = await chargeForResource(r);
         recordOutcome(r, outcome);
         if (outcome.status === "purchased") {
@@ -845,8 +853,8 @@ export default function AgentPage() {
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Set a 2 USDC daily tool budget. The workflow buys two paid data feeds, prepares an ETH
-              market-risk brief, and proves that an unnecessary premium export cannot exceed your
-              signed 0.10 USDC per-tool limit.
+              market-risk brief, then faces a deterministic adversarial request. The signed card
+              contains the 0.20 USDC attempt at its 0.10 USDC per-tool limit.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               <span className="op-chip-iris" title="Universal Accounts in EIP-7702 mode">
@@ -1111,7 +1119,7 @@ export default function AgentPage() {
           <span>
             {UA_FUNDED_AGENT
               ? "experimental path · explicit confirmation required"
-              : "settled by an on-chain spend mandate"}
+              : "deterministic workflow · on-chain enforcement"}
           </span>
         </div>
       </div>
