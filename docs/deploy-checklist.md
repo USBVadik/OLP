@@ -36,6 +36,8 @@ Stack facts that make this zero-config:
 | `NEXT_PUBLIC_PARTICLE_CLIENT_KEY` | Particle dashboard | |
 | `NEXT_PUBLIC_PARTICLE_APP_ID` | Particle dashboard | |
 | `NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY` | Magic dashboard (`pk_live_…`) | |
+| `NEXT_PUBLIC_ENABLE_GOOGLE_ONE_TAP` | **`false`** until clean-browser verification | redirect OAuth stays the fallback |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth Web client id | public; must match Magic's Google config |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project | |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project (anon) | public by design |
 | `NEXT_PUBLIC_APP_URL` | the Vercel URL | **two-phase**, see §3 |
@@ -105,6 +107,21 @@ default. After deploying to a new domain, **email + Google login fail until both
 2. **Google Cloud Console** → APIs & Services → Credentials → your OAuth 2.0 **Web** client →
    **Authorized redirect URIs** → add `https://<domain>/auth/callback` (exact, no trailing slash;
    keep the localhost one). Symptom if missing: Google *"Error 400: redirect_uri_mismatch"*.
+
+For optional Google One Tap (`NEXT_PUBLIC_ENABLE_GOOGLE_ONE_TAP=true`), also add the exact app
+origins to the same Google Web client under **Authorized JavaScript origins**:
+
+- `https://<domain>`
+- `http://localhost:3000`
+
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` must be that same Web client id and must match the Client ID saved in
+Magic Dashboard → Social Login → Google. One Tap requires `@magic-ext/oauth2 >= 15.8.0`; this repo
+pins `15.8.0`. Test the following before enabling in production:
+
+1. clean Chrome profile → One Tap completes and returns to the originating route;
+2. incognito/privacy mode or a dismissed prompt → the same button falls back to `/auth/callback`;
+3. email OTP still works;
+4. unset the feature flag and redeploy for immediate rollback.
 
 Both are dashboard-only (no redeploy needed); Google changes can take 1–2 min to apply. Always
 sign in via the clean alias `https://<domain>` so `window.location.origin` matches the allowlist.

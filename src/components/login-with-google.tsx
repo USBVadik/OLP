@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, type SVGProps } from "react";
-import { buildOauthCallbackUrl, storeReturnPath } from "@/lib/magic/redirect";
+import {
+  buildOauthCallbackUrl,
+  sanitizeReturnPath,
+  storeReturnPath,
+} from "@/lib/magic/redirect";
+import {
+  promptGoogleOneTap,
+  selectGoogleLoginMode,
+} from "@/lib/magic/google-one-tap";
 import { IconShield } from "@/components/ui";
 
 type Props = {
@@ -19,9 +27,9 @@ type Props = {
 };
 
 /**
- * "Continue with Google" button. Hands off to Magic's `oauth2.loginWithRedirect`,
- * which leaves this page entirely and returns the browser to `/auth/callback`
- * after Google + Magic finish their round-trip.
+ * "Continue with Google" button. Uses Magic's Google ID-token path when the default-off One Tap
+ * flag is enabled and fully configured. Every One Tap failure falls back to the proven OAuth
+ * redirect, which returns the browser through `/auth/callback`.
  *
  * Relies on:
  *  - Magic publishable key (already wired by the parent page).
@@ -38,6 +46,31 @@ export function LoginWithGoogleButton({ magic, returnTo, variant = "secondary", 
     setBusy(true);
     setErr(null);
     try {
+      const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "";
+      const mode = selectGoogleLoginMode({
+        enabled: process.env.NEXT_PUBLIC_ENABLE_GOOGLE_ONE_TAP,
+        clientId: googleClientId,
+        supportsIdTokenLogin:
+          typeof magic.oauth2?.loginWithGoogleIdToken === "function",
+      });
+
+      if (mode === "one_tap") {
+        try {
+          // Keep the Google-issued credential ephemeral: pass it directly to Magic, never log or
+          // persist it in OneLink code. Magic establishes the same embedded-wallet session.
+          const jwt = await promptGoogleOneTap(googleClientId);
+          await magic.oauth2.loginWithGoogleIdToken({
+            jwt,
+            googleClientId,
+          });
+          window.location.assign(sanitizeReturnPath(returnTo));
+          return;
+        } catch {
+          // Privacy settings, FedCM cooldowns, a dismissed prompt, or a transient GSI failure must
+          // never strand onboarding. Continue immediately into the proven redirect path below.
+        }
+      }
+
       // Persist where to land AFTER the OAuth round-trip so the redirectURI we hand
       // to Google stays clean (no query string -> single registered URI in Google Cloud).
       storeReturnPath(returnTo);
@@ -70,7 +103,7 @@ export function LoginWithGoogleButton({ magic, returnTo, variant = "secondary", 
         className={`op-btn-${variant} w-full`}
       >
         <GoogleG className="h-4 w-4" />
-        {busy ? "Redirecting…" : "Continue with Google"}
+        {busy ? "Signing in…" : "Continue with Google"}
       </button>
       {err ? (
         <p className="mt-2 text-xs text-danger" role="alert">
