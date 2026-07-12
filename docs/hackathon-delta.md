@@ -66,6 +66,11 @@ case described below.
 - `c1f051a` / `61b0f72` — aligned the public product and submission around the use case.
 - `c0d4b7b` — shipped the verified no-wallet Research Agent replay.
 - `3305a5e` — attached that public artifact to the honest claim ledger.
+- `dcd9d7e` — proved a build-only Particle route that can prepare the Arbitrum daily allowance from
+  the EIP-7702 Universal Account's Base + Arbitrum USDC balance.
+- `c350f14` — connected that route to one feature-gated consent flow with delegate/rebuild/sign/send
+  orchestration, renewed-consent protection, and post-FINISHED balance + allowance verification.
+  The code is post-kickoff work; the integrated send remains honestly unclaimed until its live gate.
 
 The live evidence was produced during the event:
 
