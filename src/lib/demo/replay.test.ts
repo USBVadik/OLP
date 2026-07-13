@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEMO_REPLAY_AGENT,
+  DEMO_REPLAY_AGENT_FUNDING,
   DEMO_REPLAY_AGENT_OUTCOMES,
   DEMO_REPLAY_AGENT_SUMMARY,
   getDemoReplaySuccess,
@@ -38,6 +39,17 @@ test("verified Research Agent replay exposes real settlement and revoke evidence
   assert.equal(blocked?.txUrl, undefined);
   assert.match(blocked?.reason ?? "", /PerChargeExceeded/);
   assert.match(DEMO_REPLAY_AGENT.revokeExplorer, /^https:\/\/arbiscan\.io\/tx\/0x/);
+});
+
+test("verified Research Agent replay exposes the separate cross-chain card funding proof", () => {
+  assert.equal(DEMO_REPLAY_AGENT_FUNDING.mode, "verified_replay");
+  assert.equal(DEMO_REPLAY_AGENT_FUNDING.sendsTransactions, false);
+  assert.equal(DEMO_REPLAY_AGENT_FUNDING.amountAtomic, 2_000_000n);
+  assert.equal(DEMO_REPLAY_AGENT_FUNDING.sourceChain, "Base");
+  assert.equal(DEMO_REPLAY_AGENT_FUNDING.settlementChain, "Arbitrum");
+  assert.match(DEMO_REPLAY_AGENT_FUNDING.activityUrl ?? "", /^https:\/\/universalx\.app\/activity\/details\?id=/);
+  assert.match(DEMO_REPLAY_AGENT_FUNDING.sourceExplorer, /^https:\/\/basescan\.org\/tx\/0x/);
+  assert.match(DEMO_REPLAY_AGENT_FUNDING.approvalExplorer, /^https:\/\/arbiscan\.io\/tx\/0x/);
 });
 
 test("existing payment replay remains available", () => {

@@ -14,7 +14,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 
 1. **Trigger the on-chain block yourself — no wallet, no gas** → [`/try`](https://onelink-pay.vercel.app/try): one tap simulates the charge against the live Arbitrum `SpendPolicy`; an over-cap request returns `PerChargeExceeded` before broadcast, with no funds moved. The firewall, driven by you.
 2. **Verify the cross-chain payment (~60s)** → open the live receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5); every tx is on arbiscan/basescan (settled on Arbitrum, USDC sourced from Base, InvoicePaid on Base). Full evidence: [`docs/proof-pack.md`](docs/proof-pack.md).
-3. **Replay the winning use case** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): inspect the verified Research Agent outcome — `0.13 USDC` of useful inputs, an unexpected `0.20 USDC` request blocked, and the on-chain revoke — with real explorer evidence and no wallet. The page also links the canonical Base-to-Arbitrum UA receipt and keeps the earlier same-chain checkout proof.
+3. **Replay the winning use case** → [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay): inspect how Particle funded the card from Base to Arbitrum, then see `0.13 USDC` of useful inputs, an unexpected `0.20 USDC` request blocked, and the on-chain revoke — with real explorer evidence and no wallet.
 4. **What's real vs pattern vs future** is stated plainly in-app at [`/trust`](https://onelink-pay.vercel.app/trust).
 
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
@@ -31,7 +31,7 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 - **Permission Firewall** — `SpendPolicy.sol` enforces an EIP-712 `PaymentMandate` (per-charge / daily / total caps + expiry + single-merchant + revoke). Deployed on Base (`0x73C8…3957`) and Arbitrum One (`0x9782…164E`). Over-cap charges revert with `PerChargeExceeded` — caught in simulation before broadcast, so no funds move and zero gas is spent. 22 Hardhat tests pass. **Source verified on-chain — read the enforcement contract on [Basescan](https://basescan.org/address/0x73C862a8312c12C764487a9a484f1d1ad44E3957#code) and [Arbiscan](https://arbiscan.io/address/0x9782e3724859469fbBAC5085EA8bf8E70724164E#code).**
 - **Cross-chain settlement via Particle Universal Account (EIP-7702)** — a Magic-signed UA pays a merchant on Arbitrum with USDC sourced cross-chain from Base in one operation — no manual bridge. Proven live (Arbitrum settle `0x85d8…4911`, Base source `0x8b85…4a2e`, UniversalX `0x0654e81cfea86a`) and wired into `/pay` (`NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer`, live in prod). Same-chain checkout runs on the same path.
 - **Research Agent Expense Card (x402-pattern)** — `/agent` runs the real HTTP payment handshake (`GET → 402 → pay → retry-with-proof → 200`) through the on-chain mandate. In the verified run it bought market insight for `0.05 USDC` and sentiment for `0.08 USDC`, produced a readable brief, and refused an unexpected `0.20 USDC` premium export because it exceeded the signed `0.10 USDC/tool` cap. The workflow is deterministic, the payment and block are real, and the settlement scheme is `onelink-mandate` (not the Coinbase facilitator).
-- **UA-funded Expense Card preview (experimental, default off)** — `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=true` connects the `/agent` consent to a live unsigned Particle route for making the `2 USDC` Arbitrum daily budget available from unified USDC. The integrated send waits for Particle `FINISHED` and then read-verifies Arbitrum balance + allowance before arming. The `Arbitrum + Base → Arbitrum` preview is proven; this integrated send has not been broadcast yet.
+- **UA-funded Expense Card (feature-gated, live-verified)** — `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=true` connects `/agent` consent to Particle UA funding. On 2026-07-13, one completed Particle operation used a successful Base source leg to make the `2 USDC` daily budget available on Arbitrum and approve the exact amount to SpendPolicy. OneLink waited for `FINISHED`, verified every reported operation receipt plus Arbitrum balance and allowance server-side, then stored immutable evidence before arming. [Inspect the Particle activity](https://universalx.app/activity/details?id=0x06567b3a8eed3a). The repository default remains `false` as a rollback; the stable production demo has the verified path enabled.
 - **Legible consent** — a plain-English mandate card before signing (EIP-712 hash behind a disclosure) and a live budget HUD that drains from on-chain `SpendPolicy` state.
 - **Proof receipts** — `ReceiptEmitter.sol` emits an `InvoicePaid` event after server-side verification of the on-chain USDC `Transfer`. Public, shareable receipt at `/receipt/[id]` (copy-link + QR) with a "Cross-chain: Base → Arbitrum" badge and a UniversalX activity link. Deployed on Base (`0x89CF…5bC3`) and Arbitrum One (`0xe4C6…D2A1`).
 - **Walletless onboarding** — Magic embedded wallet, email + Google OAuth (live, with auto-detect on reload).
@@ -42,6 +42,7 @@ Full talk track, judging-criteria map, and dry-run checklist: [`docs/demo-runboo
 - ✅ The on-chain firewall is live and tested (22 Hardhat tests pass).
 - ✅ Same-chain USDC checkout is proven end-to-end on Arbitrum, with proof anchored on Base.
 - ✅ Cross-chain value movement via the Universal Account is **proven live** on `@particle-network/universal-account-sdk@2.0.3` (stable): a merchant is paid on Arbitrum with USDC sourced cross-chain from Base in one operation. The active `/pay` rail is `createUniversalTransaction` + `usePrimaryTokens:[USDC]` + per-chain pre-delegation to the V2 7702 delegate; `NEXT_PUBLIC_PAYMENT_MODE=universal_7702_transfer` is live in prod.
+- ✅ The integrated Research Agent card funding is **proven live** (C27): its 2 USDC Arbitrum budget was assembled through a completed Particle activity with a Base source leg, exact Arbitrum SpendPolicy approval, and fail-closed server verification before arming. The later `0.05 + 0.08 USDC` resource purchases are separately proven same-chain Arbitrum settlements.
 - ✅ Zero-native-gas delegation is proven live on Arbitrum: the one-time EIP-7702 delegation is relayer-sponsored (C23). This is scoped to that delegation step only (no general settlement paymaster; the Particle settlement fee is paid in USDC). Particle AuthKit is not installed or used; Magic is the live wallet and signer.
 
 **Honesty caveats:**
@@ -121,7 +122,7 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm typecheck
 corepack pnpm lint
-corepack pnpm test:unit          # 253 unit tests (node:test)
+corepack pnpm test:unit          # 284 unit checks (node:test)
 corepack pnpm build
 cd contracts && corepack pnpm test   # 22 Hardhat contract tests
 ```

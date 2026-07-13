@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   DEMO_REPLAY_AGENT,
+  DEMO_REPLAY_AGENT_FUNDING,
   DEMO_REPLAY_AGENT_SUMMARY,
   DEMO_REPLAY_PAYMENT,
   DEMO_REPLAY_PAYMENT_LINK,
@@ -101,6 +102,62 @@ export default function DemoReplayPage() {
               value={formatUsdcAmount(DEMO_REPLAY_AGENT.dailyCapAtomic)}
             />
           </dl>
+
+          <div className="mt-5 rounded-2xl border border-verify/25 bg-verify-soft/70 p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-verify text-white">
+                <IconCheck className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="op-eyebrow text-verify">Card funding verified</p>
+                <h3 className="mt-1 font-display text-xl font-semibold text-ink">
+                  The budget crossed chains before the work began
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink2">
+                  Particle assembled the 2.00 USDC Arbitrum budget with a successful Base source
+                  leg, then approved the exact amount to SpendPolicy on Arbitrum. OneLink&apos;s
+                  server matched the finished activity, both receipts, and the approval before the
+                  card could be armed.
+                </p>
+              </div>
+            </div>
+
+            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+              <ReplayMetric
+                label="Funding route"
+                value={`${DEMO_REPLAY_AGENT_FUNDING.sourceChain} → ${DEMO_REPLAY_AGENT_FUNDING.settlementChain}`}
+              />
+              <ReplayMetric
+                label="Budget made available"
+                value={formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
+              />
+            </dl>
+
+            <div className="mt-3 space-y-2">
+              <TxReference
+                label="Particle activity"
+                hash={DEMO_REPLAY_AGENT_FUNDING.uaTransactionId}
+                href={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
+                destinationLabel="UniversalX activity"
+              />
+              <TxReference
+                label="Base funding leg"
+                hash={DEMO_REPLAY_AGENT_FUNDING.sourceTxHash}
+                href={DEMO_REPLAY_AGENT_FUNDING.sourceExplorer}
+              />
+              <TxReference
+                label="Arbitrum budget approval"
+                hash={DEMO_REPLAY_AGENT_FUNDING.approvalTxHash}
+                href={DEMO_REPLAY_AGENT_FUNDING.approvalExplorer}
+              />
+            </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              Funding and spending are separate proofs: this operation funded the card
+              cross-chain; the two resource purchases shown below later settled on Arbitrum.
+              Opening this replay never sends a transaction.
+            </p>
+          </div>
 
           <div className="mt-5">
             <AgentTaskResult summary={DEMO_REPLAY_AGENT_SUMMARY} />

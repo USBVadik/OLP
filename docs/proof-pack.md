@@ -1,15 +1,18 @@
 # OneLink Pay — Proof Pack (payments, policy, and cross-chain)
 
-> Last updated: 2026-07-12 · One page a judge can open and verify independently.
-> Backs ledger claims **C21, C25, and C26**. Every tx below is on a public mainnet explorer.
+> Last updated: 2026-07-13 · One page a judge can open and verify independently.
+> Backs ledger claims **C21, C25, C26, and C27**. Every tx below is on a public mainnet explorer.
 
-## The one claim we make (verbatim, ledger C21)
+## The two bounded cross-chain claims we make
 
 > A cross-chain USDC payment settles live via a Magic-signed Particle Universal Account in
 > EIP-7702 mode: a merchant is paid 1.0 USDC on **Arbitrum** with ~0.12 USDC sourced cross-chain
 > from **Base** in the same operation — no manual bridge.
 
-Nothing beyond this sentence is claimed about cross-chain. See "What's real / pattern / future" below.
+For the integrated Expense Card (C27), we separately claim that a completed Particle activity used
+a successful Base source leg to make the 2 USDC budget available and approve it to SpendPolicy on
+Arbitrum. We do **not** claim that the later resource purchases were cross-chain or that the entire
+2 USDC originated on Base.
 
 ---
 
@@ -70,6 +73,29 @@ cross-chain track proof.
 
 ---
 
+## Evidence D — integrated Expense Card funding (`/agent`)
+
+Before the card was armed, Particle UA assembled its **2 USDC Arbitrum daily budget** through one
+completed activity with a successful Base source leg. OneLink's server then verified every reported
+operation receipt, the exact Arbitrum USDC approval to SpendPolicy, and the destination balance
+before storing immutable evidence.
+
+| Field | Value |
+|---|---|
+| Payer (Magic EOA, 7702-delegated) | `0x53Bd615635Af778e5E460d5EEC2d6b234693206a` |
+| Budget / exact SpendPolicy approval | 2.00 USDC (`2,000,000` atomic) on Arbitrum |
+| Particle activity | [`0x06567b3a8eed3a`](https://universalx.app/activity/details?id=0x06567b3a8eed3a), `FINISHED` |
+| **Base source tx** | [`0x3ef6…6f98`](https://basescan.org/tx/0x3ef6e679b185fd1506e1632a313ee2ba0eb147b1be420ab3df687884f3396f98), successful |
+| **Arbitrum approval tx** | [`0x0ca4…eb7`](https://arbiscan.io/tx/0x0ca454698c355895be5027c4ed8d7d72c8d966c00ca703775e014ea180061eb7), successful |
+| SpendPolicy | `0x9782e3724859469fbBAC5085EA8bf8E70724164E` |
+| Stored verifier result | `cross_chain=true`, `source_chain_ids=[8453]`, balance and allowance both `2,000,000` atomic |
+
+Funding and spending are deliberately separate proofs. Evidence D proves the cross-chain card
+funding/approval operation. Evidence C proves the two later same-chain Arbitrum purchases, policy
+block, and revoke.
+
+---
+
 ## Contracts & addresses (all mainnet)
 
 | Item | Base (8453) | Arbitrum One (42161) |
@@ -92,6 +118,8 @@ cross-chain track proof.
 3. Open the UniversalX activity link → see the cross-chain orchestration as one transaction.
 4. Open the public receipt → it cross-checks the on-chain settlement against the invoice and shows
    the InvoicePaid attestation, with no account required.
+5. Open the Expense Card Particle activity plus its Base and Arbitrum operation links → confirm the
+   funding leg and exact SpendPolicy approval before looking at the later same-chain purchases.
 
 ---
 
@@ -104,6 +132,7 @@ cross-chain track proof.
 | Walletless login (Magic email/Google) | **Real, live** |
 | x402 agent loop (402 → pay → 200; over-cap blocked) | **Real — x402 *pattern*, `onelink-mandate` settled (NOT Coinbase facilitator-compatible)** |
 | Research Agent task result | **Real deterministic demo result (C25)** — two paid inputs produced the brief; the data fixtures are not claimed as live market research |
+| Integrated Research Agent card funding | **Real, live, server-verified (C27)** — completed Particle activity with a Base source leg and exact 2 USDC Arbitrum SpendPolicy approval; later purchases are separate same-chain operations |
 | The "agent" | **Real unattended deterministic loop** — one click; it works through the x402 APIs within budget and is halted by the firewall on the over-cap call. NOT LLM-driven (no AI decision-making claimed); on-chain enforcement is real |
 | Gas abstraction (network fee paid in USDC, no destination-chain gas) | **Real, live** — and the one-time 7702 delegation is relayer-sponsored (C23), so a first-time payer needs zero native gas |
 | Zero-gas onboarding (one-time 7702 delegation relayer-sponsored) | **Real, live (C23)** — payer needs zero native gas; scoped to the delegation step |

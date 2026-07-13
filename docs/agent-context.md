@@ -1,7 +1,7 @@
 # OneLink Pay — Agent Operating Context
 
 > Operating context for AI agents working on this repo. Read this plus `docs/status.md`
-> before acting. Last synchronized with submission RC2 on 2026-07-12.
+> before acting. Last synchronized with the live Expense Card funding proof on 2026-07-13.
 
 ## Workspace
 
@@ -31,11 +31,11 @@ reasoning are not implemented; keep the narrower claim discipline below.
 - Supabase PAID state
 - `SpendPolicy` merchant/per-charge/daily/total/expiry/revoke enforcement on Arbitrum and Base
 - Research Agent Expense Card as the primary use case: paid inputs -> useful brief -> over-cap block -> on-chain revoke
-- Default-off `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT` integration: live unsigned Particle preview for
-  funding the Arbitrum daily budget from unified USDC; execution code plus fail-closed server
-  evidence verification are implemented, and the private `agent_funding_evidence` Supabase table
-  was provisioned on 2026-07-13. A protected Vercel Preview has the flag enabled for the approved
-  live gate; no transaction has been broadcast and the path is not yet eligible for a live claim.
+- Feature-gated `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT` integration: the repository default is `false`
+  as a rollback, while the stable production demo is enabled after a successful live gate. A
+  completed Particle activity made the 2 USDC Arbitrum budget available with a Base source leg,
+  exact SpendPolicy approval, fail-closed server verification, and immutable Supabase evidence
+  (C27).
 
 ## Fallback / stable mode
 
@@ -60,6 +60,9 @@ reasoning are not implemented; keep the narrower claim discipline below.
 - Cross-chain value movement is proven on stable UA SDK `2.0.3`: Base-funded USDC settled to a merchant on Arbitrum through `createUniversalTransaction`, without a manual bridge (C21).
 - The Research Agent Expense Card was live-verified on Arbitrum on 2026-07-12: `0.05 + 0.08 USDC` paid for two inputs, a useful brief produced, and an unexpected `0.20 USDC` export blocked before settlement (C25).
 - One-click `/agent` revoke was live-verified through a successful `MandateRevoked` transaction on Arbitrum (C26).
+- The integrated Research Agent card funding was live-verified on 2026-07-13: Particle activity
+  `0x06567b3a8eed3a` includes a successful Base source leg and exact 2 USDC Arbitrum SpendPolicy
+  approval; server verification passed and immutable evidence was stored before arming (C27).
 
 ## Active ReceiptEmitter
 
@@ -69,9 +72,8 @@ reasoning are not implemented; keep the narrower claim discipline below.
 
 ## Claim discipline
 
-> Source of truth: `docs/honest-claim-ledger.md` (C1–C23) + `docs/risk-register.md`. This list is a
-> quick guardrail; the ledger wins on any conflict. (Updated 2026-07-06 — the pre-2026-06-21 notes
-> here were stale.)
+> Source of truth: `docs/honest-claim-ledger.md` (C1–C27) + `docs/risk-register.md`. This list is a
+> quick guardrail; the ledger wins on any conflict.
 
 - Cross-chain value movement via UA is **proven live** (C21) — claim it with the tx proof.
 - Zero-gas onboarding is **live** — the one-time 7702 delegation is relayer-sponsored (C23). Do NOT
@@ -79,9 +81,10 @@ reasoning are not implemented; keep the narrower claim discipline below.
 - On-chain spend caps (SpendPolicy) are **live** on Base + Arbitrum (C1–C6) — not Concept Mode.
 - Arbitrum is a **primary settlement chain** (live), not exploratory.
 - Do not claim real session keys or automated future (unattended-recurring) payments.
-- Do not claim that the integrated Research Agent Expense Card was funded cross-chain. Its Particle
-  `Arbitrum + Base -> Arbitrum` preview is proven; the feature-gated send + immutable evidence path
-  is provisioned in a protected preview but still needs one explicitly approved live verification.
+- The integrated Research Agent Expense Card funding is **proven live** (C27). Say precisely that
+  the finished Particle activity included a Base source leg and exact 2 USDC Arbitrum approval.
+  Do not imply that all 2 USDC came from Base or that the later C25 purchases were cross-chain;
+  those two resource purchases settled same-chain on Arbitrum.
 - The x402 flow is the **pattern** (`onelink-mandate` scheme), not Coinbase-facilitator-compatible.
 - The agent is an **unattended deterministic** loop — never claim an LLM / AI-reasoning agent.
 - Particle AuthKit is **not installed** and is not on the live path.
@@ -119,7 +122,7 @@ Cross-checked against the RC2 repository and live evidence:
 - Particle UA SDK is pinned to stable `2.0.3`; AuthKit and ZeroDev are absent from the active stack.
 - Arbitrum is the primary settlement and SpendPolicy chain; Base remains a supported source/proof chain.
 - `submission-rc2` points to `c1f051a` and includes the Research Agent Expense Card plus one-click revoke.
-- Current local gate: typecheck, lint, 253 unit tests, 22 contract tests, and production build.
+- Current local gate: typecheck, lint, 284 unit checks, 22 contract tests, and production build.
   Accept a production baseline only after the 7/7 HTTP smoke suite passes; rerun it after every
   deploy.
 - Live proof details belong in `docs/honest-claim-ledger.md`, `docs/proof-pack.md`, and `docs/research-agent-expense-card-spec.md`; those artifacts override narrative summaries.

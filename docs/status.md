@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-07-12
+Last updated: 2026-07-13
 
 ## Active Stack
 
@@ -127,9 +127,9 @@ The primary adoption story is now a concrete outcome rather than a generic payme
 4. An unexpected `0.20 USDC` premium export is rejected with `PerChargeExceeded` before broadcast; no funds move and no gas is spent on the blocked attempt.
 5. The user revokes the budget on-chain; the `/agent` run control is disabled and later charges are contractually invalid.
 
-Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current gate is 277 unit tests, 22 contract tests, production build, and the 7/7 production HTTP smoke suite.
+Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md`, `docs/proof-pack.md`, and claim-ledger rows C25-C27. Submission RC2 is tagged at commit `c1f051a`; the current gate is 284 unit checks, 22 contract tests, production build, and the 7/7 production HTTP smoke suite.
 
-### Experimental UA-funded arm path (default off)
+### UA-funded arm path (feature-gated, live-verified)
 
 `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=true` connects the Research Agent consent directly to the
 Particle cross-chain rail. After Magic login, `/agent` builds a live unsigned preview for making the
@@ -155,15 +155,22 @@ The post-send evidence gate is also code-complete and default-off. Before arming
 7. inserts immutable, idempotent evidence in `agent_funding_evidence`, keyed by both
    `ua_transaction_id` and the exact EIP-712 `mandate_id`, before the UI treats the card as armed.
 
-The private Supabase table from `supabase/schema.sql` was applied on 2026-07-13. A service-role
-read returns an empty result and anon access is denied. Production remains disabled and returns 404;
-a protected Vercel Preview enables the flag for the live gate. The route requires the exact
-payer-signed EIP-712 Research Agent mandate before any vendor/database read and never treats preview
-data as verified evidence.
+The private Supabase table from `supabase/schema.sql` was applied on 2026-07-13. An explicitly
+approved live run then completed and stored immutable evidence:
 
-This integration has **not** been broadcast live yet. The successful evidence is an unsigned
-`Arbitrum + Base -> Arbitrum` preview only; do not claim that the Expense Card itself was funded
-cross-chain until the separately approved live gate is complete.
+- Particle activity: [`0x06567b3a8eed3a`](https://universalx.app/activity/details?id=0x06567b3a8eed3a), status `FINISHED`;
+- Base source operation: [`0x3ef6…6f98`](https://basescan.org/tx/0x3ef6e679b185fd1506e1632a313ee2ba0eb147b1be420ab3df687884f3396f98), successful;
+- Arbitrum destination/approval operation: [`0x0ca4…eb7`](https://arbiscan.io/tx/0x0ca454698c355895be5027c4ed8d7d72c8d966c00ca703775e014ea180061eb7), successful;
+- exact Arbitrum USDC allowance to SpendPolicy: `2,000,000` atomic;
+- server-read destination balance: `2,000,000` atomic;
+- stored evidence reports `cross_chain=true` and `source_chain_ids=[8453]`.
+
+The stable production demo now enables the feature. The repository/env-example default remains
+`false` as a rollback, and disabling it still returns 404 from the evidence API. The POST verifier
+requires the exact payer-signed EIP-712 Research Agent mandate before any vendor/database read; the
+read-only GET restores already verified evidence after login. Preview data alone can never arm the
+card. Claim C27 covers the funding operation only: the later C25 resource purchases are separate
+same-chain Arbitrum settlements.
 
 ## Known Risk (resolved -> residual)
 

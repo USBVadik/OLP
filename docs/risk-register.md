@@ -692,21 +692,20 @@
 - **found_by:** external review (2026-07)
 - **mitigation:**
   1. `.gitignore` now ignores `kiro-import/`. ✅ shipped
-  2. `git rm -r --cached kiro-import` (keeps the files locally, drops them from the repo tree) runs in
-     the commit step. ⏳ pending — `.gitignore` alone does NOT untrack already-tracked files.
-- **mitigation_status:** in_progress — ignore rule shipped; the `git rm --cached` + commit is the ship step.
+  2. `kiro-import/` was removed from the Git index while remaining ignored locally. ✅ shipped
+- **mitigation_status:** closed — `git ls-files 'kiro-import/**'` returns no tracked files
 - **owner:** builder
 - **review:** confirm `git ls-files | grep kiro-import` is empty after the commit
 
 ### R28 — UA-funded Expense Card preview could be mistaken for completed funding
 
-- **likelihood:** low while the feature flag is off; medium during the future live gate
+- **likelihood:** low after the live evidence gate; preview and verified states remain visually separate
 - **impact:** high (a preview-only route or unrelated Particle activity must never arm a spending
   permission or earn a cross-chain funding claim)
 - **found_by:** pre-submission integration review, 2026-07-13
 - **mitigation:**
-  1. `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=false` remains the default and the verification API returns
-     404 while disabled. ✅
+  1. `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=false` remains the repository rollback default and the
+     verification API returns 404 while disabled. Production was enabled only after the live gate. ✅
   2. When enabled, the API verifies the exact payer-signed EIP-712 Research Agent mandate and fixed
      merchant/token/caps before any Particle, RPC, or Supabase read. ✅
   3. Core evidence derivation is fail-closed and unit-tested: `FINISHED`, exact owner, exact USDC per
@@ -718,14 +717,18 @@
      rejected. ✅ code
   5. The UI calls this server gate before arming and exposes the Particle activity plus Approval
      proof only after successful verification. ✅ code
-- **residual:** the schema migration is applied; one explicitly approved live transaction is still
-  pending. The enabled API is signature-gated but has no shared multi-instance rate limiter, so add
-  one before opening it as a general public service. Particle's 18-decimal activity normalization is
-  treated as a fail-closed vendor contract and must be rechecked after an SDK upgrade. Until the
-  live run passes, the only allowed claim remains the unsigned Base + Arbitrum preview.
-- **mitigation_status:** code-complete, schema-provisioned, live-unverified; production remains off
+- **live verification:** completed 2026-07-13. Particle activity `0x06567b3a8eed3a` reached
+  `FINISHED`; Base source tx `0x3ef6…6f98` and Arbitrum approval tx `0x0ca4…eb7` succeeded; exact
+  2 USDC allowance and balance were server-verified; immutable evidence was stored before arming. ✅
+- **residual:** the enabled POST API is mandate-signature-gated but has no shared multi-instance rate
+  limiter, so add one before offering this as a general public service. The read-only GET exposes
+  only public-chain evidence by payer address. Particle's activity schema and 18-decimal
+  normalization remain vendor contracts that must be rechecked after an SDK upgrade. Claim only the
+  observed Base-source/Arbitrum-approval operation; do not imply that all 2 USDC came from Base or
+  that the later same-chain purchases were cross-chain.
+- **mitigation_status:** closed for the submission demo; live-verified and production-enabled behind the feature flag
 - **owner:** builder
-- **review:** perform one approved run, inspect stored row and every explorer leg
+- **review:** re-run read-only evidence retrieval and explorer checks before the recorded demo
 
 ## Risks closed (kept for trace)
 

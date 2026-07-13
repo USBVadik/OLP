@@ -1,4 +1,9 @@
-import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl } from "@/lib/config/payment";
+import {
+  ARBITRUM_CHAIN,
+  BASE_CHAIN,
+  getExplorerTxUrl,
+  getUniversalXActivityUrl,
+} from "@/lib/config/payment";
 import {
   summarizeResearchTask,
   type ResearchResourceOutcome,
@@ -12,6 +17,11 @@ const RESEARCH_SENTIMENT_TX =
   "0xfaa29913ae64dd0731b21758d58529d5f08e7b007e306c282b05012661254aa8";
 const RESEARCH_REVOKE_TX =
   "0xe01a85f70d25acbda2d54f1dbe4350a055c0cf567658b0dbe015e643a3cd5aea";
+const RESEARCH_FUNDING_UA_TRANSACTION_ID = "0x06567b3a8eed3a";
+const RESEARCH_FUNDING_BASE_SOURCE_TX =
+  "0x3ef6e679b185fd1506e1632a313ee2ba0eb147b1be420ab3df687884f3396f98";
+const RESEARCH_FUNDING_ARBITRUM_APPROVAL_TX =
+  "0x0ca454698c355895be5027c4ed8d7d72c8d966c00ca703775e014ea180061eb7";
 
 /**
  * Read-only replay of the live C25/C26 Research Agent run. Payloads are frozen evidence snapshots,
@@ -76,6 +86,26 @@ export const DEMO_REPLAY_AGENT = {
   merchant: "0x8C54783849A2C042544efc37c4657Ee98a411Fb7",
   revokeTxHash: RESEARCH_REVOKE_TX,
   revokeExplorer: getExplorerTxUrl(ARBITRUM_CHAIN, RESEARCH_REVOKE_TX),
+};
+
+/**
+ * Read-only snapshot of the separately verified C27 card-funding operation. It proves how the
+ * 2 USDC Arbitrum budget became available and was approved to SpendPolicy; it does not imply that
+ * the later C25 resource purchases were themselves cross-chain.
+ */
+export const DEMO_REPLAY_AGENT_FUNDING = {
+  mode: "verified_replay" as const,
+  sendsTransactions: false as const,
+  amountAtomic: 2_000_000n,
+  sourceChain: BASE_CHAIN.name,
+  settlementChain: ARBITRUM_CHAIN.name,
+  uaTransactionId: RESEARCH_FUNDING_UA_TRANSACTION_ID,
+  activityUrl: getUniversalXActivityUrl(RESEARCH_FUNDING_UA_TRANSACTION_ID),
+  sourceTxHash: RESEARCH_FUNDING_BASE_SOURCE_TX,
+  sourceExplorer: getExplorerTxUrl(BASE_CHAIN, RESEARCH_FUNDING_BASE_SOURCE_TX),
+  approvalTxHash: RESEARCH_FUNDING_ARBITRUM_APPROVAL_TX,
+  approvalExplorer: getExplorerTxUrl(ARBITRUM_CHAIN, RESEARCH_FUNDING_ARBITRUM_APPROVAL_TX),
+  verifiedAt: "2026-07-13T10:25:36.317Z",
 };
 
 export const DEMO_REPLAY_PAYMENT_LINK = {
