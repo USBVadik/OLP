@@ -49,10 +49,9 @@ export default function DemoReplayPage() {
 
         <AppNav className="mb-6" />
 
-        {/* Intro */}
+        {/* Intro — the h1 carries the hook; the chips below state the guarantees (no kicker). */}
         <section className="op-animate-rise">
-          <span className="op-eyebrow">Verified Research Agent replay · no wallet needed</span>
-          <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
+          <h1 className="max-w-2xl font-display text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
             The task finished.{" "}
             <span className="text-gold">The overspend didn&apos;t.</span>
           </h1>
@@ -73,12 +72,9 @@ export default function DemoReplayPage() {
 
         <section className="mt-10" aria-labelledby="research-replay-title">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="op-eyebrow">The useful outcome</p>
-              <h2 id="research-replay-title" className="mt-2 font-display text-3xl font-semibold text-ink">
-                Research Agent Expense Card
-              </h2>
-            </div>
+            <h2 id="research-replay-title" className="font-display text-3xl font-semibold text-ink">
+              Research Agent Expense Card
+            </h2>
             <Chip tone="verify">
               <IconCheck className="h-3.5 w-3.5" /> Verified replay
             </Chip>
@@ -109,8 +105,7 @@ export default function DemoReplayPage() {
                 <IconCheck className="h-4 w-4" />
               </span>
               <div>
-                <p className="op-eyebrow text-verify">Card funding verified</p>
-                <h3 className="mt-1 font-display text-xl font-semibold text-ink">
+                <h3 className="font-display text-xl font-semibold text-ink">
                   The budget crossed chains before the work began
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink2">
@@ -199,10 +194,7 @@ export default function DemoReplayPage() {
 
         <section className="mt-8 rounded-2xl border border-verify/25 bg-verify-soft/70 p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-verify">
-              Main-track proof
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
+            <h2 className="font-display text-2xl font-semibold text-ink">
               Base funded. Arbitrum settled.
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink2">
@@ -221,7 +213,9 @@ export default function DemoReplayPage() {
 
         {/* Three moments */}
         <section className="mt-10">
-          <p className="op-eyebrow mb-3">The three moments that build trust</p>
+          <h2 className="mb-3 font-display text-xl font-semibold text-ink">
+            The three moments that build trust
+          </h2>
           <div className="grid gap-3 sm:grid-cols-3">
             <Moment icon={<IconShield className="h-4 w-4" />} step="Before" title="Trust Preview" />
             <Moment icon={<IconReceipt className="h-4 w-4" />} step="After" title="Proof Receipt" />
@@ -232,7 +226,7 @@ export default function DemoReplayPage() {
         {/* Verified summary */}
         <section className="mt-8 op-card overflow-hidden">
           <div className="flex items-center justify-between border-b border-line px-6 py-4">
-            <span className="op-eyebrow">Earlier checkout replay</span>
+            <h3 className="font-display text-lg font-semibold text-ink">Earlier checkout replay</h3>
             <Chip tone="verify">
               <IconCheck className="h-3.5 w-3.5" /> PAID · proof recorded
             </Chip>
@@ -254,7 +248,7 @@ export default function DemoReplayPage() {
           </div>
 
           <div className="space-y-2 px-6 pb-5 pt-2">
-            <p className="op-eyebrow mb-1">On-chain proof</p>
+            <p className="mb-1 text-sm font-semibold text-ink">On-chain proof</p>
             <TxReference label="Payment transaction" hash={DEMO_REPLAY_PAYMENT.tx_hash} href={replay.paymentExplorer} />
             <TxReference label="Proof transaction" hash={DEMO_REPLAY_PAYMENT.receipt_tx_hash} href={replay.proofExplorer} />
           </div>
