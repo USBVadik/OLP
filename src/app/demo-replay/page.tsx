@@ -107,7 +107,7 @@ export default function DemoReplayPage() {
               </span>
               <div>
                 <h3 className="font-display text-xl font-semibold text-ink">
-                  The budget crossed chains before the work began
+                  Funded across chains before the work began
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink2">
                   Particle assembled the 2.00 USDC Arbitrum budget with a successful Base source
@@ -118,14 +118,16 @@ export default function DemoReplayPage() {
               </div>
             </div>
 
-            {/* The strongest technical result of the build, shown as money in motion — the same
-                settled-route visual judges see on /pay and /receipt — instead of a metric row. */}
+            {/* Money in motion — the same settled-route visual judges see on /pay and /receipt —
+                but with NO amount on the arrow. The 2.00 USDC is an approved SpendPolicy ceiling,
+                not the sum that crossed chains (only part routed from Base; the rest was already on
+                Arbitrum), so the amount lives in its own labelled figure below to avoid implying
+                "2 USDC crossed". */}
             <CrossChainRoute
               className="mt-4"
               status="settled"
               fromNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
               toName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
-              amountLabel={formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
               verified
               activityHref={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
               sourceLegs={[
@@ -135,6 +137,13 @@ export default function DemoReplayPage() {
                 },
               ]}
             />
+
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-paper/70 px-3.5 py-2.5">
+              <span className="text-xs text-muted">Budget made available</span>
+              <span className="font-display text-sm font-semibold text-ink tnum">
+                {formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
+              </span>
+            </div>
 
             <div className="mt-3">
               <TxReference

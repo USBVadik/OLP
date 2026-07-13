@@ -60,12 +60,15 @@ export function ExpenseCardFundingConsent({
         </div>
       ) : summary ? (
         <div className="mt-4 space-y-3">
+          {/* No amount on the route arrow: the budget is a SpendPolicy ceiling, not the sum that
+              crosses chains (Particle sources part locally on the destination chain). The amount is
+              the "Available for today" figure below, so the planned route stays qualitative and
+              never implies the whole budget bridges from the source chain. */}
           {summary.crossChain ? (
             <CrossChainRoute
               status="preview"
               fromNames={sourceNames}
               toName={destinationName}
-              amountLabel={formatUsdc(amountAtomic)}
               feeLabel={feeLabel}
             />
           ) : (

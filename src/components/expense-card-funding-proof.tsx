@@ -28,29 +28,30 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
         </div>
       </div>
 
-      {/* Money in motion: the same settled-route visual as /pay and /receipt, so the card's
-          cross-chain funding reads as Particle's superpower rather than a metric row. */}
+      {/* Money in motion — the same settled-route visual as /pay and /receipt, but with NO amount
+          on the arrow. The approved budget is a SpendPolicy ceiling, not the sum that crossed
+          chains (only part routed from the source chain; the rest was already on the settlement
+          chain), so the route stays qualitative and the budget is its own labelled figure below —
+          otherwise the arrow would overclaim "N USDC crossed". */}
       {evidence.cross_chain && sourceNames.length ? (
         <CrossChainRoute
           className="mt-4"
           status="settled"
           fromNames={sourceNames}
           toName={settlementName}
-          amountLabel={budgetLabel}
           verified
         />
       ) : (
-        <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
-          <div className="rounded-xl bg-paper/80 p-3">
-            <dt className="text-muted">Funding route</dt>
-            <dd className="mt-1 font-semibold text-ink">{`${settlementName} → ${settlementName}`}</dd>
-          </div>
-          <div className="rounded-xl bg-paper/80 p-3">
-            <dt className="text-muted">Approved daily budget</dt>
-            <dd className="mt-1 font-semibold text-ink">{budgetLabel}</dd>
-          </div>
-        </dl>
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-paper/80 px-3.5 py-3 text-xs">
+          <span className="text-muted">Funding route</span>
+          <span className="font-semibold text-ink">On {settlementName}</span>
+        </div>
       )}
+
+      <div className="mt-3 flex items-center justify-between rounded-xl bg-paper/80 px-3.5 py-3">
+        <span className="text-xs text-muted">Approved daily budget</span>
+        <span className="font-display text-sm font-semibold text-ink tnum">{budgetLabel}</span>
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {activityUrl ? (
