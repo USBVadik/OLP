@@ -127,69 +127,76 @@ export function AgentTaskResult({ summary }: Props) {
 }
 
 function PolicyBlockEvidence({ block }: { block: ResearchPolicyBlock }) {
+  const revoked = /revoked|MandateIsRevoked/i.test(block.reason);
   const rule = /per[- ]?charge|PerChargeExceeded/i.test(block.reason)
     ? "Per-charge limit enforced"
-    : /revoked|MandateIsRevoked/i.test(block.reason)
+    : revoked
       ? "Revoked permission enforced"
       : "Signed policy enforced";
 
+  // The peak beat. An injected instruction tried to push a charge past the signed cap — the exact
+  // failure mode behind real autonomous-agent wallet drains — and the on-chain policy physically
+  // refused it. Given weight (bold danger container + one-shot slam), a hero "nothing moved" figure,
+  // and honest copy: it's an over-cap revert to the SAME merchant, so we never imply an attacker
+  // recipient. `animate-block-pulse` / `animate-seal` both have a reduced-motion no-op (globals.css).
   return (
-    <section aria-labelledby="policy-block-title" className="mt-5 border-y border-danger/20 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-danger">
-          <IconShield className="h-4 w-4" /> Adversarial safety test
+    <section
+      aria-labelledby="policy-block-title"
+      className="op-animate-seal mt-5 overflow-hidden rounded-2xl border-2 border-danger/45 bg-danger-soft"
+    >
+      <div className="animate-block-pulse rounded-2xl p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-danger">
+            <IconShield className="h-4 w-4" /> {revoked ? "Post-revoke charge" : "Hijack attempt"}
+          </p>
+          <Chip tone="verify">
+            <IconCheck className="h-3 w-3" /> Refused on-chain
+          </Chip>
+        </div>
+
+        <h3 id="policy-block-title" className="mt-3 font-display text-xl font-semibold text-ink">
+          {revoked ? "Charge after revoke, blocked" : "Drain attempt blocked"}
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink2">
+          {revoked
+            ? "A charge arrived after the budget was revoked. "
+            : "An injected instruction tried to push a charge past your signed per-tool limit — the way autonomous agents get drained. "}
+          SpendPolicy refused it in preflight. No transaction was broadcast, and nothing left your account.
         </p>
-        <Chip tone="verify">
-          <IconCheck className="h-3 w-3" /> Contained before settlement
-        </Chip>
+
+        {/* Hero figure: the whole point of the product, made the largest thing on screen. */}
+        <div className="mt-5 rounded-xl bg-paper/70 px-4 py-4 text-center">
+          <p className="font-display text-4xl font-semibold text-verify sm:text-5xl">
+            {formatUsdcAmount(block.fundsMovedAtomic)}
+          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+            moved · zero gas
+          </p>
+        </div>
+
+        <dl className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-danger/20 bg-danger/10">
+          <PolicyMetric label="Charge attempted" value={formatUsdcAmount(block.attemptedAtomic)} />
+          <PolicyMetric
+            label={block.signedLimitAtomic === null ? "Verdict" : "Your signed limit"}
+            value={
+              block.signedLimitAtomic === null
+                ? "Refused"
+                : formatUsdcAmount(block.signedLimitAtomic)
+            }
+          />
+        </dl>
+
+        <p className="mt-3 text-xs font-medium text-muted">{rule} · no transaction broadcast</p>
       </div>
-
-      <h3 id="policy-block-title" className="mt-3 font-display text-lg font-semibold text-ink">
-        Out-of-policy request contained
-      </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-ink2">
-        An injected deterministic test instruction requested {block.title}. SpendPolicy rejected
-        it during preflight; the useful task still completed and the attempted funds never left the
-        payer.
-      </p>
-
-      <dl className="mt-4 grid divide-y divide-line border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        <PolicyMetric label="Attempted" value={formatUsdcAmount(block.attemptedAtomic)} />
-        <PolicyMetric
-          label={block.signedLimitAtomic === null ? "Decision" : "Signed limit"}
-          value={
-            block.signedLimitAtomic === null
-              ? "Blocked"
-              : formatUsdcAmount(block.signedLimitAtomic)
-          }
-        />
-        <PolicyMetric
-          label="Funds moved"
-          value={formatUsdcAmount(block.fundsMovedAtomic)}
-          verified
-        />
-      </dl>
-
-      <p className="mt-3 text-xs font-medium text-muted">{rule} · no transaction broadcast</p>
     </section>
   );
 }
 
-function PolicyMetric({
-  label,
-  value,
-  verified = false,
-}: {
-  label: string;
-  value: string;
-  verified?: boolean;
-}) {
+function PolicyMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="py-3 sm:px-3 sm:first:pl-0 sm:last:pr-0">
+    <div className="bg-danger-soft px-3 py-3">
       <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{label}</dt>
-      <dd className={`mt-1 font-mono text-sm font-semibold ${verified ? "text-verify" : "text-ink"}`}>
-        {value}
-      </dd>
+      <dd className="mt-1 font-mono text-sm font-semibold text-ink">{value}</dd>
     </div>
   );
 }
