@@ -11,6 +11,7 @@ import {
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { formatUsdcAmount } from "@/lib/mandates/format";
 import { AgentTaskResult } from "@/components/agent-task-result";
+import { CrossChainRoute } from "@/components/cross-chain-route";
 import {
   Wordmark,
   Chip,
@@ -117,29 +118,25 @@ export default function DemoReplayPage() {
               </div>
             </div>
 
-            <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-              <ReplayMetric
-                label="Funding route"
-                value={`${DEMO_REPLAY_AGENT_FUNDING.sourceChain} → ${DEMO_REPLAY_AGENT_FUNDING.settlementChain}`}
-              />
-              <ReplayMetric
-                label="Budget made available"
-                value={formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
-              />
-            </dl>
+            {/* The strongest technical result of the build, shown as money in motion — the same
+                settled-route visual judges see on /pay and /receipt — instead of a metric row. */}
+            <CrossChainRoute
+              className="mt-4"
+              status="settled"
+              fromNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
+              toName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
+              amountLabel={formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
+              verified
+              activityHref={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
+              sourceLegs={[
+                {
+                  name: DEMO_REPLAY_AGENT_FUNDING.sourceChain,
+                  href: DEMO_REPLAY_AGENT_FUNDING.sourceExplorer,
+                },
+              ]}
+            />
 
-            <div className="mt-3 space-y-2">
-              <TxReference
-                label="Particle activity"
-                hash={DEMO_REPLAY_AGENT_FUNDING.uaTransactionId}
-                href={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
-                destinationLabel="UniversalX activity"
-              />
-              <TxReference
-                label="Base funding leg"
-                hash={DEMO_REPLAY_AGENT_FUNDING.sourceTxHash}
-                href={DEMO_REPLAY_AGENT_FUNDING.sourceExplorer}
-              />
+            <div className="mt-3">
               <TxReference
                 label="Arbitrum budget approval"
                 hash={DEMO_REPLAY_AGENT_FUNDING.approvalTxHash}

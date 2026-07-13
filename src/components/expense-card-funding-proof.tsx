@@ -1,12 +1,15 @@
 import { ARBITRUM_CHAIN, getExplorerTxUrl, getUniversalXActivityUrl } from "@/lib/config/payment";
 import { chainLabel } from "@/lib/particle/assets";
 import type { StoredFundingEvidence } from "@/lib/agent/funding-evidence-store";
+import { CrossChainRoute } from "@/components/cross-chain-route";
 import { IconArrowUpRight, IconCheck } from "@/components/ui";
 
 export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingEvidence }) {
   const activityUrl = getUniversalXActivityUrl(evidence.ua_transaction_id);
   const approvalUrl = getExplorerTxUrl(ARBITRUM_CHAIN, evidence.approval_tx_hash);
   const sourceNames = evidence.source_chain_ids.map(chainLabel);
+  const budgetLabel = `${(Number(evidence.approved_amount) / 1_000_000).toFixed(2)} USDC`;
+  const settlementName = chainLabel(evidence.settlement_chain_id);
 
   return (
     <section className="rounded-2xl border border-verify/25 bg-verify-soft p-4" aria-label="Verified card funding">
@@ -15,8 +18,7 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
           <IconCheck className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="op-eyebrow text-verify">Funding evidence verified</p>
-          <h2 className="mt-1 font-display text-lg font-semibold text-ink">
+          <h2 className="font-display text-lg font-semibold text-ink">
             Daily card budget is ready on Arbitrum
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-ink2">
@@ -26,22 +28,29 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
         </div>
       </div>
 
-      <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
-        <div className="rounded-xl bg-paper/80 p-3">
-          <dt className="text-muted">Funding route</dt>
-          <dd className="mt-1 font-semibold text-ink">
-            {evidence.cross_chain && sourceNames.length
-              ? `${sourceNames.join(" + ")} → Arbitrum`
-              : "Arbitrum → Arbitrum"}
-          </dd>
-        </div>
-        <div className="rounded-xl bg-paper/80 p-3">
-          <dt className="text-muted">Approved daily budget</dt>
-          <dd className="mt-1 font-semibold text-ink">
-            {(Number(evidence.approved_amount) / 1_000_000).toFixed(2)} USDC
-          </dd>
-        </div>
-      </dl>
+      {/* Money in motion: the same settled-route visual as /pay and /receipt, so the card's
+          cross-chain funding reads as Particle's superpower rather than a metric row. */}
+      {evidence.cross_chain && sourceNames.length ? (
+        <CrossChainRoute
+          className="mt-4"
+          status="settled"
+          fromNames={sourceNames}
+          toName={settlementName}
+          amountLabel={budgetLabel}
+          verified
+        />
+      ) : (
+        <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+          <div className="rounded-xl bg-paper/80 p-3">
+            <dt className="text-muted">Funding route</dt>
+            <dd className="mt-1 font-semibold text-ink">{`${settlementName} → ${settlementName}`}</dd>
+          </div>
+          <div className="rounded-xl bg-paper/80 p-3">
+            <dt className="text-muted">Approved daily budget</dt>
+            <dd className="mt-1 font-semibold text-ink">{budgetLabel}</dd>
+          </div>
+        </dl>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {activityUrl ? (
