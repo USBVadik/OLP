@@ -39,8 +39,21 @@ export default function HomePage() {
             className="pointer-events-none absolute -inset-x-10 -top-28 bottom-0 overflow-hidden"
             aria-hidden="true"
           >
+            {/* Feather the edges so the fixed-width aurora rectangle dissolves into the page on
+                wide screens instead of showing a hard image boundary. Radial anchored top-right
+                where the silk actually sits; opaque core, transparent at every edge. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/fx/aurora.webp" alt="" className="h-full w-full object-cover opacity-[0.6]" />
+            <img
+              src="/fx/aurora.webp"
+              alt=""
+              className="h-full w-full object-cover opacity-[0.6]"
+              style={{
+                maskImage:
+                  "radial-gradient(115% 115% at 72% 22%, #000 45%, rgba(0,0,0,0.35) 72%, transparent 100%)",
+                WebkitMaskImage:
+                  "radial-gradient(115% 115% at 72% 22%, #000 45%, rgba(0,0,0,0.35) 72%, transparent 100%)",
+              }}
+            />
           </div>
           <ParticleField density={1.15} />
           <div className="relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">

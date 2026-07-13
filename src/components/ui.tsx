@@ -301,7 +301,7 @@ export function AppNav({ active, className = "" }: { active?: string; className?
 
   return (
     <div className={className}>
-      <details className="group relative sm:hidden">
+      <details className="group relative md:hidden">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm font-semibold text-ink shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 [&::-webkit-details-marker]:hidden">
           <span>{activeSection?.label ?? "Menu"}</span>
           <IconChevronDown className="h-4 w-4 text-muted transition-transform duration-150 group-open:rotate-180" />
@@ -332,7 +332,7 @@ export function AppNav({ active, className = "" }: { active?: string; className?
 
       <nav
         aria-label="Sections"
-        className="hidden flex-wrap items-center gap-1 border-b border-line sm:flex"
+        className="hidden flex-nowrap items-center gap-1 overflow-x-auto border-b border-line md:flex"
       >
         {APP_NAV_SECTIONS.map((section) => {
           const isActive = section.href === active;

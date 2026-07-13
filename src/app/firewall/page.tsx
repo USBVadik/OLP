@@ -268,7 +268,7 @@ export default function FirewallPage() {
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
-      <div className={`mx-auto w-full ${armed ? "max-w-3xl" : "max-w-md"}`}>
+      <div className="mx-auto w-full max-w-3xl">
         <header className="mb-5 flex items-center justify-between">
           <Wordmark href="/" />
           <div className="flex items-center gap-2">
@@ -281,7 +281,9 @@ export default function FirewallPage() {
 
         <AppNav active="/firewall" className="mb-5" />
 
-        <div className="op-card op-animate-rise p-6 sm:p-7">
+        {/* The arm/consent card stays a narrow column; the armed panel needs the full width.
+            The header + nav above always span max-w-3xl so the tab bar never wraps. */}
+        <div className={`op-card op-animate-rise p-6 sm:p-7 ${armed ? "" : "mx-auto max-w-md"}`}>
           <div className="mb-5">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2" aria-hidden="true">
