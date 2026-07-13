@@ -421,7 +421,6 @@ export default function AgentPage() {
     if (!UA_FUNDED_AGENT || !ua || !chosen) return;
     setFundingPreviewLoading(true);
     setFundingPreviewError(null);
-    setFundingEvidence(null);
     try {
       const transaction = await buildFundingTransaction();
       const summary = summarizeExpenseCardFundingPreview(transaction);
