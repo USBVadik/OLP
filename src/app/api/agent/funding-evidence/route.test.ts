@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 test("funding evidence API is unavailable while the UA-funded agent flag is off", async () => {
   const previous = process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
@@ -18,6 +18,37 @@ test("funding evidence API is unavailable while the UA-funded agent flag is off"
     );
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), { error: "UA-funded Expense Card is disabled" });
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
+    else process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT = previous;
+  }
+});
+
+test("stored funding evidence read is also flag-gated", async () => {
+  const previous = process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
+  process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT = "false";
+  try {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/agent/funding-evidence?payerAddress=0x53Bd615635Af778e5E460d5EEC2d6b234693206a",
+      ),
+    );
+    assert.equal(response.status, 404);
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
+    else process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT = previous;
+  }
+});
+
+test("stored funding evidence read rejects an invalid payer before Supabase", async () => {
+  const previous = process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
+  process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT = "true";
+  try {
+    const response = await GET(
+      new Request("http://localhost/api/agent/funding-evidence?payerAddress=not-an-address"),
+    );
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "Invalid payer address" });
   } finally {
     if (previous === undefined) delete process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT;
     else process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT = previous;

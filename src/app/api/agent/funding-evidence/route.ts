@@ -72,6 +72,40 @@ async function findExistingMandate(mandateId: string) {
     .maybeSingle();
 }
 
+export async function GET(request: Request) {
+  if (process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT !== "true") {
+    return NextResponse.json({ error: "UA-funded Expense Card is disabled" }, { status: 404 });
+  }
+
+  const payerAddress = new URL(request.url).searchParams.get("payerAddress");
+  if (!payerAddress || !isAddress(payerAddress)) {
+    return NextResponse.json({ error: "Invalid payer address" }, { status: 400 });
+  }
+
+  try {
+    const result = await supabaseAdmin
+      .from("agent_funding_evidence")
+      .select("*")
+      .ilike("payer_address", payerAddress)
+      .order("verified_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) {
+      return NextResponse.json({ error: "Verified funding evidence was not found" }, { status: 404 });
+    }
+    return NextResponse.json(
+      { ok: true, evidence: result.data },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Funding evidence read failed" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   if (process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT !== "true") {
     return NextResponse.json({ error: "UA-funded Expense Card is disabled" }, { status: 404 });

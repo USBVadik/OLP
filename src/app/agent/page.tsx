@@ -380,6 +380,34 @@ export default function AgentPage() {
     };
   }, [address, balanceReloadKey]);
 
+  // Funding evidence is immutable and safe to restore after a refresh. The current mandate still
+  // requires a fresh Magic signature; restoring proof never arms the agent by itself.
+  useEffect(() => {
+    if (!UA_FUNDED_AGENT || !address) {
+      setFundingEvidence(null);
+      return;
+    }
+    let cancelled = false;
+    setFundingEvidence(null);
+    void fetch(`/api/agent/funding-evidence?payerAddress=${encodeURIComponent(address)}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const body = await response.json();
+        return body?.evidence as StoredFundingEvidence | undefined;
+      })
+      .then((evidence) => {
+        if (!cancelled && evidence) setFundingEvidence(evidence);
+      })
+      .catch(() => {
+        // Absence or temporary read failure keeps the UI on the normal explicit funding path.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
   const fundingAmount = useMemo(
     () => (chosen ? getExpenseCardFundingAmount(chosen) : 0n),
     [chosen],
@@ -467,7 +495,6 @@ export default function AgentPage() {
     setBusy(UA_FUNDED_AGENT ? "Reviewing and signing your limits…" : "Arming: sign mandate + approve SpendPolicy…");
     setError(null);
     if (UA_FUNDED_AGENT) setAgentLog([]);
-    if (UA_FUNDED_AGENT) setFundingEvidence(null);
     try {
       const { BrowserProvider, Contract, Signature, getBytes } = await loadEthers();
       const provider = new BrowserProvider(magic.rpcProvider);
@@ -484,25 +511,35 @@ export default function AgentPage() {
         const existingReadiness = await readCardReadiness();
         let transactionId: string | null = null;
         let recovered = false;
+        let verifiedEvidence: StoredFundingEvidence | null = null;
 
         if (
           existingReadiness.balance >= fundingAmount &&
           existingReadiness.allowance >= fundingAmount
         ) {
           setBusy("Reconciling the completed Particle funding…");
-          const history = await ua.getTransactions(1, 10);
-          const entries = Array.isArray(history) ? history : history?.data;
-          transactionId = findRecoverableExpenseCardFundingTransaction({
-            entries,
-            payerAddress: address,
-            targetChainId: CHAIN.chainId,
-            targetTokenAddress: USDC,
-            amountAtomic: fundingAmount,
-          });
-          if (!transactionId) {
-            throw new Error(
-              "The card already has sufficient balance and allowance, but no matching recent Particle funding activity was found. No new transaction was sent.",
-            );
+          if (
+            fundingEvidence &&
+            fundingEvidence.payer_address.toLowerCase() === address.toLowerCase() &&
+            BigInt(fundingEvidence.approved_amount) >= fundingAmount
+          ) {
+            transactionId = fundingEvidence.ua_transaction_id;
+            verifiedEvidence = fundingEvidence;
+          } else {
+            const history = await ua.getTransactions(1, 10);
+            const entries = Array.isArray(history) ? history : history?.data;
+            transactionId = findRecoverableExpenseCardFundingTransaction({
+              entries,
+              payerAddress: address,
+              targetChainId: CHAIN.chainId,
+              targetTokenAddress: USDC,
+              amountAtomic: fundingAmount,
+            });
+            if (!transactionId) {
+              throw new Error(
+                "The card already has sufficient balance and allowance, but no matching recent Particle funding activity was found. No new transaction was sent.",
+              );
+            }
           }
           recovered = true;
         } else {
@@ -570,25 +607,27 @@ export default function AgentPage() {
           });
         }
 
-        setBusy("Verifying the funding source and approval…");
-        const verificationResponse = await fetch("/api/agent/funding-evidence", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            uaTransactionId: transactionId,
-            payerAddress: address,
-            mandate: toRawMandate(chosen),
-            signature,
-          }),
-        });
-        const verificationBody = await verificationResponse.json().catch(() => ({}));
-        if (!verificationResponse.ok || !verificationBody?.evidence?.approval_tx_hash) {
-          throw new Error(
-            verificationBody?.error ??
-              "Server could not verify the Particle funding activity and on-chain approval. The agent was not armed.",
-          );
+        if (!verifiedEvidence) {
+          setBusy("Verifying the funding source and approval…");
+          const verificationResponse = await fetch("/api/agent/funding-evidence", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uaTransactionId: transactionId,
+              payerAddress: address,
+              mandate: toRawMandate(chosen),
+              signature,
+            }),
+          });
+          const verificationBody = await verificationResponse.json().catch(() => ({}));
+          if (!verificationResponse.ok || !verificationBody?.evidence?.approval_tx_hash) {
+            throw new Error(
+              verificationBody?.error ??
+                "Server could not verify the Particle funding activity and on-chain approval. The agent was not armed.",
+            );
+          }
+          verifiedEvidence = verificationBody.evidence as StoredFundingEvidence;
         }
-        const verifiedEvidence = verificationBody.evidence as StoredFundingEvidence;
         setFundingEvidence(verifiedEvidence);
         append(
           "FIREWALL",
@@ -649,6 +688,7 @@ export default function AgentPage() {
     fundingPreviewSummary,
     buildFundingTransaction,
     fundingAmount,
+    fundingEvidence,
     readCardReadiness,
   ]);
 
@@ -1020,6 +1060,9 @@ export default function AgentPage() {
                   onRetry={refreshFundingPreview}
                 />
               ) : null}
+              {UA_FUNDED_AGENT && fundingEvidence ? (
+                <ExpenseCardFundingProof evidence={fundingEvidence} />
+              ) : null}
               <button
                 onClick={arm}
                 disabled={
@@ -1029,12 +1072,18 @@ export default function AgentPage() {
                 }
                 className="op-btn-primary w-full"
               >
-                {busy ?? (UA_FUNDED_AGENT ? `Fund ${fmt(fundingAmount)} & arm agent` : "Arm agent budget")}
+                {busy ??
+                  (UA_FUNDED_AGENT
+                    ? fundingEvidence
+                      ? "Arm agent with verified funding"
+                      : `Fund ${fmt(fundingAmount)} & arm agent`
+                    : "Arm agent budget")}
               </button>
               {UA_FUNDED_AGENT ? (
                 <p className="text-center text-[11px] leading-relaxed text-muted">
-                  One review, explicit wallet approvals: sign the spending limits, then sign the
-                  Particle funding transaction. A one-time chain activation may also be requested.
+                  {fundingEvidence
+                    ? "Funding is already verified. Sign the current spending limits; no new funding transaction will be sent."
+                    : "One review, explicit wallet approvals: sign the spending limits, then sign the Particle funding transaction. A one-time chain activation may also be requested."}
                 </p>
               ) : null}
             </div>
