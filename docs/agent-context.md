@@ -32,8 +32,8 @@ reasoning are not implemented; keep the narrower claim discipline below.
 - `SpendPolicy` merchant/per-charge/daily/total/expiry/revoke enforcement on Arbitrum and Base
 - Research Agent Expense Card as the primary use case: paid inputs -> useful brief -> over-cap block -> on-chain revoke
 - Default-off `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT` integration: live unsigned Particle preview for
-  funding the Arbitrum daily budget from unified USDC; execution code is implemented but not yet
-  broadcast or eligible for a live claim
+  funding the Arbitrum daily budget from unified USDC; execution code plus fail-closed server
+  evidence verification are implemented but not yet broadcast or eligible for a live claim
 
 ## Fallback / stable mode
 
@@ -78,8 +78,8 @@ reasoning are not implemented; keep the narrower claim discipline below.
 - Arbitrum is a **primary settlement chain** (live), not exploratory.
 - Do not claim real session keys or automated future (unattended-recurring) payments.
 - Do not claim that the integrated Research Agent Expense Card was funded cross-chain. Its Particle
-  `Arbitrum + Base -> Arbitrum` preview is proven; the feature-gated send path still needs one
-  explicitly approved live verification.
+  `Arbitrum + Base -> Arbitrum` preview is proven; the feature-gated send + immutable evidence path
+  still needs its Supabase migration and one explicitly approved live verification.
 - The x402 flow is the **pattern** (`onelink-mandate` scheme), not Coinbase-facilitator-compatible.
 - The agent is an **unattended deterministic** loop — never claim an LLM / AI-reasoning agent.
 - Particle AuthKit is **not installed** and is not on the live path.

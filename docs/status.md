@@ -142,6 +142,23 @@ Particle root -> send once -> wait for Particle `FINISHED` -> read-verify Arbitr
 allowance -> arm. The current direct Arbitrum approval remains the default rollback while the flag
 is false.
 
+The post-send evidence gate is also code-complete and default-off. Before arming, the server now:
+
+1. fetches `getTransaction(uaTransactionId)` directly from Particle;
+2. requires `FINISHED`, the exact payer, Arbitrum destination, and configured USDC on every reported
+   funding chain;
+3. fetches the activity's source/destination operation receipts from their chains;
+4. requires every foreign source leg to have succeeded;
+5. requires an exact Arbitrum USDC `Approval(payer, SpendPolicy, 2 USDC)` inside a successful
+   destination operation;
+6. requires the server-read Arbitrum USDC balance to cover the full daily budget;
+7. inserts immutable, idempotent evidence in `agent_funding_evidence`, keyed by both
+   `ua_transaction_id` and the exact EIP-712 `mandate_id`, before the UI treats the card as armed.
+
+The Supabase table in `supabase/schema.sql` must be applied before this flag can be enabled. The
+route returns 404 while the flag is false, requires the exact payer-signed EIP-712 Research Agent
+mandate before any vendor/database read, and never treats preview data as verified evidence.
+
 This integration has **not** been broadcast live yet. The successful evidence is an unsigned
 `Arbitrum + Base -> Arbitrum` preview only; do not claim that the Expense Card itself was funded
 cross-chain until the separately approved live gate is complete.

@@ -90,6 +90,10 @@ export function ExpenseCardFundingConsent({
             The funding transaction approves only today&apos;s budget to SpendPolicy. The signed
             merchant, per-call, daily, expiry, total, and revoke rules still apply on-chain.
           </p>
+          <p className="rounded-xl border border-line bg-paper/70 p-3 text-xs leading-relaxed text-muted">
+            Preview only. The card is not treated as funded until the server verifies Particle
+            FINISHED status, each reported source leg, and the exact on-chain USDC approval.
+          </p>
           {summary.feeUsd !== null && summary.feeUsd > Number(formatUnits(amountAtomic, 6)) * 0.1 ? (
             <p className="rounded-xl border border-gold/25 bg-gold-soft/50 p-3 text-xs leading-relaxed text-gold">
               This quote is expensive relative to the small demo budget. It proves the routing

@@ -73,12 +73,18 @@ import {
   type ResearchResourceStatus,
 } from "@/lib/agent/research-task";
 import { agentControls } from "@/lib/agent/agent-controls";
+import {
+  RESEARCH_AGENT_BASIS_ATOMIC,
+  RESEARCH_AGENT_MERCHANT,
+} from "@/lib/agent/expense-card-config";
+import type { StoredFundingEvidence } from "@/lib/agent/funding-evidence-store";
+import { ExpenseCardFundingProof } from "@/components/expense-card-funding-proof";
 
 // Demo on Arbitrum (where SpendPolicy + USDC + relayer gas live).
 const CHAIN = ARBITRUM_CHAIN;
 const USDC = CHAIN.usdcAddress;
-const DEMO_MERCHANT: Address = "0x8C54783849A2C042544efc37c4657Ee98a411Fb7";
-const AGENT_BASIS = 100_000n; // 0.10 USDC per-charge basis -> agent_budget caps
+const DEMO_MERCHANT = RESEARCH_AGENT_MERCHANT;
+const AGENT_BASIS = RESEARCH_AGENT_BASIS_ATOMIC; // 0.10 USDC per-charge basis -> agent_budget caps
 const ERC20_READ_ABI = [
   {
     type: "function",
@@ -229,6 +235,7 @@ export default function AgentPage() {
   const [fundingPreviewSummary, setFundingPreviewSummary] = useState<ExpenseCardFundingPreview | null>(null);
   const [fundingPreviewLoading, setFundingPreviewLoading] = useState(false);
   const [fundingPreviewError, setFundingPreviewError] = useState<string | null>(null);
+  const [fundingEvidence, setFundingEvidence] = useState<StoredFundingEvidence | null>(null);
 
   const append = useCallback(
     (source: LogSource, message: string, tone: LogTone, txUrl?: string) => {
@@ -393,6 +400,7 @@ export default function AgentPage() {
     if (!UA_FUNDED_AGENT || !ua || !chosen) return;
     setFundingPreviewLoading(true);
     setFundingPreviewError(null);
+    setFundingEvidence(null);
     try {
       const transaction = await buildFundingTransaction();
       const summary = summarizeExpenseCardFundingPreview(transaction);
@@ -439,6 +447,7 @@ export default function AgentPage() {
     setBusy(UA_FUNDED_AGENT ? "Reviewing and signing your limits…" : "Arming: sign mandate + approve SpendPolicy…");
     setError(null);
     if (UA_FUNDED_AGENT) setAgentLog([]);
+    if (UA_FUNDED_AGENT) setFundingEvidence(null);
     try {
       const { BrowserProvider, Contract, Signature, getBytes } = await loadEthers();
       const provider = new BrowserProvider(magic.rpcProvider);
@@ -514,6 +523,35 @@ export default function AgentPage() {
           getTransaction: (id) => ua.getTransaction(id),
           onStatus: (status) => setBusy(`Funding the card · Particle status ${status}…`),
         });
+
+        setBusy("Verifying the funding source and approval…");
+        const verificationResponse = await fetch("/api/agent/funding-evidence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uaTransactionId: transactionId,
+            payerAddress: address,
+            mandate: toRawMandate(chosen),
+            signature,
+          }),
+        });
+        const verificationBody = await verificationResponse.json().catch(() => ({}));
+        if (!verificationResponse.ok || !verificationBody?.evidence?.approval_tx_hash) {
+          throw new Error(
+            verificationBody?.error ??
+              "Server could not verify the Particle funding activity and on-chain approval. The agent was not armed.",
+          );
+        }
+        const verifiedEvidence = verificationBody.evidence as StoredFundingEvidence;
+        setFundingEvidence(verifiedEvidence);
+        append(
+          "FIREWALL",
+          verifiedEvidence.cross_chain
+            ? "Cross-chain funding source and SpendPolicy approval verified server-side."
+            : "Funding activity and SpendPolicy approval verified server-side.",
+          "ok",
+          getExplorerTxUrl(CHAIN, verifiedEvidence.approval_tx_hash),
+        );
 
         setBusy("Verifying the card balance and allowance on Arbitrum…");
         const arbitrumClient = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
@@ -967,6 +1005,9 @@ export default function AgentPage() {
             </div>
           ) : (
             <div className="space-y-4">
+              {UA_FUNDED_AGENT && fundingEvidence ? (
+                <ExpenseCardFundingProof evidence={fundingEvidence} />
+              ) : null}
               <AgentMissionCard mandate={armed.mandate} running={running} onRun={runAutonomous} disabled={revoked} />
 
               {!running && taskSummary.status !== "idle" ? (

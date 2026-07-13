@@ -72,10 +72,15 @@ Implemented safe step:
    chains, rebuilds fresh, and refuses to arm until Particle reports `FINISHED` plus read-only
    Arbitrum balance and allowance verification.
 4. A material route/fee change after rebuild stops before send and asks the user to review again.
+5. A default-off server gate now re-fetches the Particle activity, verifies successful source legs
+   plus sufficient source debits, the exact destination USDC Approval, and the resulting Arbitrum
+   balance on-chain, then stores immutable evidence keyed by `ua_transaction_id` plus the exact
+   EIP-712 `mandate_id`. Preview fields are never accepted as proof.
 
-Next live gate (not run): request explicit approval for one small mainnet run, then verify the
-Particle activity, post-transaction Arbitrum USDC balance, and exact allowance before running the
-agent.
+Next live gate (not run): apply the `agent_funding_evidence` Supabase migration, keep the product
+flag off until review, request explicit approval for one small mainnet run, then verify the Particle
+activity, every source receipt, exact Approval, stored evidence row, post-transaction Arbitrum USDC
+balance, and exact allowance before running the agent.
 
 ## Claim discipline
 

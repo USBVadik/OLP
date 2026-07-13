@@ -698,6 +698,35 @@
 - **owner:** builder
 - **review:** confirm `git ls-files | grep kiro-import` is empty after the commit
 
+### R28 — UA-funded Expense Card preview could be mistaken for completed funding
+
+- **likelihood:** low while the feature flag is off; medium during the future live gate
+- **impact:** high (a preview-only route or unrelated Particle activity must never arm a spending
+  permission or earn a cross-chain funding claim)
+- **found_by:** pre-submission integration review, 2026-07-13
+- **mitigation:**
+  1. `NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT=false` remains the default and the verification API returns
+     404 while disabled. ✅
+  2. When enabled, the API verifies the exact payer-signed EIP-712 Research Agent mandate and fixed
+     merchant/token/caps before any Particle, RPC, or Supabase read. ✅
+  3. Core evidence derivation is fail-closed and unit-tested: `FINISHED`, exact owner, exact USDC per
+     reported source chain, enough source debit to cover the budget, expected Arbitrum destination,
+     successful receipts for every foreign source leg, exact `Approval(owner, SpendPolicy, 2 USDC)`
+     in a Particle destination op, and a server-read destination balance of at least 2 USDC. ✅
+  4. Accepted evidence is immutable/idempotent in `agent_funding_evidence`; Particle
+     `transactionId`, EIP-712 `mandate_id`, and Approval tx hash are unique. A conflicting replay is
+     rejected. ✅ code
+  5. The UI calls this server gate before arming and exposes the Particle activity plus Approval
+     proof only after successful verification. ✅ code
+- **residual:** the schema migration and one explicitly approved live transaction are still
+  pending. The enabled API is signature-gated but has no shared multi-instance rate limiter, so add
+  one before opening it as a general public service. Particle's 18-decimal activity normalization is
+  treated as a fail-closed vendor contract and must be rechecked after an SDK upgrade. Until the
+  migration and live run pass, the only allowed claim remains the unsigned Base + Arbitrum preview.
+- **mitigation_status:** code-complete, live-unverified; feature remains off
+- **owner:** builder
+- **review:** apply migration, perform one approved run, inspect stored row and every explorer leg
+
 ## Risks closed (kept for trace)
 
 | id | risk | closed_on | how |

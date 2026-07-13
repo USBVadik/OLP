@@ -155,3 +155,43 @@ alter table public.x402_consumed enable row level security;
 --   );
 --   grant select, insert on public.x402_consumed to service_role;
 --   alter table public.x402_consumed enable row level security;
+
+-- ── Particle-funded Expense Card evidence ───────────────────────────────────────────────────────
+-- Immutable, server-written evidence for the default-off UA-funded Research Agent path. A row is
+-- inserted only after the server fetches the FINISHED Particle activity, verifies every reported
+-- foreign source leg on-chain, and finds the exact Arbitrum USDC Approval(owner, SpendPolicy,
+-- amount) in a destination operation receipt. Preview data alone is never stored as verified.
+create table if not exists agent_funding_evidence (
+  id uuid primary key default gen_random_uuid(),
+  ua_transaction_id text not null unique,
+  mandate_id text not null unique,
+  payer_address text not null,
+  settlement_chain_id integer not null,
+  token_address text not null,
+  spend_policy_address text not null,
+  required_amount text not null,
+  approved_amount text not null,
+  destination_balance text not null,
+  cross_chain boolean not null default false,
+  source_chain_ids jsonb not null default '[]'::jsonb,
+  source_legs jsonb not null default '[]'::jsonb,
+  destination_tx_hashes jsonb not null default '[]'::jsonb,
+  approval_tx_hash text not null unique,
+  verified_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_agent_funding_evidence_payer
+  on agent_funding_evidence(payer_address);
+
+-- Evidence is private to the server-rendered/API path. It is immutable through the Data API:
+-- service_role can insert and read, but cannot silently rewrite or delete an accepted proof.
+revoke all on public.agent_funding_evidence from anon, authenticated;
+revoke update, delete on public.agent_funding_evidence from service_role;
+grant select, insert on public.agent_funding_evidence to service_role;
+alter table public.agent_funding_evidence enable row level security;
+
+-- ── Apply on an EXISTING Supabase project (run once in the SQL editor) ────────────────────────────
+-- Run the create table / index / grant / RLS statements above before enabling
+-- NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT. The active production path is unaffected while the flag is
+-- false; the verification API fails closed if this table has not been provisioned.
