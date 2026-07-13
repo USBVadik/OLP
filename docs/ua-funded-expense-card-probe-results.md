@@ -1,6 +1,6 @@
 # UA-Funded Expense Card Probe Results
 
-Status: build-only preview succeeded; no transaction sent
+Status: build-only preview succeeded; evidence schema provisioned; no transaction sent
 
 Run date: 2026-07-12
 
@@ -77,10 +77,13 @@ Implemented safe step:
    balance on-chain, then stores immutable evidence keyed by `ua_transaction_id` plus the exact
    EIP-712 `mandate_id`. Preview fields are never accepted as proof.
 
-Next live gate (not run): apply the `agent_funding_evidence` Supabase migration, keep the product
-flag off until review, request explicit approval for one small mainnet run, then verify the Particle
-activity, every source receipt, exact Approval, stored evidence row, post-transaction Arbitrum USDC
-balance, and exact allowance before running the agent.
+Provisioning update (2026-07-13): the `agent_funding_evidence` migration is applied. Service-role
+read access succeeds, anon access is denied, production remains disabled, and a protected Vercel
+Preview is built with the flag enabled.
+
+Next live gate (not run): request explicit approval at the wallet confirmation for one small mainnet
+run, then verify the Particle activity, every source receipt, exact Approval, stored evidence row,
+post-transaction Arbitrum USDC balance, and exact allowance before running the agent.
 
 ## Claim discipline
 

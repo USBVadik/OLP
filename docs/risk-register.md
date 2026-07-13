@@ -718,14 +718,14 @@
      rejected. ✅ code
   5. The UI calls this server gate before arming and exposes the Particle activity plus Approval
      proof only after successful verification. ✅ code
-- **residual:** the schema migration and one explicitly approved live transaction are still
+- **residual:** the schema migration is applied; one explicitly approved live transaction is still
   pending. The enabled API is signature-gated but has no shared multi-instance rate limiter, so add
   one before opening it as a general public service. Particle's 18-decimal activity normalization is
   treated as a fail-closed vendor contract and must be rechecked after an SDK upgrade. Until the
-  migration and live run pass, the only allowed claim remains the unsigned Base + Arbitrum preview.
-- **mitigation_status:** code-complete, live-unverified; feature remains off
+  live run passes, the only allowed claim remains the unsigned Base + Arbitrum preview.
+- **mitigation_status:** code-complete, schema-provisioned, live-unverified; production remains off
 - **owner:** builder
-- **review:** apply migration, perform one approved run, inspect stored row and every explorer leg
+- **review:** perform one approved run, inspect stored row and every explorer leg
 
 ## Risks closed (kept for trace)
 

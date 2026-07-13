@@ -127,7 +127,7 @@ The primary adoption story is now a concrete outcome rather than a generic payme
 4. An unexpected `0.20 USDC` premium export is rejected with `PerChargeExceeded` before broadcast; no funds move and no gas is spent on the blocked attempt.
 5. The user revokes the budget on-chain; the `/agent` run control is disabled and later charges are contractually invalid.
 
-Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current local gate is 253 unit tests, 22 contract tests, and production build. A production baseline is accepted only after the 7/7 HTTP smoke suite passes; rerun it after every deploy.
+Live Arbitrum evidence and exact transaction links are recorded in `docs/research-agent-expense-card-spec.md` and claim-ledger rows C25-C26. Submission RC2 is tagged at commit `c1f051a`; the current gate is 277 unit tests, 22 contract tests, production build, and the 7/7 production HTTP smoke suite.
 
 ### Experimental UA-funded arm path (default off)
 
@@ -155,9 +155,11 @@ The post-send evidence gate is also code-complete and default-off. Before arming
 7. inserts immutable, idempotent evidence in `agent_funding_evidence`, keyed by both
    `ua_transaction_id` and the exact EIP-712 `mandate_id`, before the UI treats the card as armed.
 
-The Supabase table in `supabase/schema.sql` must be applied before this flag can be enabled. The
-route returns 404 while the flag is false, requires the exact payer-signed EIP-712 Research Agent
-mandate before any vendor/database read, and never treats preview data as verified evidence.
+The private Supabase table from `supabase/schema.sql` was applied on 2026-07-13. A service-role
+read returns an empty result and anon access is denied. Production remains disabled and returns 404;
+a protected Vercel Preview enables the flag for the live gate. The route requires the exact
+payer-signed EIP-712 Research Agent mandate before any vendor/database read and never treats preview
+data as verified evidence.
 
 This integration has **not** been broadcast live yet. The successful evidence is an unsigned
 `Arbitrum + Base -> Arbitrum` preview only; do not claim that the Expense Card itself was funded
