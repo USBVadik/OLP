@@ -50,6 +50,64 @@ export function assertExpenseCardReadiness(input: {
   }
 }
 
+type FundingHistoryEntry = {
+  transactionId?: unknown;
+  status?: unknown;
+  createdAt?: unknown;
+  fromChains?: unknown;
+  toChains?: unknown;
+  targetToken?: { chainId?: unknown; address?: unknown };
+  change?: { amount?: unknown; from?: unknown; to?: unknown };
+};
+
+function sameAddress(left: unknown, right: string): boolean {
+  return typeof left === "string" && left.toLowerCase() === right.toLowerCase();
+}
+
+/**
+ * Finds a recent FINISHED Particle activity that funded the payer's own settlement-chain card.
+ * This is only a recovery candidate: the server still verifies every Particle source leg and the
+ * exact on-chain Approval before the card can be armed.
+ */
+export function findRecoverableExpenseCardFundingTransaction(input: {
+  entries: unknown;
+  payerAddress: string;
+  targetChainId: number;
+  targetTokenAddress: string;
+  amountAtomic: bigint;
+  nowMs?: number;
+  maxAgeMs?: number;
+}): string | null {
+  if (!Array.isArray(input.entries) || input.amountAtomic <= 0n) return null;
+  const nowMs = input.nowMs ?? Date.now();
+  const maxAgeMs = input.maxAgeMs ?? 24 * 60 * 60 * 1_000;
+  const expectedAmount = Number(input.amountAtomic) / 1_000_000;
+
+  const candidates = (input.entries as FundingHistoryEntry[])
+    .filter((entry) => {
+      if (Number(entry.status) !== UA_FINISHED) return false;
+      if (typeof entry.transactionId !== "string" || !/^0x[a-fA-F0-9]{8,198}$/.test(entry.transactionId)) {
+        return false;
+      }
+      const createdAt = typeof entry.createdAt === "string" ? Date.parse(entry.createdAt) : Number.NaN;
+      if (!Number.isFinite(createdAt) || createdAt > nowMs + 5 * 60_000 || nowMs - createdAt > maxAgeMs) {
+        return false;
+      }
+      if (Number(entry.targetToken?.chainId) !== input.targetChainId) return false;
+      if (!sameAddress(entry.targetToken?.address, input.targetTokenAddress)) return false;
+      if (!sameAddress(entry.change?.from, input.payerAddress) || !sameAddress(entry.change?.to, input.payerAddress)) {
+        return false;
+      }
+      if (!Array.isArray(entry.toChains) || !entry.toChains.includes(input.targetChainId)) return false;
+      if (!Array.isArray(entry.fromChains) || entry.fromChains.length === 0) return false;
+      const amount = Math.abs(Number(entry.change?.amount));
+      return Number.isFinite(amount) && Math.abs(amount - expectedAmount) <= 0.000001;
+    })
+    .sort((left, right) => Date.parse(String(right.createdAt)) - Date.parse(String(left.createdAt)));
+
+  return (candidates[0]?.transactionId as string | undefined) ?? null;
+}
+
 function uniqueChainIds(values: unknown): number[] {
   if (!Array.isArray(values)) return [];
   return Array.from(

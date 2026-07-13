@@ -94,6 +94,33 @@ export interface ExpenseCardFundingVerificationProviders {
   getDestinationBalance: () => Promise<bigint>;
 }
 
+const RECEIPT_RETRY_ATTEMPTS = 6;
+const RECEIPT_RETRY_MS = 1_000;
+
+export async function readFundingReceiptWithRetry(input: {
+  operation: { chainId: number; txHash: Hex };
+  getReceipt: (operation: { chainId: number; txHash: Hex }) => Promise<FundingOperationReceipt>;
+  sleep?: (ms: number) => Promise<void>;
+  maxAttempts?: number;
+  intervalMs?: number;
+}): Promise<FundingOperationReceipt> {
+  const maxAttempts = input.maxAttempts ?? RECEIPT_RETRY_ATTEMPTS;
+  const intervalMs = input.intervalMs ?? RECEIPT_RETRY_MS;
+  const sleep = input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await input.getReceipt(input.operation);
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) await sleep(intervalMs);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Funding operation receipt is unavailable");
+}
+
 export interface ServerVerifiedExpenseCardFundingEvidence extends ExpenseCardFundingEvidence {
   destinationBalance: bigint;
 }
@@ -113,7 +140,9 @@ export async function verifyExpenseCardFundingWithProviders(input: {
   }
 
   const receipts = await Promise.all(
-    operations.map((operation) => input.providers.getReceipt(operation)),
+    operations.map((operation) =>
+      readFundingReceiptWithRetry({ operation, getReceipt: input.providers.getReceipt }),
+    ),
   );
   const evidence = deriveExpenseCardFundingEvidence(activity, receipts, input.context);
   if (!evidence.verified) {

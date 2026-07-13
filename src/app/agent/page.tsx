@@ -53,6 +53,7 @@ import { chainLabel } from "@/lib/particle/assets";
 import { buildExpenseCardArmIntent } from "@/lib/particle/expense-card-arm";
 import {
   assertExpenseCardReadiness,
+  findRecoverableExpenseCardFundingTransaction,
   getExpenseCardFundingAmount,
   hasMaterialExpenseCardPreviewChange,
   prepareExpenseCardFundingTransaction,
@@ -396,6 +397,26 @@ export default function AgentPage() {
     return ua.createUniversalTransaction(intent.request, intent.options);
   }, [ua, chosen, spendPolicy, fundingAmount]);
 
+  const readCardReadiness = useCallback(async () => {
+    if (!address) throw new Error("Connected wallet address is unavailable");
+    const client = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
+    const [balance, allowance] = await Promise.all([
+      client.readContract({
+        address: USDC,
+        abi: ERC20_READ_ABI,
+        functionName: "balanceOf",
+        args: [address as Address],
+      }),
+      client.readContract({
+        address: USDC,
+        abi: ERC20_READ_ABI,
+        functionName: "allowance",
+        args: [address as Address, spendPolicy],
+      }),
+    ]);
+    return { balance: BigInt(balance), allowance: BigInt(allowance) };
+  }, [address, spendPolicy]);
+
   const refreshFundingPreview = useCallback(async () => {
     if (!UA_FUNDED_AGENT || !ua || !chosen) return;
     setFundingPreviewLoading(true);
@@ -461,68 +482,94 @@ export default function AgentPage() {
       );
 
       if (UA_FUNDED_AGENT) {
-        setBusy("Preparing the Particle funding route…");
-        const prepared = await prepareExpenseCardFundingTransaction({
-          initialTransaction: reviewedFundingPreview,
-          buildTransaction: buildFundingTransaction,
-          ensureDelegated: async (chainId) => {
-            setBusy(`Preparing your account on ${chainLabel(chainId)}…`);
-            if (SPONSORED_DELEGATION) {
-              try {
-                await sponsoredDelegateChain(magic, ua, address, chainId);
-                return;
-              } catch {
-                // Preserve the proven self-paid delegation fallback. This is still an explicit
-                // wallet action inside the user-triggered Fund & arm flow, never an auto-send.
+        const existingReadiness = await readCardReadiness();
+        let transactionId: string | null = null;
+        let recovered = false;
+
+        if (
+          existingReadiness.balance >= fundingAmount &&
+          existingReadiness.allowance >= fundingAmount
+        ) {
+          setBusy("Reconciling the completed Particle funding…");
+          const history = await ua.getTransactions(1, 10);
+          const entries = Array.isArray(history) ? history : history?.data;
+          transactionId = findRecoverableExpenseCardFundingTransaction({
+            entries,
+            payerAddress: address,
+            targetChainId: CHAIN.chainId,
+            targetTokenAddress: USDC,
+            amountAtomic: fundingAmount,
+          });
+          if (!transactionId) {
+            throw new Error(
+              "The card already has sufficient balance and allowance, but no matching recent Particle funding activity was found. No new transaction was sent.",
+            );
+          }
+          recovered = true;
+        } else {
+          setBusy("Preparing the Particle funding route…");
+          const prepared = await prepareExpenseCardFundingTransaction({
+            initialTransaction: reviewedFundingPreview,
+            buildTransaction: buildFundingTransaction,
+            ensureDelegated: async (chainId) => {
+              setBusy(`Preparing your account on ${chainLabel(chainId)}…`);
+              if (SPONSORED_DELEGATION) {
+                try {
+                  await sponsoredDelegateChain(magic, ua, address, chainId);
+                  return;
+                } catch {
+                  // Preserve the proven self-paid delegation fallback. This is still an explicit
+                  // wallet action inside the user-triggered Fund & arm flow, never an auto-send.
+                }
               }
-            }
-            await delegateAgentChain7702(magic, ua, address, chainId);
-          },
-        });
+              await delegateAgentChain7702(magic, ua, address, chainId);
+            },
+          });
 
-        const freshSummary = summarizeExpenseCardFundingPreview(prepared.transaction);
-        if (!reviewedFundingSummary) throw new Error("Reviewed Particle funding preview is missing");
-        if (hasMaterialExpenseCardPreviewChange(reviewedFundingSummary, freshSummary)) {
-          setFundingPreview(prepared.transaction);
-          setFundingPreviewSummary(freshSummary);
-          throw new Error(
-            "Particle changed the funding route or fee after account preparation. Review the refreshed preview, then confirm again.",
-          );
+          const freshSummary = summarizeExpenseCardFundingPreview(prepared.transaction);
+          if (!reviewedFundingSummary) throw new Error("Reviewed Particle funding preview is missing");
+          if (hasMaterialExpenseCardPreviewChange(reviewedFundingSummary, freshSummary)) {
+            setFundingPreview(prepared.transaction);
+            setFundingPreviewSummary(freshSummary);
+            throw new Error(
+              "Particle changed the funding route or fee after account preparation. Review the refreshed preview, then confirm again.",
+            );
+          }
+
+          setBusy("Confirming the Particle funding transaction…");
+          const sent = await sendExpenseCardFundingTransaction({
+            transaction: prepared.transaction,
+            signAuthorization: async ({ contractAddress, chainId, legChainId, nonce }) => {
+              await magic.evm.switchChain(legChainId);
+              const authorization = await magic.wallet.sign7702Authorization({
+                contractAddress,
+                chainId,
+                nonce,
+              });
+              const recovery =
+                authorization.v !== undefined
+                  ? Number(authorization.v)
+                  : Number(authorization.yParity) + 27;
+              return Signature.from({
+                r: authorization.r,
+                s: authorization.s,
+                v: recovery,
+              }).serialized;
+            },
+            signRootHash: async (rootHash) => signer.signMessage(getBytes(rootHash)),
+            sendTransaction: async (transaction, rootSignature, authorizations) =>
+              ua.sendTransaction(transaction, rootSignature, authorizations),
+          });
+
+          transactionId = prepared.transaction.transactionId ?? sent?.transactionId ?? null;
+          if (!transactionId) throw new Error("Particle did not return a funding transactionId");
+          setBusy("Waiting for the daily budget to become available…");
+          await waitForExpenseCardFunding({
+            transactionId,
+            getTransaction: (id) => ua.getTransaction(id),
+            onStatus: (status) => setBusy(`Funding the card · Particle status ${status}…`),
+          });
         }
-
-        setBusy("Confirming the Particle funding transaction…");
-        const sent = await sendExpenseCardFundingTransaction({
-          transaction: prepared.transaction,
-          signAuthorization: async ({ contractAddress, chainId, legChainId, nonce }) => {
-            await magic.evm.switchChain(legChainId);
-            const authorization = await magic.wallet.sign7702Authorization({
-              contractAddress,
-              chainId,
-              nonce,
-            });
-            const recovery =
-              authorization.v !== undefined
-                ? Number(authorization.v)
-                : Number(authorization.yParity) + 27;
-            return Signature.from({
-              r: authorization.r,
-              s: authorization.s,
-              v: recovery,
-            }).serialized;
-          },
-          signRootHash: async (rootHash) => signer.signMessage(getBytes(rootHash)),
-          sendTransaction: async (transaction, rootSignature, authorizations) =>
-            ua.sendTransaction(transaction, rootSignature, authorizations),
-        });
-
-        const transactionId = prepared.transaction.transactionId ?? sent?.transactionId;
-        if (!transactionId) throw new Error("Particle did not return a funding transactionId");
-        setBusy("Waiting for the daily budget to become available…");
-        await waitForExpenseCardFunding({
-          transactionId,
-          getTransaction: (id) => ua.getTransaction(id),
-          onStatus: (status) => setBusy(`Funding the card · Particle status ${status}…`),
-        });
 
         setBusy("Verifying the funding source and approval…");
         const verificationResponse = await fetch("/api/agent/funding-evidence", {
@@ -554,29 +601,17 @@ export default function AgentPage() {
         );
 
         setBusy("Verifying the card balance and allowance on Arbitrum…");
-        const arbitrumClient = createPublicClient({ transport: http(getPublicRpcUrl(CHAIN)) });
-        const [balance, allowance] = await Promise.all([
-          arbitrumClient.readContract({
-            address: USDC,
-            abi: ERC20_READ_ABI,
-            functionName: "balanceOf",
-            args: [address as Address],
-          }),
-          arbitrumClient.readContract({
-            address: USDC,
-            abi: ERC20_READ_ABI,
-            functionName: "allowance",
-            args: [address as Address, spendPolicy],
-          }),
-        ]);
+        const { balance, allowance } = await readCardReadiness();
         assertExpenseCardReadiness({
-          balance: BigInt(balance),
-          allowance: BigInt(allowance),
+          balance,
+          allowance,
           required: fundingAmount,
         });
         append(
           "USER",
-          `${fmt(fundingAmount)} daily budget funded through Particle and approved on Arbitrum.`,
+          recovered
+            ? `${fmt(fundingAmount)} completed Particle funding recovered and verified without a duplicate transaction.`
+            : `${fmt(fundingAmount)} daily budget funded through Particle and approved on Arbitrum.`,
           "ok",
         );
         setBalanceReloadKey((key) => key + 1);
@@ -615,6 +650,7 @@ export default function AgentPage() {
     fundingPreviewSummary,
     buildFundingTransaction,
     fundingAmount,
+    readCardReadiness,
   ]);
 
   // Revoke the budget on-chain (mirrors the proven /firewall flow). SpendPolicy.revoke marks the

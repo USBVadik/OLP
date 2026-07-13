@@ -5,7 +5,10 @@ import type {
   ExpenseCardFundingActivity,
   FundingOperationReceipt,
 } from "./expense-card-funding-evidence";
-import { verifyExpenseCardFundingWithProviders } from "./expense-card-funding-verifier";
+import {
+  readFundingReceiptWithRetry,
+  verifyExpenseCardFundingWithProviders,
+} from "./expense-card-funding-verifier";
 
 const PAYER: Address = "0x53Bd615635Af778e5E460d5EEC2d6b234693206a";
 const POLICY: Address = "0x9782e3724859469fbBAC5085EA8bf8E70724164E";
@@ -79,6 +82,40 @@ test("loads receipts for Particle operations and returns verified evidence", asy
 
   assert.equal(evidence.verified, true);
   assert.deepEqual(receiptCalls, [{ chainId: CHAIN, txHash: TX }]);
+});
+
+test("retries a temporarily missing operation receipt before accepting it", async () => {
+  let attempts = 0;
+  const result = await readFundingReceiptWithRetry({
+    operation: { chainId: CHAIN, txHash: TX },
+    getReceipt: async () => {
+      attempts += 1;
+      if (attempts < 3) throw new Error(`Transaction receipt with hash \"${TX}\" could not be found`);
+      return receipt();
+    },
+    sleep: async () => undefined,
+    maxAttempts: 4,
+  });
+
+  assert.equal(attempts, 3);
+  assert.equal(result.status, "success");
+});
+
+test("fails closed after the receipt retry budget is exhausted", async () => {
+  let attempts = 0;
+  await assert.rejects(
+    readFundingReceiptWithRetry({
+      operation: { chainId: CHAIN, txHash: TX },
+      getReceipt: async () => {
+        attempts += 1;
+        throw new Error("receipt temporarily unavailable");
+      },
+      sleep: async () => undefined,
+      maxAttempts: 3,
+    }),
+    /temporarily unavailable/,
+  );
+  assert.equal(attempts, 3);
 });
 
 test("fails before RPC reads when Particle activity has no usable operation", async () => {

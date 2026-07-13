@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   assertExpenseCardAllowance,
   assertExpenseCardReadiness,
+  findRecoverableExpenseCardFundingTransaction,
   getExpenseCardFundingAmount,
   hasMaterialExpenseCardPreviewChange,
   isUaFundedExpenseCardEnabled,
@@ -11,6 +12,9 @@ import {
   summarizeExpenseCardFundingPreview,
   waitForExpenseCardFunding,
 } from "./expense-card-funding";
+
+const RECOVERY_PAYER = "0x53Bd615635Af778e5E460d5EEC2d6b234693206a";
+const RECOVERY_USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
 test("enables the product path only for the exact true literal", () => {
   assert.equal(isUaFundedExpenseCardEnabled({ NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT: "true" }), true);
@@ -45,6 +49,84 @@ test("arms only when Arbitrum has both the funded balance and allowance", () => 
     () => assertExpenseCardReadiness({ balance: 2_000_000n, allowance: 1_999_999n, required: 2_000_000n }),
     /allowance verification failed/,
   );
+});
+
+test("recovers only the latest matching finished self-funding activity", () => {
+  const nowMs = Date.parse("2026-07-13T10:10:00.000Z");
+  const transactionId = findRecoverableExpenseCardFundingTransaction({
+    entries: [
+      {
+        transactionId: "0xaaaa0001",
+        status: 7,
+        createdAt: "2026-07-13T10:06:00.000Z",
+        fromChains: [42161, 8453],
+        toChains: [42161],
+        targetToken: { chainId: 42161, address: RECOVERY_USDC },
+        change: { amount: "-2.0", from: RECOVERY_PAYER, to: "0x8C54783849A2C042544efc37c4657Ee98a411Fb7" },
+      },
+      {
+        transactionId: "0xbbbb0001",
+        status: 7,
+        createdAt: "2026-07-13T10:05:25.000Z",
+        fromChains: [42161, 8453],
+        toChains: [42161],
+        targetToken: { chainId: 42161, address: RECOVERY_USDC.toUpperCase() },
+        change: {
+          amount: "-2.00000000000000001",
+          from: RECOVERY_PAYER,
+          to: RECOVERY_PAYER.toLowerCase(),
+        },
+      },
+      {
+        transactionId: "0xcccc0001",
+        status: 3,
+        createdAt: "2026-07-13T10:07:00.000Z",
+        fromChains: [42161, 8453],
+        toChains: [42161],
+        targetToken: { chainId: 42161, address: RECOVERY_USDC },
+        change: { amount: "-2.0", from: RECOVERY_PAYER, to: RECOVERY_PAYER },
+      },
+    ],
+    payerAddress: RECOVERY_PAYER,
+    targetChainId: 42161,
+    targetTokenAddress: RECOVERY_USDC,
+    amountAtomic: 2_000_000n,
+    nowMs,
+  });
+
+  assert.equal(transactionId, "0xbbbb0001");
+});
+
+test("does not recover stale or differently funded activity", () => {
+  const transactionId = findRecoverableExpenseCardFundingTransaction({
+    entries: [
+      {
+        transactionId: "0xdddd0001",
+        status: 7,
+        createdAt: "2026-07-10T10:05:25.000Z",
+        fromChains: [42161, 8453],
+        toChains: [42161],
+        targetToken: { chainId: 42161, address: RECOVERY_USDC },
+        change: { amount: "-2.0", from: RECOVERY_PAYER, to: RECOVERY_PAYER },
+      },
+      {
+        transactionId: "0xeeee0001",
+        status: 7,
+        createdAt: "2026-07-13T10:05:25.000Z",
+        fromChains: [42161, 8453],
+        toChains: [42161],
+        targetToken: { chainId: 42161, address: RECOVERY_USDC },
+        change: { amount: "-1.0", from: RECOVERY_PAYER, to: RECOVERY_PAYER },
+      },
+    ],
+    payerAddress: RECOVERY_PAYER,
+    targetChainId: 42161,
+    targetTokenAddress: RECOVERY_USDC,
+    amountAtomic: 2_000_000n,
+    nowMs: Date.parse("2026-07-13T10:10:00.000Z"),
+  });
+
+  assert.equal(transactionId, null);
 });
 
 test("summarizes the real Particle route and 18-decimal fee quote defensively", () => {
