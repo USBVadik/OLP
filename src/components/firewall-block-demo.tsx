@@ -63,20 +63,30 @@ export function FirewallBlockDemo() {
       </button>
 
       {result?.blocked ? (
-        <div className="op-animate-rise mt-5 rounded-2xl border border-danger/30 bg-danger-soft p-4">
-          <p className="flex items-center gap-2 font-semibold text-danger">
-            <IconBan className="h-4 w-4" /> Blocked on-chain
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink2">
-            The charge reverted (<span className="font-mono text-xs">{result.reason}</span>) —
-            attempted <span className="font-medium text-ink">{result.attempted} USDC</span> against a{" "}
-            <span className="font-medium text-ink">{result.cap} USDC</span> cap.{" "}
-            <span className="font-semibold text-ink">No funds moved. Zero gas.</span>
-          </p>
-          <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-verify">
-            <IconCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Refused by SpendPolicy on the
-            payer&rsquo;s own account — not by a server you have to trust.
-          </p>
+        <div className="op-animate-seal mt-5 overflow-hidden rounded-2xl border-2 border-danger/45 bg-danger-soft">
+          <div className="animate-block-pulse rounded-2xl p-5">
+            <p className="flex items-center gap-2 font-bold uppercase tracking-[0.14em] text-danger">
+              <IconBan className="h-4 w-4" /> Blocked on-chain
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink2">
+              The charge reverted (<span className="font-mono text-xs">{result.reason}</span>) —
+              attempted <span className="font-medium text-ink">{result.attempted} USDC</span> against a{" "}
+              <span className="font-medium text-ink">{result.cap} USDC</span> cap.
+            </p>
+
+            {/* Hero figure: over-cap charges revert before any transfer, so nothing moved — the whole point. */}
+            <div className="mt-4 rounded-xl bg-paper/70 px-4 py-4 text-center">
+              <p className="font-display text-4xl font-semibold text-verify sm:text-5xl">0.00 USDC</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                moved · zero gas
+              </p>
+            </div>
+
+            <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-verify">
+              <IconCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> Refused by SpendPolicy on the
+              payer&rsquo;s own account — not by a server you have to trust.
+            </p>
+          </div>
         </div>
       ) : result && !result.armed ? (
         <p className="mt-4 rounded-xl border border-line bg-paper2 p-3 text-sm text-muted">
