@@ -120,6 +120,20 @@
   /* Disclosure (native <details>) */
   .op-disclosure {
     @apply rounded-2xl border border-line bg-paper2;
+    /* Lets block-size animate to `auto` (Chrome 131+); inert elsewhere. */
+    interpolate-size: allow-keywords;
+  }
+  /* Smooth open/close as a progressive enhancement — browsers without ::details-content
+     keep the instant toggle. 250ms strong ease-out to match the motion system. */
+  .op-disclosure::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      block-size 250ms cubic-bezier(0.23, 1, 0.32, 1),
+      content-visibility 250ms allow-discrete;
+  }
+  .op-disclosure[open]::details-content {
+    block-size: auto;
   }
   .op-disclosure > summary {
     @apply flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-ink2 transition-colors hover:text-ink;
@@ -143,6 +157,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .op-disclosure::details-content {
+    transition: none;
+  }
   .op-animate-rise,
   .op-animate-seal,
   .animate-float-y,

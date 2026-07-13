@@ -568,7 +568,7 @@ export function ScrollNarrative() {
             {BEATS.map((b, i) => (
               <div
                 key={b.k}
-                className={`absolute inset-x-0 top-0 transition-all duration-500 ease-out ${
+                className={`absolute inset-x-0 top-0 transition-[opacity,transform] duration-500 ease-out ${
                   active === i ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-3"
                 }`}
               >
@@ -601,7 +601,7 @@ export function ScrollNarrative() {
           {BEATS.map((b, i) => (
             <span
               key={b.k}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-[width,background-color] duration-300 ease-out ${
                 active === i ? "w-6 bg-gold" : "w-1.5 bg-white/25"
               }`}
             />

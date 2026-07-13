@@ -1185,17 +1185,18 @@ export default function AgentPage() {
                       {resources.map((r) => {
                         const owned = r.id in bought;
                         return (
-                          <div key={r.id} className="min-w-0 rounded-2xl border border-line bg-paper p-3">
+                          <div key={r.id} className="flex min-w-0 flex-col rounded-2xl border border-line bg-paper p-3">
                             <div className="flex items-baseline justify-between gap-2">
                               <p className="min-w-0 text-sm font-semibold text-ink">{r.title}</p>
                               <span className="shrink-0 font-mono text-xs text-ink2">{fmt(r.priceAtomic)}</span>
                             </div>
-                            <p className="mt-1 text-xs leading-relaxed text-muted">{r.description}</p>
+                            <p className="mb-3 mt-1 text-xs leading-relaxed text-muted">{r.description}</p>
+                            {/* mt-auto pins the action row: equal-height cards, buttons on one line. */}
                             <button
                               type="button"
                               onClick={() => buy(r)}
                               disabled={running || owned}
-                              className="op-btn-secondary mt-2 w-full justify-center text-xs"
+                              className="op-btn-secondary mt-auto w-full justify-center text-xs"
                             >
                               {owned ? (
                                 <>
