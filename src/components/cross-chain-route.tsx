@@ -236,7 +236,7 @@ export function CrossChainRoute({
           rel="noreferrer"
           className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-iris transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iris/40"
         >
-          Trace the route on UniversalX
+          Open in UniversalX (sign in)
           <IconArrowUpRight className="h-3.5 w-3.5" />
         </a>
       ) : null}

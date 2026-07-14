@@ -56,7 +56,7 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
       <div className="mt-3 flex flex-wrap gap-2">
         {activityUrl ? (
           <a href={activityUrl} target="_blank" rel="noreferrer" className="op-btn-secondary text-xs">
-            Particle activity <IconArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            Particle activity (sign in) <IconArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         ) : null}
         <a href={approvalUrl} target="_blank" rel="noreferrer" className="op-btn-secondary text-xs">

@@ -156,7 +156,8 @@ export function ProofReceiptCard({
       <div className="px-6 pb-2 pt-7 sm:px-8">
         <p className="op-eyebrow">Verification trail</p>
         <p className="mb-3 mt-1 text-xs leading-relaxed text-muted">
-          Each step links to an independent block explorer — verify it yourself, no account.
+          The payment and proof links open independent block explorers — verify them yourself, no
+          account needed. The Universal Account link is Particle&rsquo;s own view and needs a sign-in.
         </p>
         <ol className="ml-0.5">
           <Leg
@@ -173,7 +174,7 @@ export function ProofReceiptCard({
                   label="Universal Account · UniversalX"
                   hash={universalActivity.id}
                   href={universalActivity.href}
-                  destinationLabel="UniversalX activity"
+                  destinationLabel="Open in UniversalX (sign in)"
                 />
               ) : null}
             </div>
