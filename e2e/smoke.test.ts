@@ -72,6 +72,6 @@ test("canonical cross-chain receipt renders", async () => {
   assert.match(body, /Executed by Particle Universal Account/i);
   assert.match(body, /Particle Network proof/i);
   assert.match(body, /EIP-7702/i);
-  assert.match(body, /View Particle activity/i);
+  assert.match(body, /Open Particle explorer/i);
   assert.match(body, /0x0655f16e0cd6c8/i);
 });
