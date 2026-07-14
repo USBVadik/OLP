@@ -8,6 +8,7 @@ import {
   IconLock,
   IconArrowUpRight,
   IconCheck,
+  IconChevronDown,
   Term,
   AppNav,
 } from "@/components/ui";
@@ -34,7 +35,7 @@ export default function HomePage() {
         </header>
 
         {/* Hero */}
-        <section className="relative min-h-[calc(100dvh-5.5rem)] pt-5 sm:pt-8 lg:pt-12">
+        <section className="relative pb-10 pt-4 sm:min-h-[calc(100dvh-5.5rem)] sm:pb-8 sm:pt-8 lg:pt-12">
           <div
             className="pointer-events-none absolute -top-28 bottom-0 left-1/2 w-screen -translate-x-1/2 overflow-hidden"
             aria-hidden="true"
@@ -82,8 +83,8 @@ export default function HomePage() {
               className="op-animate-rise mt-4 max-w-lg text-base leading-relaxed text-ink2 sm:text-lg"
               style={{ animationDelay: "240ms" }}
             >
-              A research workflow buys the market data it needs, prepares a useful brief, and gets
-              stopped when an unexpected premium request exceeds your signed limit.
+              It buys two data feeds, prepares an ETH risk brief, and rejects a premium request
+              that breaks your signed limit.
             </p>
 
             <div
@@ -113,7 +114,7 @@ export default function HomePage() {
             </div>
 
             <p
-              className="op-animate-rise mt-3 max-w-lg text-xs leading-relaxed text-muted"
+              className="op-animate-rise mt-3 hidden max-w-lg text-xs leading-relaxed text-muted sm:block"
               style={{ animationDelay: "380ms" }}
             >
               The task is deterministic, not an LLM. The separate canonical receipt proves the
@@ -123,7 +124,7 @@ export default function HomePage() {
 
           {/* Product peek: a Trust Preview card */}
           <div
-            className="op-animate-rise lg:justify-self-end"
+            className="op-animate-rise hidden sm:block lg:justify-self-end"
             style={{ animationDelay: "320ms" }}
           >
             <div className="animate-float-y">
@@ -384,27 +385,6 @@ function AgentEconomySection() {
         wave rather than reinvent it.
       </p>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-line">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-paper2 text-muted">
-            <tr>
-              <th className="px-4 py-2.5 font-semibold">Prior art</th>
-              <th className="hidden px-4 py-2.5 font-semibold sm:table-cell">What it is</th>
-              <th className="px-4 py-2.5 font-semibold">Where OneLink differs</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {PRIOR_ART.map((row) => (
-              <tr key={row.name} className="align-top">
-                <td className="px-4 py-3 font-medium text-ink">{row.name}</td>
-                <td className="hidden px-4 py-3 text-muted sm:table-cell">{row.what}</td>
-                <td className="px-4 py-3 text-ink2">{row.edge}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       <p className="mt-5 max-w-2xl rounded-2xl border border-gold/25 bg-gold-soft/40 px-4 py-3 text-sm font-medium text-ink">
         OneLink Pay is the on-chain, revocable spending limit for the x402 agent economy — built on
         Particle{" "}
@@ -413,6 +393,33 @@ function AgentEconomySection() {
         <Term def="An Ethereum upgrade that lets your normal wallet act as a smart account for a transaction — no separate smart wallet to set up.">EIP-7702</Term>
         , with a public proof receipt for every payment.
       </p>
+
+      <details className="op-disclosure mt-5">
+        <summary>
+          Compare OneLink with existing permission rails
+          <IconChevronDown className="op-chevron h-4 w-4" aria-hidden="true" />
+        </summary>
+        <div className="overflow-x-auto border-t border-line">
+          <table className="w-full min-w-[620px] text-left text-sm">
+            <thead className="bg-paper2 text-muted">
+              <tr>
+                <th className="px-4 py-2.5 font-semibold">Prior art</th>
+                <th className="px-4 py-2.5 font-semibold">What it is</th>
+                <th className="px-4 py-2.5 font-semibold">Where OneLink differs</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {PRIOR_ART.map((row) => (
+                <tr key={row.name} className="align-top">
+                  <td className="px-4 py-3 font-medium text-ink">{row.name}</td>
+                  <td className="px-4 py-3 text-muted">{row.what}</td>
+                  <td className="px-4 py-3 text-ink2">{row.edge}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
   );
 }
@@ -500,28 +507,6 @@ function IntegrateSection() {
         hosted checkout with one API call; your customer logs in with email or Google and pays in
         USDC, and the Universal Account sources funds cross-chain and settles on your chain.
       </p>
-      <pre className="mt-5 overflow-x-auto rounded-2xl border border-line bg-paper2 p-5 font-mono text-xs leading-relaxed text-ink2">
-        <code>{INTEGRATE_SNIPPET}</code>
-      </pre>
-      <p className="mt-2 text-xs text-muted">
-        Server-side call — your create token stays secret; the browser only ever sees the returned{" "}
-        <code className="font-mono text-ink2">checkoutUrl</code>.
-      </p>
-
-      <p className="mt-7 max-w-2xl text-ink2">
-        The firewall speaks JSON, too. Trigger the live block yourself — walletless — and read the
-        on-chain verdict your integration branches on: whether it was blocked, why, and the cap it
-        broke.
-      </p>
-      <pre className="mt-3 overflow-x-auto rounded-2xl border border-line bg-paper2 p-5 font-mono text-xs leading-relaxed text-ink2">
-        <code>{FIREWALL_VERDICT_SNIPPET}</code>
-      </pre>
-      <p className="mt-2 text-xs text-muted">
-        The over-cap charge reverts in simulation against the live Arbitrum SpendPolicy — nothing
-        moves, no gas. Run it now on{" "}
-        <Link href="/try" className="op-link">/try</Link>.
-      </p>
-
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {INTEGRATE_PATHS.map((p) => (
           <div key={p.t} className="op-card-quiet p-4">
@@ -537,6 +522,35 @@ function IntegrateSection() {
         while the agent&rsquo;s owner holds a spend cap they can prove and pull. The same shape fits
         a SaaS metering agent usage, or a marketplace handing each automation its own budget.
       </p>
+
+      <details className="op-disclosure mt-5">
+        <summary>
+          View live API examples
+          <IconChevronDown className="op-chevron h-4 w-4" aria-hidden="true" />
+        </summary>
+        <div className="space-y-5 border-t border-line p-4 sm:p-5">
+          <div>
+            <p className="text-sm font-semibold text-ink">Create a hosted checkout</p>
+            <pre className="mt-3 overflow-x-auto rounded-2xl border border-line bg-paper p-4 font-mono text-xs leading-relaxed text-ink2">
+              <code>{INTEGRATE_SNIPPET}</code>
+            </pre>
+            <p className="mt-2 text-xs text-muted">
+              Server-side call — your create token stays secret; the browser only sees the returned{" "}
+              <code className="font-mono text-ink2">checkoutUrl</code>.
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-ink">Read a walletless firewall verdict</p>
+            <pre className="mt-3 overflow-x-auto rounded-2xl border border-line bg-paper p-4 font-mono text-xs leading-relaxed text-ink2">
+              <code>{FIREWALL_VERDICT_SNIPPET}</code>
+            </pre>
+            <p className="mt-2 text-xs text-muted">
+              The over-cap charge reverts against the live Arbitrum SpendPolicy — nothing moves,
+              no gas. Run it on <Link href="/try" className="op-link">/try</Link>.
+            </p>
+          </div>
+        </div>
+      </details>
     </section>
   );
 }

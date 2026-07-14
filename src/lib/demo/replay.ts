@@ -145,6 +145,22 @@ export const DEMO_REPLAY_PAYMENT = {
   created_at: DEMO_REPLAY_PAYMENT_LINK.created_at,
 };
 
+type DashboardSearchParams = Pick<URLSearchParams, "get">;
+
+export function resolveDashboardView(searchParams: DashboardSearchParams): {
+  mode: "demo" | "live";
+  merchantId: string;
+} {
+  if (searchParams.get("demo") === DEMO_REPLAY_MODE) {
+    return { mode: "demo", merchantId: DEMO_REPLAY_PAYMENT_LINK.merchant_id };
+  }
+
+  const merchantId = searchParams.get("merchantId")?.trim();
+  if (merchantId) return { mode: "live", merchantId };
+
+  return { mode: "demo", merchantId: DEMO_REPLAY_PAYMENT_LINK.merchant_id };
+}
+
 export function isDemoReplayRequest(searchParams: URLSearchParams) {
   return searchParams.get("demo") === DEMO_REPLAY_MODE;
 }

@@ -7,6 +7,7 @@ import {
   DEMO_REPLAY_AGENT_SUMMARY,
   getDemoReplaySuccess,
   DEMO_REPLAY_PAYMENT_LINK,
+  resolveDashboardView,
 } from "./replay";
 
 test("verified Research Agent replay reports useful spend and protected spend separately", () => {
@@ -56,4 +57,31 @@ test("existing payment replay remains available", () => {
   const replay = getDemoReplaySuccess(DEMO_REPLAY_PAYMENT_LINK.id);
   assert.ok(replay);
   assert.equal(replay?.payment.status, "completed");
+});
+
+test("merchant dashboard opens on honest verified replay by default", () => {
+  const view = resolveDashboardView(new URLSearchParams());
+
+  assert.equal(view.mode, "demo");
+  assert.equal(view.merchantId, DEMO_REPLAY_PAYMENT_LINK.merchant_id);
+});
+
+test("explicit merchant dashboard query selects live data", () => {
+  const merchantId = "0x0000000000000000000000000000000000000001";
+  const view = resolveDashboardView(new URLSearchParams({ merchantId }));
+
+  assert.equal(view.mode, "live");
+  assert.equal(view.merchantId, merchantId);
+});
+
+test("explicit replay query keeps the seeded verified merchant", () => {
+  const view = resolveDashboardView(
+    new URLSearchParams({
+      demo: "replay",
+      merchantId: "0x0000000000000000000000000000000000000001",
+    }),
+  );
+
+  assert.equal(view.mode, "demo");
+  assert.equal(view.merchantId, DEMO_REPLAY_PAYMENT_LINK.merchant_id);
 });

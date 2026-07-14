@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatAtomicTokenAmount, parseTokenAmountToAtomic, resolvePaymentToken } from "@/lib/tokens";
-import { DEMO_REPLAY_PAYMENT_LINK } from "@/lib/demo/replay";
+import { DEMO_REPLAY_PAYMENT_LINK, resolveDashboardView } from "@/lib/demo/replay";
 import {
   BASE_CHAIN,
   getConfiguredPaymentMode,
@@ -33,8 +33,10 @@ function chainForId(chainId: number | null | undefined): ChainPaymentConfig {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
-  const isDemoReplay = searchParams.get("demo") === "replay";
-  const [merchantId, setMerchantId] = useState("");
+  const initialView = resolveDashboardView(searchParams);
+  const [viewMode, setViewMode] = useState<"demo" | "live">(initialView.mode);
+  const isDemoReplay = viewMode === "demo";
+  const [merchantId, setMerchantId] = useState(initialView.merchantId);
   const [links, setLinks] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, failed: 0 });
@@ -96,10 +98,10 @@ function DashboardContent() {
   }
 
   useEffect(() => {
-    if (isDemoReplay) {
-      setMerchantId(searchParams.get("merchantId") || DEMO_REPLAY_PAYMENT_LINK.merchant_id);
-    }
-  }, [isDemoReplay, searchParams]);
+    const view = resolveDashboardView(searchParams);
+    setViewMode(view.mode);
+    setMerchantId(view.merchantId);
+  }, [searchParams]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -114,6 +116,24 @@ function DashboardContent() {
 
   function getCompletedPaymentForLink(linkId: string) {
     return payments.find((payment) => payment.payment_link_id === linkId && payment.status === "completed");
+  }
+
+  function resetDashboardData() {
+    setLinks([]);
+    setPayments([]);
+    setStats({ total: 0, completed: 0, pending: 0, failed: 0 });
+  }
+
+  function showDemoReceipts() {
+    resetDashboardData();
+    setViewMode("demo");
+    setMerchantId(DEMO_REPLAY_PAYMENT_LINK.merchant_id);
+  }
+
+  function showLiveMerchant() {
+    resetDashboardData();
+    setViewMode("live");
+    setMerchantId("");
   }
 
   function TxLink({
@@ -150,13 +170,23 @@ function DashboardContent() {
           </Chip>
         </div>
 
-        {isDemoReplay && (
-          <div className="mb-6 rounded-2xl border border-gold/25 bg-gold-soft/50 p-4 text-sm">
-            <p className="font-semibold text-ink">Demo replay mode</p>
-            <p className="mt-1 text-muted">
-              Showing seeded data from an existing successful payment and proof transaction. No new
-              payment is created or executed.
-            </p>
+        {isDemoReplay ? (
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gold/25 bg-gold-soft/50 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-ink">Verified demo receipts</p>
+              <p className="mt-1 text-muted">
+                Existing successful payment and proof data. This view never sends a transaction.
+              </p>
+            </div>
+            <button type="button" onClick={showLiveMerchant} className="op-btn-secondary shrink-0">
+              View live merchant
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 flex justify-end">
+            <button type="button" onClick={showDemoReceipts} className="op-link text-sm">
+              Show verified demo receipts
+            </button>
           </div>
         )}
 
@@ -181,7 +211,13 @@ function DashboardContent() {
               id="op-view-merchant"
               placeholder="Enter a merchant address to view links"
               value={merchantId}
-              onChange={(e) => setMerchantId(e.target.value)}
+              onChange={(e) => {
+                if (isDemoReplay) {
+                  resetDashboardData();
+                  setViewMode("live");
+                }
+                setMerchantId(e.target.value);
+              }}
               className="op-input font-mono"
             />
           </div>
@@ -202,9 +238,9 @@ function DashboardContent() {
                   : "Enter a merchant address above to view its payment links, statuses, and on-chain proofs."}
               </p>
               {!merchantId && (
-                <Link href="/dashboard?demo=replay" className="op-btn-secondary mt-4 inline-flex">
+                <button type="button" onClick={showDemoReceipts} className="op-btn-secondary mt-4 inline-flex">
                   View a verified demo receipt
-                </Link>
+                </button>
               )}
             </div>
           ) : (

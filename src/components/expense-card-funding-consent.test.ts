@@ -57,3 +57,24 @@ test("does not label a same-chain preview as live cross-chain", () => {
   assert.doesNotMatch(html, /Live cross-chain funding/);
   assert.match(html, /Daily card funding/);
 });
+
+test("keeps fee and server-verification caveats in secondary details", () => {
+  const html = renderToStaticMarkup(
+    ExpenseCardFundingConsent({
+      amountAtomic: 2_000_000n,
+      totalCapAtomic: 10_000_000n,
+      summary: {
+        ...baseSummary,
+        feeUsd: 0.36,
+      },
+      loading: false,
+      error: null,
+      onRetry: () => undefined,
+    }),
+  );
+
+  assert.match(html, /<details/);
+  assert.match(html, /Verification &amp; fee details/);
+  assert.match(html, /This quote is expensive relative to the small demo budget/);
+  assert.match(html, /Open Particle explorer appears here after FINISHED/);
+});

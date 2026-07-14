@@ -104,7 +104,7 @@ export function getExpenseCardFundingActionCopy(input: {
   if (input.crossChainPreview) {
     return {
       buttonLabel: "Fund live cross-chain & arm agent",
-      helperText: `A real Particle UA transaction will top the card up to its ${input.amountLabel} daily budget through the live Base → Arbitrum route. After Particle reports FINISHED, an Open Particle explorer proof appears before the task starts.`,
+      helperText: `Particle will top the card up to ${input.amountLabel} through the live Base → Arbitrum route. After FINISHED, the Particle explorer proof appears here.`,
       willSendTransaction: true,
       showVerifiedEvidence: false,
     };
