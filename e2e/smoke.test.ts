@@ -61,6 +61,7 @@ test("verified Research Agent replay renders without a wallet", async () => {
   assert.match(body, /Budget revoked/i);
   assert.match(body, /Trigger live policy check/i);
   assert.match(body, /Executed by Particle Universal Account/i);
+  assert.match(body, /Open Particle explorer/i);
   assert.match(body, /0x06567b3a8eed3a/i);
   assert.match(body, /View Proof Receipt/i);
 });
