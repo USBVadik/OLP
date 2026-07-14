@@ -25,7 +25,7 @@ test("renders verified Particle UA execution proof with route and activity link"
   assert.match(html, /EIP-7702/);
   assert.match(html, /Base source leg/);
   assert.match(html, /Arbitrum One settlement/);
-  assert.match(html, /View Particle activity/);
+  assert.match(html, /Open Particle explorer/);
   assert.match(html, /universalx\.app\/activity\/details\?id=0x0655f16e0cd6c8/);
 });
 

@@ -105,6 +105,18 @@ export function AgentTaskResult({
               />
             </dl>
 
+            {particleActivity ? (
+              <ParticleActivityProof
+                activityId={particleActivity.activityId}
+                href={particleActivity.href}
+                sourceNames={particleActivity.sourceNames}
+                settlementName={particleActivity.settlementName}
+                verified={particleActivity.verified}
+                variant="inline"
+                summary={`EIP-7702 · Particle verified the cross-chain card funding before this task; the tool purchases settled separately on ${particleActivity.settlementName ?? "the destination chain"}`}
+              />
+            ) : null}
+
             <div className="mt-5 border-l-2 border-verify/45 pl-4">
               <p className="text-xs font-semibold text-verify">Useful result</p>
               <h3 className="mt-1 font-display text-xl font-semibold text-ink">
@@ -292,18 +304,6 @@ function OutcomeProofTrail({
           {hasLinkedEvidence ? "Linked evidence" : "Run evidence"}
         </Chip>
       </div>
-
-      {particleActivity ? (
-        <ParticleActivityProof
-          activityId={particleActivity.activityId}
-          href={particleActivity.href}
-          sourceNames={particleActivity.sourceNames}
-          settlementName={particleActivity.settlementName}
-          verified={particleActivity.verified}
-          variant="inline"
-          summary={`EIP-7702 · Particle activity verified for card funding and the ${particleActivity.settlementName ?? "settlement-chain"} approval`}
-        />
-      ) : null}
 
       {fundingLinks.length ? (
         <div className="mt-3 flex flex-wrap gap-2">

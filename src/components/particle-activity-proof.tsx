@@ -76,7 +76,9 @@ export function ParticleActivityProof({
             className="group flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-xl border border-iris/25 bg-paper px-3.5 py-2.5 text-left transition-colors hover:border-iris/45 hover:bg-iris-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-iris/40 sm:min-w-48"
           >
             <span className="min-w-0">
-              <span className="block text-[11px] text-muted">View Particle activity</span>
+              <span className="block text-[11px] font-semibold text-iris">
+                Open Particle explorer
+              </span>
               <span className="block break-all font-mono text-xs font-medium text-ink2 group-hover:text-iris">
                 {shortActivityId(activityId)}
               </span>

@@ -655,7 +655,8 @@ export default function AgentPage() {
             ? "Cross-chain funding source and SpendPolicy approval verified server-side."
             : "Funding activity and SpendPolicy approval verified server-side.",
           "ok",
-          getExplorerTxUrl(CHAIN, verifiedEvidence.approval_tx_hash),
+          getUniversalXActivityUrl(verifiedEvidence.ua_transaction_id) ??
+            getExplorerTxUrl(CHAIN, verifiedEvidence.approval_tx_hash),
         );
 
         setBusy("Verifying the card balance and allowance on Arbitrum…");

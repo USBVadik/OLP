@@ -66,6 +66,8 @@ test("renders one complete judge outcome with useful work, containment, Particle
   assert.match(html, /0\.20 USDC/);
   assert.match(html, /0\.00 USDC moved/);
   assert.match(html, /Executed by Particle Universal Account/);
+  assert.match(html, /Open Particle explorer/);
+  assert.match(html, /cross-chain card funding before this task/);
   assert.match(html, /0x06567b3a8eed3a/);
   assert.match(html, /Base source leg/);
   assert.match(html, /Arbitrum approval/);
