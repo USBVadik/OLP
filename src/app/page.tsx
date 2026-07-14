@@ -34,14 +34,13 @@ export default function HomePage() {
         </header>
 
         {/* Hero */}
-        <section className="relative pt-5 sm:pt-8 lg:pt-12">
+        <section className="relative min-h-[calc(100dvh-5.5rem)] pt-5 sm:pt-8 lg:pt-12">
           <div
-            className="pointer-events-none absolute -inset-x-10 -top-28 bottom-0 overflow-hidden"
+            className="pointer-events-none absolute -top-28 bottom-0 left-1/2 w-screen -translate-x-1/2 overflow-hidden"
             aria-hidden="true"
           >
-            {/* Feather the edges so the fixed-width aurora rectangle dissolves into the page on
-                wide screens instead of showing a hard image boundary. Radial anchored top-right
-                where the silk actually sits; opaque core, transparent at every edge. */}
+            {/* This layer is viewport-wide rather than bound to max-w-6xl. Feather the image edges
+                so the aurora still dissolves into the page instead of exposing its rectangle. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/fx/aurora.webp"
