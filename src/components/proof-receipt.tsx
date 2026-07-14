@@ -165,8 +165,8 @@ export function ProofReceiptCard({
         <p className="op-eyebrow">Verification trail</p>
         <p className="mb-3 mt-1 text-xs leading-relaxed text-muted">
           The payment and proof links open independent block explorers — verify them yourself, no
-          account needed. The Particle activity above shows the complete UA orchestration and may
-          require a UniversalX sign-in.
+          account needed. The Particle activity above opens the full cross-chain orchestration on
+          Particle&rsquo;s own UniversalX explorer — also no account needed.
         </p>
         <ol className="ml-0.5">
           <Leg

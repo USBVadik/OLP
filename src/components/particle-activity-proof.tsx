@@ -84,7 +84,7 @@ export function ParticleActivityProof({
               </span>
             </span>
             <IconArrowUpRight className="h-4 w-4 shrink-0 text-iris" />
-            <span className="sr-only">Opens UniversalX in a new tab; sign-in may be required.</span>
+            <span className="sr-only">Opens this transaction on Particle&rsquo;s UniversalX explorer in a new tab; no account needed.</span>
           </a>
         ) : (
           <div className="break-all font-mono text-xs text-ink2">{shortActivityId(activityId)}</div>
