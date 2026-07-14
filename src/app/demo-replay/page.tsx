@@ -11,8 +11,6 @@ import {
 import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { formatUsdcAmount } from "@/lib/mandates/format";
 import { AgentTaskResult } from "@/components/agent-task-result";
-import { CrossChainRoute } from "@/components/cross-chain-route";
-import { ParticleActivityProof } from "@/components/particle-activity-proof";
 import {
   Wordmark,
   Chip,
@@ -101,95 +99,29 @@ export default function DemoReplayPage() {
             />
           </dl>
 
-          <div className="mt-5 rounded-2xl border border-verify/25 bg-verify-soft/70 p-5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-verify text-white">
-                <IconCheck className="h-4 w-4" />
-              </span>
-              <div>
-                <h3 className="font-display text-xl font-semibold text-ink">
-                  Funded across chains before the work began
-                </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-ink2">
-                  Particle assembled the 2.00 USDC Arbitrum budget with a successful Base source
-                  leg, then approved the exact amount to SpendPolicy on Arbitrum. OneLink&apos;s
-                  server matched the finished activity, both receipts, and the approval before the
-                  card could be armed.
-                </p>
-              </div>
-            </div>
-
-            {/* Money in motion — the same settled-route visual judges see on /pay and /receipt —
-                but with NO amount on the arrow. The 2.00 USDC is an approved SpendPolicy ceiling,
-                not the sum that crossed chains (only part routed from Base; the rest was already on
-                Arbitrum), so the amount lives in its own labelled figure below to avoid implying
-                "2 USDC crossed". */}
-            <CrossChainRoute
-              className="mt-4"
-              status="settled"
-              fromNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
-              toName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
-              verified
-              sourceLegs={[
+          <div className="mt-5">
+            <AgentTaskResult
+              summary={DEMO_REPLAY_AGENT_SUMMARY}
+              particleActivity={{
+                activityId: DEMO_REPLAY_AGENT_FUNDING.uaTransactionId,
+                href: DEMO_REPLAY_AGENT_FUNDING.activityUrl,
+                sourceNames: [DEMO_REPLAY_AGENT_FUNDING.sourceChain],
+                settlementName: DEMO_REPLAY_AGENT_FUNDING.settlementChain,
+                verified: true,
+              }}
+              fundingLinks={[
                 {
-                  name: DEMO_REPLAY_AGENT_FUNDING.sourceChain,
+                  label: `${DEMO_REPLAY_AGENT_FUNDING.sourceChain} source leg`,
                   href: DEMO_REPLAY_AGENT_FUNDING.sourceExplorer,
                 },
+                {
+                  label: `${DEMO_REPLAY_AGENT_FUNDING.settlementChain} approval`,
+                  href: DEMO_REPLAY_AGENT_FUNDING.approvalExplorer,
+                },
               ]}
-            />
-
-            <ParticleActivityProof
-              activityId={DEMO_REPLAY_AGENT_FUNDING.uaTransactionId}
-              href={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
-              sourceNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
-              settlementName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
-              verified
-              variant="inline"
-              summary="EIP-7702 · Base source leg helped make the Arbitrum card budget available"
-            />
-
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-paper/70 px-3.5 py-2.5">
-              <span className="text-xs text-muted">Budget made available</span>
-              <span className="font-display text-sm font-semibold text-ink tnum">
-                {formatUsdcAmount(DEMO_REPLAY_AGENT_FUNDING.amountAtomic)}
-              </span>
-            </div>
-
-            <div className="mt-3">
-              <TxReference
-                label="Arbitrum budget approval"
-                hash={DEMO_REPLAY_AGENT_FUNDING.approvalTxHash}
-                href={DEMO_REPLAY_AGENT_FUNDING.approvalExplorer}
-              />
-            </div>
-
-            <p className="mt-3 text-xs leading-relaxed text-muted">
-              Funding and spending are separate proofs: this operation funded the card
-              cross-chain; the two resource purchases shown below later settled on Arbitrum.
-              Opening this replay never sends a transaction.
-            </p>
-          </div>
-
-          <div className="mt-5">
-            <AgentTaskResult summary={DEMO_REPLAY_AGENT_SUMMARY} />
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-verify/25 bg-verify-soft/55 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-verify text-white">
-                <IconLock className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="font-semibold text-ink">Budget revoked on-chain</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted">
-                  The payer&apos;s kill switch disarmed this mandate after the verified run.
-                </p>
-              </div>
-            </div>
-            <TxReference
-              label="Revoke transaction"
-              hash={DEMO_REPLAY_AGENT.revokeTxHash}
-              href={DEMO_REPLAY_AGENT.revokeExplorer}
+              revoked
+              revokeTxUrl={DEMO_REPLAY_AGENT.revokeExplorer}
+              receiptHref={`/receipt/${CROSS_CHAIN_RECEIPT_ID}`}
             />
           </div>
 

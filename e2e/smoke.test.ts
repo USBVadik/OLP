@@ -57,9 +57,12 @@ test("verified Research Agent replay renders without a wallet", async () => {
   assert.match(body, /Research Agent Expense Card/i);
   assert.match(body, /No transaction sent by replay/i);
   assert.match(body, /0\.20 USDC/i);
+  assert.match(body, /Task completed safely/i);
+  assert.match(body, /Budget revoked/i);
   assert.match(body, /Trigger live policy check/i);
   assert.match(body, /Executed by Particle Universal Account/i);
   assert.match(body, /0x06567b3a8eed3a/i);
+  assert.match(body, /View Proof Receipt/i);
 });
 
 test("canonical cross-chain receipt renders", async () => {

@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPublicClient, formatUnits, http, type Address, type Hex } from "viem";
-import { ARBITRUM_CHAIN, BASE_CHAIN, getExplorerTxUrl, getPublicRpcUrl } from "@/lib/config/payment";
+import {
+  ARBITRUM_CHAIN,
+  BASE_CHAIN,
+  getExplorerTxUrl,
+  getPaymentChainById,
+  getPublicRpcUrl,
+  getUniversalXActivityUrl,
+} from "@/lib/config/payment";
 import { ERC20_APPROVE_ABI } from "@/lib/contracts/receipt-emitter";
 import { SPEND_POLICY_ABI, toContractMandate } from "@/lib/contracts/spend-policy";
 import {
@@ -110,6 +117,8 @@ const ERC20_READ_ABI = [
 // Arbitrum approval path until one explicitly approved live verification succeeds.
 const UA_FUNDED_AGENT = process.env.NEXT_PUBLIC_ENABLE_UA_FUNDED_AGENT === "true";
 const SPONSORED_DELEGATION = process.env.NEXT_PUBLIC_SPONSORED_DELEGATION === "true";
+const CANONICAL_CROSS_CHAIN_RECEIPT =
+  "/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5";
 
 let Magic: any = null;
 let OAuthExtension: any = null;
@@ -201,6 +210,16 @@ function fmt(atomic: bigint) {
   return `${n % 1 === 0 ? n : n.toFixed(2)} USDC`;
 }
 
+function buildOutcomeEvidenceLink(chainId: number, txHash: string, label: string) {
+  try {
+    return { label, href: getExplorerTxUrl(getPaymentChainById(chainId), txHash) };
+  } catch {
+    // Particle's UniversalX activity remains the canonical proof when a routed chain is not part
+    // of this app's small explorer allowlist. A new source chain must never crash the judge view.
+    return null;
+  }
+}
+
 type AgentChargeResult = {
   status: ResearchResourceStatus;
   settled?: boolean;
@@ -220,6 +239,7 @@ export default function AgentPage() {
   const [armed, setArmed] = useState<{ mandate: PaymentMandate; signature: string } | null>(null);
   const [revoked, setRevoked] = useState(false);
   const [revokeProof, setRevokeProof] = useState<PostRevokeProof | null>(null);
+  const [revokeTxUrl, setRevokeTxUrl] = useState<string | null>(null);
   const [agentLog, setAgentLog] = useState<LogEntry[]>([]);
   const [running, setRunning] = useState(false);
   const [bought, setBought] = useState<Record<string, unknown>>({});
@@ -665,6 +685,7 @@ export default function AgentPage() {
       setArmed({ mandate: chosen, signature });
       setRevoked(false);
       setRevokeProof(null);
+      setRevokeTxUrl(null);
       setBought({});
       setTaskOutcomes([]);
       append(
@@ -707,6 +728,7 @@ export default function AgentPage() {
       const tx = await policy.revoke(toContractMandate(armed.mandate));
       await tx.wait();
       setRevoked(true);
+      setRevokeTxUrl(getExplorerTxUrl(CHAIN, tx.hash));
       append(
         "FIREWALL",
         "Budget revoked on-chain. Agent disarmed — further charges will revert.",
@@ -942,6 +964,34 @@ export default function AgentPage() {
     balanceFailed: Boolean(balanceError),
   });
   const revokedCopy = revoked ? revokedStatusCopy(revokeProof) : null;
+  const outcomeParticleActivity = fundingEvidence
+    ? {
+        activityId: fundingEvidence.ua_transaction_id,
+        href: getUniversalXActivityUrl(fundingEvidence.ua_transaction_id),
+        sourceNames: fundingEvidence.source_chain_ids.map(chainLabel),
+        settlementName: chainLabel(fundingEvidence.settlement_chain_id),
+        verified: true,
+      }
+    : null;
+  const outcomeFundingLinks = fundingEvidence
+    ? [
+        ...fundingEvidence.source_legs.flatMap((leg) => {
+          const link = buildOutcomeEvidenceLink(
+            leg.chainId,
+            leg.txHash,
+            `${chainLabel(leg.chainId)} source leg`,
+          );
+          return link ? [link] : [];
+        }),
+        buildOutcomeEvidenceLink(
+          fundingEvidence.settlement_chain_id,
+          fundingEvidence.approval_tx_hash,
+          `${chainLabel(fundingEvidence.settlement_chain_id)} approval`,
+        ),
+      ].filter(
+        (link): link is { label: string; href: string } => link !== null,
+      )
+    : [];
 
   return (
     <main className="op-shell px-4 py-8 sm:py-12">
@@ -1089,13 +1139,21 @@ export default function AgentPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {UA_FUNDED_AGENT && fundingEvidence ? (
+              {UA_FUNDED_AGENT && fundingEvidence && (running || taskSummary.status === "idle") ? (
                 <ExpenseCardFundingProof evidence={fundingEvidence} />
               ) : null}
               <AgentMissionCard mandate={armed.mandate} running={running} onRun={runAutonomous} disabled={revoked} />
 
               {!running && taskSummary.status !== "idle" ? (
-                <AgentTaskResult summary={taskSummary} />
+                <AgentTaskResult
+                  summary={taskSummary}
+                  particleActivity={outcomeParticleActivity}
+                  fundingLinks={outcomeFundingLinks}
+                  revoked={revoked}
+                  revokeProof={revokeProof}
+                  revokeTxUrl={revokeTxUrl}
+                  receiptHref={CANONICAL_CROSS_CHAIN_RECEIPT}
+                />
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1112,7 +1170,7 @@ export default function AgentPage() {
                 />
               </div>
 
-              {revoked ? (
+              {revoked && taskSummary.status !== "complete" ? (
                 <div role="status" className="rounded-2xl border border-danger/25 bg-danger-soft p-4 text-sm">
                   <p className="flex items-center gap-2 font-semibold text-danger">
                     <IconBan className="h-4 w-4" /> Budget revoked on-chain
@@ -1133,7 +1191,7 @@ export default function AgentPage() {
                     </p>
                   )}
                 </div>
-              ) : (
+              ) : !revoked ? (
                 <button
                   type="button"
                   onClick={revoke}
@@ -1146,7 +1204,7 @@ export default function AgentPage() {
                     </>
                   )}
                 </button>
-              )}
+              ) : null}
 
               <Disclosure
                 summary={
