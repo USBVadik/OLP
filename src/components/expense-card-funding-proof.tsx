@@ -2,6 +2,7 @@ import { ARBITRUM_CHAIN, getExplorerTxUrl, getUniversalXActivityUrl } from "@/li
 import { chainLabel } from "@/lib/particle/assets";
 import type { StoredFundingEvidence } from "@/lib/agent/funding-evidence-store";
 import { CrossChainRoute } from "@/components/cross-chain-route";
+import { ParticleActivityProof } from "@/components/particle-activity-proof";
 import { IconArrowUpRight, IconCheck } from "@/components/ui";
 
 export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingEvidence }) {
@@ -10,6 +11,9 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
   const sourceNames = evidence.source_chain_ids.map(chainLabel);
   const budgetLabel = `${(Number(evidence.approved_amount) / 1_000_000).toFixed(2)} USDC`;
   const settlementName = chainLabel(evidence.settlement_chain_id);
+  const particleSummary = sourceNames.length
+    ? `EIP-7702 · ${sourceNames.join(" + ")} source leg${sourceNames.length > 1 ? "s" : ""} helped make the budget available on ${settlementName}`
+    : `EIP-7702 · Particle activity matched to the ${settlementName} budget approval`;
 
   return (
     <section className="rounded-2xl border border-verify/25 bg-verify-soft p-4" aria-label="Verified card funding">
@@ -53,12 +57,17 @@ export function ExpenseCardFundingProof({ evidence }: { evidence: StoredFundingE
         <span className="font-display text-sm font-semibold text-ink tnum">{budgetLabel}</span>
       </div>
 
+      <ParticleActivityProof
+        activityId={evidence.ua_transaction_id}
+        href={activityUrl}
+        sourceNames={sourceNames}
+        settlementName={settlementName}
+        verified
+        variant="inline"
+        summary={particleSummary}
+      />
+
       <div className="mt-3 flex flex-wrap gap-2">
-        {activityUrl ? (
-          <a href={activityUrl} target="_blank" rel="noreferrer" className="op-btn-secondary text-xs">
-            Particle activity (sign in) <IconArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </a>
-        ) : null}
         <a href={approvalUrl} target="_blank" rel="noreferrer" className="op-btn-secondary text-xs">
           Approval proof <IconArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         </a>

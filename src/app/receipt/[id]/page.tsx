@@ -142,7 +142,11 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               isCrossChain={settlementChain.chainId !== proofChain.chainId}
               payment={{ hash: paymentHash, href: paymentHash ? getExplorerTxUrl(settlementChain, paymentHash) : null }}
               proof={{ hash: proofHash, href: proofHash ? getExplorerTxUrl(proofChain, proofHash) : null }}
-              universalActivity={{ id: uaTransactionId, href: getUniversalXActivityUrl(uaTransactionId) }}
+              universalActivity={{
+                id: uaTransactionId,
+                href: getUniversalXActivityUrl(uaTransactionId),
+                verified: funding.status === "particle_verified",
+              }}
               crossChain={crossChain}
               matchedDetail={`Recipient and amount (${amountLabel}) were re-checked against this invoice from the on-chain ${settlementChain.name} USDC transfer.`}
               settledAt={settledAt}

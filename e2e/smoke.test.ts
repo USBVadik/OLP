@@ -58,9 +58,17 @@ test("verified Research Agent replay renders without a wallet", async () => {
   assert.match(body, /No transaction sent by replay/i);
   assert.match(body, /0\.20 USDC/i);
   assert.match(body, /Trigger live policy check/i);
+  assert.match(body, /Executed by Particle Universal Account/i);
+  assert.match(body, /0x06567b3a8eed3a/i);
 });
 
 test("canonical cross-chain receipt renders", async () => {
   const res = await get(`/receipt/${CANONICAL_RECEIPT}`);
   assert.equal(res.status, 200);
+  const body = await res.text();
+  assert.match(body, /Executed by Particle Universal Account/i);
+  assert.match(body, /Particle Network proof/i);
+  assert.match(body, /EIP-7702/i);
+  assert.match(body, /View Particle activity/i);
+  assert.match(body, /0x0655f16e0cd6c8/i);
 });

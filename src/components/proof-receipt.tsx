@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { CrossChainRoute } from "@/components/cross-chain-route";
 import { CopyValue } from "@/components/copy-value";
+import { ParticleActivityProof } from "@/components/particle-activity-proof";
 
 export interface ProofReceiptCardProps {
   amountLabel: string;
@@ -29,7 +30,7 @@ export interface ProofReceiptCardProps {
    * where `ua.sendTransaction` returns a transactionId that spans the whole cross-chain
    * orchestration. Rendered alongside the settlement leg when an id is available.
    */
-  universalActivity?: { id: string | null; href: string | null };
+  universalActivity?: { id: string | null; href: string | null; verified?: boolean };
   /**
    * Cross-chain funding summary. When the payment was SOURCED from chain(s) other than the
    * settlement chain, this surfaces the "no manual bridge" story (Particle UA chain abstraction).
@@ -138,6 +139,14 @@ export function ProofReceiptCard({
         </div>
       </div>
 
+      <ParticleActivityProof
+        activityId={universalActivity?.id}
+        href={universalActivity?.href}
+        sourceNames={crossChain?.fromNames}
+        settlementName={settlementChainName}
+        verified={universalActivity?.verified}
+      />
+
       {crossChain && crossChain.fromNames.length ? (
         <div className="px-6 pt-6 sm:px-8">
           <CrossChainRoute
@@ -145,7 +154,6 @@ export function ProofReceiptCard({
             fromNames={crossChain.fromNames}
             toName={crossChain.toName}
             amountLabel={amountLabel}
-            activityHref={universalActivity?.href ?? null}
             verified={crossChain.verified}
             sourceLegs={crossChain.sourceLegs}
           />
@@ -157,7 +165,8 @@ export function ProofReceiptCard({
         <p className="op-eyebrow">Verification trail</p>
         <p className="mb-3 mt-1 text-xs leading-relaxed text-muted">
           The payment and proof links open independent block explorers — verify them yourself, no
-          account needed. The Universal Account link is Particle&rsquo;s own view and needs a sign-in.
+          account needed. The Particle activity above shows the complete UA orchestration and may
+          require a UniversalX sign-in.
         </p>
         <ol className="ml-0.5">
           <Leg
@@ -169,14 +178,6 @@ export function ProofReceiptCard({
           >
             <div className="space-y-2">
               <TxReference label={`Payment · ${settlementChainName}`} hash={payment.hash} href={payment.href} />
-              {universalActivity?.id ? (
-                <TxReference
-                  label="Universal Account · UniversalX"
-                  hash={universalActivity.id}
-                  href={universalActivity.href}
-                  destinationLabel="Open in UniversalX (sign in)"
-                />
-              ) : null}
             </div>
           </Leg>
           <Leg

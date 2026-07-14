@@ -12,6 +12,7 @@ import { formatAtomicTokenAmount, resolvePaymentToken } from "@/lib/tokens";
 import { formatUsdcAmount } from "@/lib/mandates/format";
 import { AgentTaskResult } from "@/components/agent-task-result";
 import { CrossChainRoute } from "@/components/cross-chain-route";
+import { ParticleActivityProof } from "@/components/particle-activity-proof";
 import {
   Wordmark,
   Chip,
@@ -129,13 +130,22 @@ export default function DemoReplayPage() {
               fromNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
               toName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
               verified
-              activityHref={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
               sourceLegs={[
                 {
                   name: DEMO_REPLAY_AGENT_FUNDING.sourceChain,
                   href: DEMO_REPLAY_AGENT_FUNDING.sourceExplorer,
                 },
               ]}
+            />
+
+            <ParticleActivityProof
+              activityId={DEMO_REPLAY_AGENT_FUNDING.uaTransactionId}
+              href={DEMO_REPLAY_AGENT_FUNDING.activityUrl}
+              sourceNames={[DEMO_REPLAY_AGENT_FUNDING.sourceChain]}
+              settlementName={DEMO_REPLAY_AGENT_FUNDING.settlementChain}
+              verified
+              variant="inline"
+              summary="EIP-7702 · Base source leg helped make the Arbitrum card budget available"
             />
 
             <div className="mt-3 flex items-center justify-between rounded-xl bg-paper/70 px-3.5 py-2.5">
