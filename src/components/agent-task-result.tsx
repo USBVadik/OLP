@@ -134,11 +134,11 @@ function PolicyBlockEvidence({ block }: { block: ResearchPolicyBlock }) {
       ? "Revoked permission enforced"
       : "Signed policy enforced";
 
-  // The peak beat. An injected instruction tried to push a charge past the signed cap — the exact
-  // failure mode behind real autonomous-agent wallet drains — and the on-chain policy physically
-  // refused it. Given weight (bold danger container + one-shot slam), a hero "nothing moved" figure,
-  // and honest copy: it's an over-cap revert to the SAME merchant, so we never imply an attacker
-  // recipient. `animate-block-pulse` / `animate-seal` both have a reduced-motion no-op (globals.css).
+  // The peak beat. A charge was requested above the signed per-tool cap and the on-chain policy
+  // refused it in preflight, before any broadcast. Given weight (bold danger container + one-shot
+  // slam), a hero "nothing moved" figure, and honest copy: it's an over-cap revert to the SAME
+  // merchant and a preflight check — never an off-merchant transfer.
+  // `animate-block-pulse` / `animate-seal` both have a reduced-motion no-op (globals.css).
   return (
     <section
       aria-labelledby="policy-block-title"
@@ -147,20 +147,20 @@ function PolicyBlockEvidence({ block }: { block: ResearchPolicyBlock }) {
       <div className="animate-block-pulse rounded-2xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-danger">
-            <IconShield className="h-4 w-4" /> {revoked ? "Post-revoke charge" : "Hijack attempt"}
+            <IconShield className="h-4 w-4" /> {revoked ? "Post-revoke charge" : "Unexpected over-cap request"}
           </p>
           <Chip tone="verify">
-            <IconCheck className="h-3 w-3" /> Refused on-chain
+            <IconCheck className="h-3 w-3" /> Rejected by deployed policy before broadcast
           </Chip>
         </div>
 
         <h3 id="policy-block-title" className="mt-3 font-display text-xl font-semibold text-ink">
-          {revoked ? "Charge after revoke, blocked" : "Drain attempt blocked"}
+          {revoked ? "Charge after revoke, blocked" : "Over-cap charge blocked"}
         </h3>
         <p className="mt-1.5 text-sm leading-relaxed text-ink2">
           {revoked
             ? "A charge arrived after the budget was revoked. "
-            : "An injected instruction tried to push a charge past your signed per-tool limit — the way autonomous agents get drained. "}
+            : "A charge was requested above your signed per-tool limit. "}
           SpendPolicy refused it in preflight. No transaction was broadcast, and nothing left your account.
         </p>
 

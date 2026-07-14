@@ -47,7 +47,7 @@ test("research mission names one concrete task and is explicitly deterministic",
   assert.match(RESEARCH_MISSION.title, /ETH market-risk brief/i);
   assert.equal(RESEARCH_MISSION.execution, "deterministic");
   assert.equal(RESEARCH_MISSION.adversarialFixture.usesLlm, false);
-  assert.match(RESEARCH_MISSION.adversarialFixture.label, /hijack|attack|injected/i);
+  assert.match(RESEARCH_MISSION.adversarialFixture.label, /over-cap|unexpected/i);
   assert.match(RESEARCH_MISSION.adversarialFixture.instruction, /premium export/i);
   // Honesty: the block is an over-cap revert to the same merchant (PerChargeExceeded), never an
   // off-merchant transfer, so the copy must not imply funds were routed to an attacker address.

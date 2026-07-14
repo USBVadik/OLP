@@ -97,17 +97,25 @@ export default function HomePage() {
                   <IconArrowUpRight className="h-4 w-4" />
                 </Link>
               </Magnetic>
+              <Link href="/demo-replay" className="op-btn-secondary w-full sm:w-auto">
+                View verified run
+                <IconArrowUpRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="op-animate-rise mt-3" style={{ animationDelay: "360ms" }}>
               <Link
                 href="/try"
-                className="op-btn-secondary w-full sm:w-auto"
+                className="op-link inline-flex items-center gap-1 text-sm font-medium"
               >
-                Try the block without a wallet
+                Or try the block without a wallet
+                <IconArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             <p
               className="op-animate-rise mt-3 max-w-lg text-xs leading-relaxed text-muted"
-              style={{ animationDelay: "360ms" }}
+              style={{ animationDelay: "380ms" }}
             >
               The task is deterministic, not an LLM. The separate canonical receipt proves the
               live Base-to-Arbitrum Particle UA payment.
