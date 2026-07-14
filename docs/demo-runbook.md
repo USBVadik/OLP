@@ -13,12 +13,12 @@ deployed live at onelink-pay.vercel.app.
 **The full 60–90 second path:**
 1. Magic login — no seed phrase, no gas, no chain picker. *(Your own EOA → Particle UA in EIP-7702 mode.)*
 2. Read the mandate card aloud: `$0.10/charge`, `$2/day`, one merchant, expires today, revocable — "a card with a built-in limit."
-3. **Run task with my budget** → it buys market insight (`0.05`) and sentiment (`0.08`) through the x402 pattern, then renders a readable ETH risk brief. The unexpected `0.20` premium export is blocked by the signed `0.10/tool` cap.
-4. **Revoke budget** → the mandate emits `MandateRevoked` on Arbitrum and the workflow is disarmed. The kill switch is owned by the payer.
-5. **Credibility layer (after the peak) — cross-chain:** the merchant is paid on Arbitrum with USDC sourced from Base, no manual bridge, on your own Universal Account (same address, EIP-7702). Separately, the first-time Arbitrum delegation path is proven relayer-sponsored (C23), so the payer needs no native gas for that step.
-6. Open the public **proof receipt** → anyone verifies on a block explorer, no account.
+3. Confirm the live **Base -> Arbitrum** funding preview and click **Fund live cross-chain & arm agent**. Wait for Particle `FINISHED`, then show **Open Particle explorer** before continuing.
+4. **Run task with my budget** → it buys market insight (`0.05`) and sentiment (`0.08`) through the x402 pattern, then renders a readable ETH risk brief. The unexpected `0.20` premium export is blocked by the signed `0.10/tool` cap.
+5. **Revoke budget** → the mandate emits `MandateRevoked` on Arbitrum and the workflow is disarmed. The kill switch is owned by the payer.
+6. Hold on the unified result: Particle proves the cross-chain card funding; Arbiscan proves the two separate same-chain tool purchases; OneLink shows the useful result and protected spend together.
 
-**Golden path — don't sprawl.** The live run is exactly `/agent` for task → result → block → revoke, followed by the canonical cross-chain `/receipt` for Particle UA credibility. `/demo-replay` is the no-wallet fallback for that same Research Agent outcome; `/try`, `/firewall`, `/dashboard`, and `/wallet` are **"explore if asked," not live beats**. One useful result plus one hard refusal beats a tour of every route.
+**Golden path — don't sprawl.** The live run is exactly `/agent` for live Particle funding → Explorer proof → task → result → block → revoke. `/demo-replay` is the no-wallet fallback; the canonical `/receipt` is optional deeper checkout evidence. `/try`, `/firewall`, `/dashboard`, and `/wallet` are **"explore if asked," not live beats**. One useful result plus one hard refusal beats a tour of every route.
 
 **Must-say honesty lines:** x402 *pattern* (`onelink-mandate`, not the Coinbase facilitator) · the agent is an *unattended deterministic* loop, **not** LLM-driven · **gas abstraction** is real (the network fee is paid in USDC) and the **one-time 7702 delegation is now sponsored** — the relayer pays it (proven on-chain, C23), so a first-time payer needs **zero native gas**. (Scoped to the delegation step; the settlement fee is still paid in USDC — we do **not** claim a general paymaster.)
 
@@ -75,22 +75,26 @@ Agent Expense Card (useful result plus on-chain refusal). **Act 2** = the cross-
 
 ### Act 1 — The agent on a leash (the hook, cold-open) — `/agent` (or `/firewall`)
 
-Set up ALREADY armed before you present, so you can open on the block. (The `/agent` screen shows
-your one Universal Account balance across chains — Particle's chain-abstraction, made visible.)
+Sign in before you present, but do **not** arm yet. Wait until `/agent` shows **Live cross-chain
+funding**, Base as a source, Arbitrum as destination, and **Fund live cross-chain & arm agent**. If
+the preview is same-chain, do not record it as cross-chain.
 
 1. Read the mission and mandate aloud: **prepare an ETH market-risk brief**, `$0.10 / paid tool`, `$2 / day`, `$10 total`, **one merchant**,
    **expires today**, **revocable anytime**. "If a charge breaks any limit it reverts on-chain — you
-   pay nothing." *(If arming live: one signature + one approve; the Budget HUD lights up 2.00/2.00
-   today, 10.00/10.00 lifetime.)*
-2. **Run task with my budget.** One click. The workflow buys **Market insight ($0.05)** then
+   pay nothing."
+2. **Fund live cross-chain & arm agent.** Particle tops the Arbitrum card up from Base through the
+   user's EIP-7702 Universal Account. Wait for `FINISHED`, hold on the verified route, and open the
+   **Particle explorer** proof once. This is the live cross-chain track operation; the budget amount
+   is a ceiling, so do not claim the whole 2 USDC crossed from Base.
+3. **Run task with my budget.** One click. The workflow buys **Market insight ($0.05)** then
    **Live sentiment ($0.08)** (`402 → pay within mandate → 200 OK`). The **Budget HUD drains** and
    the primary result becomes **Brief ready** with a readable risk summary; technical activity stays
    behind the accordion.
-3. It then reaches **Premium dataset ($0.20)** — over the $0.10 per-charge cap. **BLOCKED: over the
+4. It then reaches **Premium dataset ($0.20)** — over the $0.10 per-charge cap. **BLOCKED: over the
    per-charge cap. No funds moved, zero gas.** The agent halts itself; the Budget HUD and the "Your
    own account" spine hold **Firewall held · budget untouched** — the bars do NOT move. *(This is the
    10-second wow — say it human-first: "it tried to overspend and it can't; my money never moved.")*
-4. **Revoke budget** → "Budget revoked on-chain." The `/agent` run control becomes unavailable and
+5. **Revoke budget** → "Budget revoked on-chain." The `/agent` run control becomes unavailable and
    the revoked state is visible. The security boundary is the contract: the live revoke transaction
    emitted `MandateRevoked`, and future charges for that mandate revert. If a judge asks to exercise
    the post-revoke failure manually, use the dedicated `/firewall` surface rather than adding another

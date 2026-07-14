@@ -61,12 +61,14 @@ import { buildExpenseCardArmIntent } from "@/lib/particle/expense-card-arm";
 import {
   assertExpenseCardReadiness,
   findRecoverableExpenseCardFundingTransaction,
+  getExpenseCardFundingActionCopy,
   getExpenseCardFundingAmount,
   hasMaterialExpenseCardPreviewChange,
   prepareExpenseCardFundingTransaction,
   sendExpenseCardFundingTransaction,
   summarizeExpenseCardFundingPreview,
   waitForExpenseCardFunding,
+  type ExpenseCardReadinessSnapshot,
   type ExpenseCardFundingPreview,
 } from "@/lib/particle/expense-card-funding";
 import { sponsoredDelegateChain } from "@/lib/particle/delegation";
@@ -257,6 +259,8 @@ export default function AgentPage() {
   const [fundingPreviewLoading, setFundingPreviewLoading] = useState(false);
   const [fundingPreviewError, setFundingPreviewError] = useState<string | null>(null);
   const [fundingEvidence, setFundingEvidence] = useState<StoredFundingEvidence | null>(null);
+  const [cardReadiness, setCardReadiness] = useState<ExpenseCardReadinessSnapshot | null>(null);
+  const [cardReadinessLoading, setCardReadinessLoading] = useState(false);
 
   const append = useCallback(
     (source: LogSource, message: string, tone: LogTone, txUrl?: string) => {
@@ -465,6 +469,31 @@ export default function AgentPage() {
     return { balance: BigInt(balance), allowance: BigInt(allowance) };
   }, [address, spendPolicy]);
 
+  useEffect(() => {
+    if (!UA_FUNDED_AGENT || !address) {
+      setCardReadiness(null);
+      setCardReadinessLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCardReadinessLoading(true);
+    void readCardReadiness()
+      .then((readiness) => {
+        if (!cancelled) setCardReadiness(readiness);
+      })
+      .catch(() => {
+        if (!cancelled) setCardReadiness(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCardReadinessLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, balanceReloadKey, readCardReadiness]);
+
   const refreshFundingPreview = useCallback(async () => {
     if (!UA_FUNDED_AGENT || !ua || !chosen) return;
     setFundingPreviewLoading(true);
@@ -666,6 +695,7 @@ export default function AgentPage() {
           allowance,
           required: fundingAmount,
         });
+        setCardReadiness({ balance, allowance });
         append(
           "USER",
           recovered
@@ -965,6 +995,13 @@ export default function AgentPage() {
     balanceFailed: Boolean(balanceError),
   });
   const revokedCopy = revoked ? revokedStatusCopy(revokeProof) : null;
+  const fundingAction = getExpenseCardFundingActionCopy({
+    readiness: cardReadiness,
+    required: fundingAmount,
+    hasVerifiedEvidence: Boolean(fundingEvidence),
+    crossChainPreview: Boolean(fundingPreviewSummary?.crossChain),
+    amountLabel: fmt(fundingAmount),
+  });
   const outcomeParticleActivity = fundingEvidence
     ? {
         activityId: fundingEvidence.ua_transaction_id,
@@ -1111,7 +1148,7 @@ export default function AgentPage() {
                   onRetry={refreshFundingPreview}
                 />
               ) : null}
-              {UA_FUNDED_AGENT && fundingEvidence ? (
+              {UA_FUNDED_AGENT && fundingEvidence && fundingAction.showVerifiedEvidence ? (
                 <ExpenseCardFundingProof evidence={fundingEvidence} />
               ) : null}
               <button
@@ -1119,22 +1156,19 @@ export default function AgentPage() {
                 disabled={
                   !chosen ||
                   !!busy ||
+                  (UA_FUNDED_AGENT && cardReadinessLoading) ||
                   (UA_FUNDED_AGENT && (!fundingPreview || !fundingPreviewSummary || fundingPreviewLoading))
                 }
                 className="op-btn-primary w-full"
               >
                 {busy ??
                   (UA_FUNDED_AGENT
-                    ? fundingEvidence
-                      ? "Arm agent with verified funding"
-                      : `Fund ${fmt(fundingAmount)} & arm agent`
+                    ? fundingAction.buttonLabel
                     : "Arm agent budget")}
               </button>
               {UA_FUNDED_AGENT ? (
                 <p className="text-center text-[11px] leading-relaxed text-muted">
-                  {fundingEvidence
-                    ? "Funding is already verified. Sign the current spending limits; no new funding transaction will be sent."
-                    : "One review, explicit wallet approvals: sign the spending limits, then sign the Particle funding transaction. A one-time chain activation may also be requested."}
+                  {fundingAction.helperText}
                 </p>
               ) : null}
             </div>

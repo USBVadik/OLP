@@ -23,9 +23,17 @@ export function ExpenseCardFundingConsent({
   error: string | null;
   onRetry: () => void;
 }) {
-  const sourceNames = summary?.sourceChainIds.map(chainLabel) ?? [];
-  const destinationName = summary?.destinationChainIds[0]
-    ? chainLabel(summary.destinationChainIds[0])
+  const destinationChainId = summary?.destinationChainIds[0];
+  const sourceNames = summary
+    ? [...summary.sourceChainIds]
+        .sort(
+          (left, right) =>
+            Number(left === destinationChainId) - Number(right === destinationChainId),
+        )
+        .map(chainLabel)
+    : [];
+  const destinationName = destinationChainId
+    ? chainLabel(destinationChainId)
     : "Arbitrum";
   const feeLabel =
     summary?.feeUsd !== null && summary?.feeUsd !== undefined
@@ -39,12 +47,14 @@ export function ExpenseCardFundingConsent({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="op-eyebrow">Daily card funding · experimental</p>
+          <p className="op-eyebrow">
+            {summary?.crossChain ? "Live cross-chain funding" : "Daily card funding"}
+          </p>
           <h2 className="mt-1 font-display text-lg font-semibold text-ink">
             Make {formatUsdc(amountAtomic)} available to the agent
           </h2>
         </div>
-        <span className="op-chip-iris shrink-0">Particle UA</span>
+        <span className="op-chip-iris shrink-0">Particle UA · EIP-7702</span>
       </div>
 
       {loading ? (
@@ -97,6 +107,13 @@ export function ExpenseCardFundingConsent({
             Preview only. The card is not treated as funded until the server verifies Particle
             FINISHED status, each reported source leg, and the exact on-chain USDC approval.
           </p>
+          {summary.crossChain ? (
+            <p className="rounded-xl border border-iris/25 bg-paper p-3 text-xs leading-relaxed text-ink2">
+              Confirming this route sends a real mainnet Particle UA transaction. After FINISHED
+              and server verification, an <span className="font-semibold text-iris">Open Particle explorer</span>{" "}
+              proof appears before the task starts.
+            </p>
+          ) : null}
           {summary.feeUsd !== null && summary.feeUsd > Number(formatUnits(amountAtomic, 6)) * 0.1 ? (
             <p className="rounded-xl border border-gold/25 bg-gold-soft/50 p-3 text-xs leading-relaxed text-gold">
               This quote is expensive relative to the small demo budget. It proves the routing

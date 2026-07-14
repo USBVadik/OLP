@@ -5,6 +5,7 @@ import {
   assertExpenseCardReadiness,
   findRecoverableExpenseCardFundingTransaction,
   getExpenseCardFundingAmount,
+  getExpenseCardFundingActionCopy,
   hasMaterialExpenseCardPreviewChange,
   isUaFundedExpenseCardEnabled,
   prepareExpenseCardFundingTransaction,
@@ -49,6 +50,52 @@ test("arms only when Arbitrum has both the funded balance and allowance", () => 
     () => assertExpenseCardReadiness({ balance: 2_000_000n, allowance: 1_999_999n, required: 2_000_000n }),
     /allowance verification failed/,
   );
+});
+
+test("stale proof never hides a fresh live cross-chain top-up", () => {
+  const action = getExpenseCardFundingActionCopy({
+    readiness: { balance: 1_870_000n, allowance: 9_870_000n },
+    required: 2_000_000n,
+    hasVerifiedEvidence: true,
+    crossChainPreview: true,
+    amountLabel: "2 USDC",
+  });
+
+  assert.equal(action.willSendTransaction, true);
+  assert.equal(action.showVerifiedEvidence, false);
+  assert.match(action.buttonLabel, /Fund live cross-chain/);
+  assert.match(action.helperText, /Base.*Arbitrum/);
+  assert.match(action.helperText, /Particle explorer/);
+});
+
+test("a ready card reuses verified funding without promising a new transaction", () => {
+  const action = getExpenseCardFundingActionCopy({
+    readiness: { balance: 2_000_000n, allowance: 2_000_000n },
+    required: 2_000_000n,
+    hasVerifiedEvidence: true,
+    crossChainPreview: true,
+    amountLabel: "2 USDC",
+  });
+
+  assert.equal(action.willSendTransaction, false);
+  assert.equal(action.showVerifiedEvidence, true);
+  assert.equal(action.buttonLabel, "Arm agent with verified funding");
+  assert.match(action.helperText, /No new funding transaction/);
+});
+
+test("unknown readiness makes no claim about whether funding will be sent", () => {
+  const action = getExpenseCardFundingActionCopy({
+    readiness: null,
+    required: 2_000_000n,
+    hasVerifiedEvidence: true,
+    crossChainPreview: true,
+    amountLabel: "2 USDC",
+  });
+
+  assert.equal(action.willSendTransaction, null);
+  assert.equal(action.showVerifiedEvidence, false);
+  assert.equal(action.buttonLabel, "Review funding & arm agent");
+  assert.match(action.helperText, /Checking the live Arbitrum balance/);
 });
 
 test("recovers only the latest matching finished self-funding activity", () => {

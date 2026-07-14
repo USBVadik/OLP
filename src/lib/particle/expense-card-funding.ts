@@ -50,6 +50,74 @@ export function assertExpenseCardReadiness(input: {
   }
 }
 
+export interface ExpenseCardReadinessSnapshot {
+  balance: bigint;
+  allowance: bigint;
+}
+
+export interface ExpenseCardFundingActionCopy {
+  buttonLabel: string;
+  helperText: string;
+  willSendTransaction: boolean | null;
+  showVerifiedEvidence: boolean;
+}
+
+/**
+ * Keep the operator-facing action honest when an older verified activity exists but the card has
+ * since spent part of its daily balance. Evidence proves what happened before; live balance and
+ * allowance decide whether the next click must send a fresh Particle transaction.
+ */
+export function getExpenseCardFundingActionCopy(input: {
+  readiness: ExpenseCardReadinessSnapshot | null;
+  required: bigint;
+  hasVerifiedEvidence: boolean;
+  crossChainPreview: boolean;
+  amountLabel: string;
+}): ExpenseCardFundingActionCopy {
+  if (!input.readiness) {
+    return {
+      buttonLabel: "Review funding & arm agent",
+      helperText:
+        "Checking the live Arbitrum balance and SpendPolicy allowance before deciding whether a transaction is needed.",
+      willSendTransaction: null,
+      showVerifiedEvidence: false,
+    };
+  }
+
+  const ready =
+    input.readiness.balance >= input.required &&
+    input.readiness.allowance >= input.required;
+
+  if (ready) {
+    return {
+      buttonLabel: input.hasVerifiedEvidence
+        ? "Arm agent with verified funding"
+        : "Verify funding & arm agent",
+      helperText: input.hasVerifiedEvidence
+        ? "The daily card balance and allowance are ready. No new funding transaction will be sent."
+        : "The card is already funded. No duplicate transaction will be sent; OneLink will recover and verify the recent Particle activity.",
+      willSendTransaction: false,
+      showVerifiedEvidence: input.hasVerifiedEvidence,
+    };
+  }
+
+  if (input.crossChainPreview) {
+    return {
+      buttonLabel: "Fund live cross-chain & arm agent",
+      helperText: `A real Particle UA transaction will top the card up to its ${input.amountLabel} daily budget through the live Base → Arbitrum route. After Particle reports FINISHED, an Open Particle explorer proof appears before the task starts.`,
+      willSendTransaction: true,
+      showVerifiedEvidence: false,
+    };
+  }
+
+  return {
+    buttonLabel: `Fund ${input.amountLabel} & arm agent`,
+    helperText: `A real Particle UA transaction will prepare the ${input.amountLabel} daily budget on Arbitrum. Explorer proof appears only after server verification.`,
+    willSendTransaction: true,
+    showVerifiedEvidence: false,
+  };
+}
+
 type FundingHistoryEntry = {
   transactionId?: unknown;
   status?: unknown;

@@ -13,12 +13,15 @@
 - [ ] Record the production build at `https://onelink-pay.vercel.app`.
 - [ ] Re-run the full Magic Google OAuth round-trip in that clean profile before recording. C13 is a
       live dependency; seeing the button is not enough. Never show the email address or OTP in the cut.
-- [ ] Confirm the Research Agent payer has enough Arbitrum USDC for `0.13 USDC` of purchases and
-      the relayer has enough Arbitrum ETH.
-- [ ] Open `/agent`, sign in with Magic, and arm the `agent budget` mandate before recording. Keep
-      this tab in the same session because armed state is not restored after a reload.
-- [ ] Pre-open these tabs: `/` · `/agent` (armed) · canonical
-      `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5` · `/try`.
+- [ ] Confirm the Research Agent payer has **less than 2 USDC on Arbitrum**, enough USDC on Base
+      for the missing balance + Particle fee, and the relayer has enough Arbitrum ETH. The normal
+      task spends `0.13 USDC`, so a completed rehearsal naturally leaves the card at `1.87 USDC`
+      and primes the next Base -> Arbitrum top-up.
+- [ ] Open `/agent` and sign in with Magic, but do **not** arm before recording. Wait for the live
+      preview to say **Live cross-chain funding**, show Base as a source, Arbitrum as destination,
+      and expose the CTA **Fund live cross-chain & arm agent**. If the preview is same-chain, stop;
+      never narrate it as cross-chain.
+- [ ] Pre-open these tabs: `/` · `/agent` (signed in, live funding preview ready) · `/try`.
 - [ ] Run the exact click path once silently. If any external dependency is unstable, record the
       existing verified state and use the canonical receipt rather than sending another payment.
 - [ ] Treat revoke as a one-take state mutation: record it last, or capture it as a separate shot.
@@ -36,16 +39,28 @@
 
 Voiceover intent: "Autonomous software needs purchasing power, not unrestricted wallet access."
 
-### 2. Permission before execution (0:08-0:25) · `/agent` armed
+### 2. Permission + live Particle route (0:08-0:28) · `/agent` signed in
 
 - Show the mission: prepare an ETH market-risk brief.
 - Point to the signed limits: `0.10 USDC/tool`, `2 USDC/day`, one merchant, expiry, revoke.
+- Hold on **Live cross-chain funding**: Base source, Arbitrum destination, fee in USDC.
+- Click **Fund live cross-chain & arm agent** and complete the Magic confirmations.
 - Keep addresses, hashes, and x402 details closed.
 
-Voiceover intent: "I give this workflow a card it cannot exceed: one provider, ten cents per tool,
-two dollars per day, revocable whenever I choose."
+Voiceover intent: "I give this workflow a card it cannot exceed. Particle now tops that card up
+from my Base balance and makes the budget available on Arbitrum — no bridge or chain picker."
 
-### 3. Useful work and hard refusal (0:25-1:00) · `/agent`
+### 3. Live cross-chain proof (0:28-0:45) · `/agent`
+
+- Keep the status progression visible while Particle settles; trim only dead waiting time.
+- Hold on **Daily card budget is ready on Arbitrum** and the verified Base -> Arbitrum route.
+- Click **Open Particle explorer** once. Let the activity id and `FINISHED` state remain visible for
+  a beat, then return to OneLink.
+
+Voiceover intent: "The live Particle activity is finished and server-verified. This button opens
+Particle's own explorer, not a screenshot or a OneLink-only claim."
+
+### 4. Useful work and hard refusal (0:45-1:18) · `/agent`
 
 - Click **Run task with my budget** once.
 - Let Market insight (`0.05`) and Live sentiment (`0.08`) settle.
@@ -57,7 +72,7 @@ Voiceover intent: "It buys the two inputs it needs and produces the brief. Then 
 export asks for twenty cents. The contract refuses it before settlement. Useful work completed;
 unexpected spend prevented."
 
-### 4. Kill switch (1:00-1:13) · `/agent`
+### 5. Kill switch (1:18-1:31) · `/agent`
 
 - Click **Revoke budget** and confirm through Magic.
 - Hold on the revoked confirmation and disabled run action.
@@ -66,18 +81,18 @@ unexpected spend prevented."
 
 Voiceover intent: "And the authority remains mine. One revoke disarms the budget on-chain."
 
-### 5. Particle UA track proof (1:13-1:43) · canonical `/receipt`
+### 6. Unified outcome proof (1:31-1:47) · `/agent`
 
-- Open `/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5`.
-- Show the Base -> Arbitrum route, amount, merchant, settlement transaction, UniversalX activity,
-  and InvoicePaid proof.
-- Open one explorer link only if it loads immediately.
+- Return to the completed task outcome.
+- Show the Particle Network proof near the top, the `0.13 USDC` useful spend, the `0.20 USDC`
+  protected spend, and the Arbiscan links for the two separate tool purchases.
+- Keep the distinction visible: Particle proves the cross-chain card funding; each tool purchase
+  settled separately on Arbitrum under SpendPolicy.
 
-Voiceover intent: "Underneath, the same Magic EOA is a Particle Universal Account in EIP-7702
-mode. This verified payment sourced USDC from Base and settled on Arbitrum without a manual bridge.
-The receipt is public and independently checkable."
+Voiceover intent: "Particle handled the cross-chain funding on my own EIP-7702 account. OneLink
+then enforced every tool purchase and kept each proof independently inspectable."
 
-### 6. Close (1:43-1:55) · `/` or receipt header
+### 7. Close (1:47-1:58) · outcome or `/`
 
 - Finish on the product name or verified receipt.
 
@@ -110,8 +125,8 @@ proof."
 - Say **unattended deterministic workflow**, not LLM reasoning.
 - Say the two research resources are deterministic demo fixtures; the payments and enforcement are
   real.
-- Say the Research Agent purchases settle on Arbitrum. The separate canonical Particle UA receipt
-  is the Base -> Arbitrum cross-chain proof.
+- Say the Research Agent purchases settle on Arbitrum and are **not** themselves cross-chain. The
+  live Particle activity shown during card funding is the Base -> Arbitrum cross-chain proof.
 - Say the one-time EIP-7702 delegation is sponsored, not that every transaction has a general gas
   paymaster.
 - Say no private key or unrestricted signing authority is shared with the workflow. Do not imply
