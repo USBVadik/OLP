@@ -47,7 +47,7 @@ before the finale).
 |---|---|
 | Use UA SDK in **EIP-7702 mode** | Magic EOA upgraded in place via Particle UA (`useEIP7702: true`); same address delegated on Base + Arbitrum (no new address, no smart-account deploy). |
 | **≥1 cross-chain operation moving value via UA** | A merchant is paid 2 USDC on Arbitrum sourced cross-chain from Base, one operation, no bridge — proven live + RPC-verified on stable SDK 2.0.3 (C21). Receipt: `/receipt/fc5adc83…`. |
-| Functional demo (deployed or runnable) | Deployed + live: https://onelink-pay.vercel.app (`/agent`, `/firewall`, `/pay`, `/receipt`, `/dashboard`, `/wallet`). |
+| Functional demo (deployed or runnable) | Deployed + live: https://onelink-pay.vercel.app (`/agent`, `/firewall`, `/pay/[id]`, `/receipt/[id]`, `/dashboard`, `/wallet`). |
 
 ---
 
@@ -73,7 +73,7 @@ before the finale).
 
 **Technical quality / polish — 10%**
 - `SpendPolicy.sol` + `ReceiptEmitter.sol` deployed on Base + Arbitrum; **22 Hardhat tests** pass.
-- **251 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
+- **297 deterministic unit tests** cover payment verification, mandate state, agent task accounting, verified replay evidence, replay guards, receipt rendering, and UX helpers.
 - Typed end-to-end; the EIP-712 `PaymentMandate` is **byte-identical** between contract and frontend.
 - Honest-claim ledger + risk register + verifiable proof pack; WCAG-AA contrast pass; reduced-motion respected.
 
@@ -106,8 +106,9 @@ before the finale).
 ## Key links
 
 - **Live app:** https://onelink-pay.vercel.app
+- **Demo video:** https://youtu.be/LSkvvrFh4n4
 - **No login needed:** [`/demo-replay`](https://onelink-pay.vercel.app/demo-replay) · verifiable cross-chain receipt [`/receipt/fc5adc83…`](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5) · honesty surface [`/trust`](https://onelink-pay.vercel.app/trust)
-- **Live product:** `/agent` (Research Agent Expense Card) · `/firewall` (sign + enforce + revoke) · `/pay` (cross-chain checkout) · `/dashboard` · `/wallet`
+- **Live product:** `/agent` (Research Agent Expense Card) · `/firewall` (sign + enforce + revoke) · `/pay/[id]` (cross-chain checkout) · `/dashboard` · `/wallet`
 - **Verify on-chain (60s):** `docs/proof-pack.md`
 - **Talk track + pitch card:** `docs/demo-runbook.md`
 

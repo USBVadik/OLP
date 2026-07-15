@@ -61,7 +61,7 @@ agentic payments safe — an "AI-safe card", not a blank-cheque wallet.
 - **Adoption potential (20%)** — a non-custodial expense-card layer for autonomous software buying
   paid data, inference, compute, storage, or APIs; the Research Agent is one concrete vertical; an
   x402-pattern gateway already ships, settled by the on-chain mandate.
-- **Technical quality / polish (10%)** — 253 unit + 22 contract tests; typed end-to-end; the EIP-712
+- **Technical quality / polish (10%)** — 297 unit + 22 contract tests; typed end-to-end; the EIP-712
   mandate is byte-identical between contract and frontend; clean production build; honest claim
   ledger + risk register discipline.
 

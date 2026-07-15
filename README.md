@@ -1,10 +1,14 @@
 # OneLink Pay
 
+![OneLink Pay - permission firewall for AI agents](public/og.png)
+
 **Give your AI a card, not your wallet.** OneLink Pay is a permission firewall for Universal Accounts: sign one scoped mandate, and an app, script, or AI agent can spend USDC only inside the per-charge, daily, and total caps you set — to a single merchant, until it expires, revocable anytime. Invalid charges are caught against the live on-chain policy during preflight simulation, before broadcast, so no funds move and no gas is spent. Completed checkout payments produce a public, verifiable proof receipt; agent charges expose their on-chain evidence.
 
 Particle makes execution chain-abstracted; OneLink makes consent visible, limits enforceable, and every settlement provable.
 
 Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-hackathon) (Encode Club + 7702 Collective).
+
+**[Watch the 3-minute demo](https://youtu.be/LSkvvrFh4n4)** · **[Open the live app](https://onelink-pay.vercel.app)** · **[View the interactive pitch](https://onelink-pay.vercel.app/pitch)** · **[Download the judge deck](docs/OneLink-Pay-UXmaxx-Judge-Deck.pdf)**
 
 ## Evaluate in 2 minutes (for judges)
 
@@ -20,7 +24,7 @@ Built for the [UXmaxx Hackathon](https://www.encodeclub.com/programmes/uxmaxx-ha
 **Explore the live product** (the live buttons run on our funded demo account — we can drive it on stage):
 
 - **Research Agent Expense Card** → `/agent`: arm a `0.10 USDC/tool` budget → **Run task with my budget** → the deterministic workflow buys two paid inputs, produces an ETH market-risk brief, blocks an unexpected `0.20 USDC` export before settlement, then lets the user revoke the budget on-chain.
-- **Cross-chain checkout** → `/pay`: Magic login → a merchant is paid on Arbitrum with USDC sourced from Base (no manual bridge) → public proof receipt.
+- **Cross-chain checkout proof** → [verified receipt](https://onelink-pay.vercel.app/receipt/fc5adc83-3b17-4004-8902-a5a40a178dd5): a merchant was paid on Arbitrum with USDC sourced from Base (no manual bridge), with Base, Arbitrum, and Particle activity evidence.
 
 **Prize fit:** Particle Universal Accounts + EIP-7702 (cross-chain, chain-abstracted UX) · Magic (walletless Google/email login) · Arbitrum (USDC settlement + on-chain mandate enforcement).
 
@@ -122,7 +126,7 @@ corepack pnpm install
 corepack pnpm dev
 corepack pnpm typecheck
 corepack pnpm lint
-corepack pnpm test:unit          # 284 unit checks (node:test)
+corepack pnpm test:unit          # 297 unit checks (node:test)
 corepack pnpm build
 cd contracts && corepack pnpm test   # 22 Hardhat contract tests
 ```
