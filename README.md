@@ -1,6 +1,6 @@
 # OneLink Pay
 
-![OneLink Pay - permission firewall for AI agents](public/og.png)
+![OneLink Pay](public/logo-lockup.png)
 
 **Give your AI a card, not your wallet.** OneLink Pay is a permission firewall for Universal Accounts: sign one scoped mandate, and an app, script, or AI agent can spend USDC only inside the per-charge, daily, and total caps you set — to a single merchant, until it expires, revocable anytime. Invalid charges are caught against the live on-chain policy during preflight simulation, before broadcast, so no funds move and no gas is spent. Completed checkout payments produce a public, verifiable proof receipt; agent charges expose their on-chain evidence.
 
